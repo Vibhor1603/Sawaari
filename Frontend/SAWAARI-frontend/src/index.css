@@ -1,0 +1,74 @@
+*{
+  margin:0;
+  padding:0;
+}
+body{
+  background-color: #323437;
+}
+.navbar{
+  background-color: rgb(241, 190, 95);
+  
+
+}
+.nav-link:hover{
+  color: rgb(65, 164, 65);
+  background-color: rgb(225, 215, 229);
+  border-radius: 10px;
+  font-weight: 500;
+  border-bottom: 2px #84112e solid;
+  
+}
+.about{
+  margin-top: 55px;
+  border:4;
+  border-bottom: 7px solid #f3cd46;
+  margin-bottom: 110px;
+  padding-top: 30px;
+  padding-bottom: 70px;
+  padding-right: 10px;
+}
+.auto-image{
+  width: 400px;
+  height: auto;
+  display: flex;
+  justify-content: flex-start;
+  border-right:2px solid #f3cd46;
+  margin-right: 100px;
+  margin-left: 20px;
+}
+.banner-img{
+  margin-top: 55px;
+    width: 100%;
+    height: 85vh;
+}
+
+.login{
+  justify-content: flex-end;
+}
+
+.headings{
+  color: rgb(65, 164, 65);
+}
+.nav-link{
+  font-size: larger;
+}
+
+.test-box{
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: -40px;
+}
+.test-box img{
+width: 80px;
+height: auto;
+align-self: center;
+margin-top: 20px;
+}
+.card:hover{
+  transform: scale(1.1);
+  transition: 0.5s;
+  cursor: pointer;
+  background-color: rgb(241, 190, 95);
+
+}
+
