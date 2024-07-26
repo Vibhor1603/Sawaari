@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-vars */
 import React from 'react';
-import '../src/assets/download.jpeg'; // Ensure this path is correct
+
 
 export default function About() {
     return (
