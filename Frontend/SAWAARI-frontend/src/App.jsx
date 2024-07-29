@@ -5,9 +5,10 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Navbar from './navbar';
 import About from './about';
 import Hotspots from './hotspots';
-import Testimonials from './testimonials';
 import Footer from './footer';
 import Root from './Root';
+import Routeinfo from './RouteInfo';
+
 
 
 function App() {
@@ -34,6 +35,8 @@ function App() {
               <Route index element={<Root />} />
               <Route path="/hotspots" element={<Hotspots 
               hotspot={hotspot}
+              />} />
+              <Route path="/routes" element={<Routeinfo hotspot={hotspot}
               />} />
             </Routes>
             <Footer />  

@@ -4,11 +4,12 @@ import About from "./about";
 import Testimonials from "./testimonials";
 import Footer from "./footer";
 import { testimonials } from './userTestimonials';
+import Carousel from "./Carousel";
 
 export default function Root(){
     return(
 <>
-<img src="../src/assets/banner2.jpg" className="banner-img" alt="banner" />
+<Carousel />
 <About />
 <Testimonials testimonials={testimonials}/>
 

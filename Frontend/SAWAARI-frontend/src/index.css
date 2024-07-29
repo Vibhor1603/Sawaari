@@ -8,16 +8,40 @@ body{
 }
 .navbar{
   background-color: rgb(241, 190, 95);
+  margin: 0;
 
 }
-.nav-link:hover{
-  color: rgb(65, 164, 65);
+.nav-items{
+  border-bottom: 1px solid #84112e ;
+}
+.nav-items:hover{
+  color: rgb(90, 35, 35);
   background-color: rgb(225, 215, 229);
   border-radius: 10px;
   font-weight: 500;
-  border-bottom: 2px #84112e solid;
+  border-bottom: 2.5px #84112e solid;
   
 }
+.login-btn{
+  border: 2px solid brown;
+  margin-top: 7px;
+  
+  }
+  .login-btn:hover{
+    background-color: rgb(146, 60, 60);
+    color: wheat;
+  }
+  .logo-img{
+    width: 95px;
+    height: 73px;
+    padding: 0;
+    
+  }
+.third-img{
+  height: 650px;
+  width: 75%;
+}
+
 .about{
   margin-top: 55px;
   border:4;
@@ -39,7 +63,7 @@ body{
 .banner-img{
   margin-top: 55px;
     width: 100%;
-    height: 85vh;
+    height: 100vh;
 }
 
 .login{
@@ -78,12 +102,40 @@ transition: 0.5s;
 
 }
 #map {
-   height: '400px';
+   height: '70vh';
    width: '100%'; 
+   margin-top: 80px;
+   border: 5px solid rgb(65, 164, 65);
+   border-radius: 5px;
+   padding: 0;
 }
-.mapContainer{
-  height: '100%';
-   width: '100%' 
+
+.route-container{
+  margin-top: 80px;
 }
+.route-map{
+  display: flex;
+  justify-content: space-around;
+  color: rgb(241, 190, 95);
+  width: 600px;
+  margin-bottom: 0;
+  padding-bottom: 0;
+  
+}
+.submit-btn{
+  display: flex;
+  justify-content: center;
+  width: fit-content;
+  align-self: center;;
+}
+form{
+  display: flex;
+  flex-direction: column;
+}
+.routes-map{
+  height: 200px;
+
+}
+
 
 

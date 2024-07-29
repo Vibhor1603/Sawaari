@@ -6,21 +6,21 @@ import { NavLink} from "react-router-dom";
 
 export default function Navbar() {
     return (
-        <nav className="navbar fixed-top navbar-expand-lg">
+        <nav className="navbar fixed-top navbar-expand-lg ">
             <div className="container-fluid">
-                <NavLink to="/" className="navbar-brand">Sawaari</NavLink>
+                <NavLink to="/" className="navbar-brand "><img src="../src/assets/logo.jpg" alt="logo-img" className="logo-img"/></NavLink>
                 <button className="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbarTogglerDemo01">
                     <span className="navbar-toggler-icon"></span>
                 </button>
                 <div className="collapse navbar-collapse" id="navbarTogglerDemo01">
-                    <div className="navbar-nav">
-                        <NavLink to="/hotspots" className="nav-link">Hotspots</NavLink>
-                        <NavLink to="#" className="nav-link">Routes</NavLink>
-                        <NavLink to="#" className="nav-link">Ride Buddy</NavLink>
-                        <NavLink to="#" className="nav-link">Contact us</NavLink>
+                    <div className="navbar-nav ms-auto ">
+                        <NavLink to="/hotspots" className="nav-link nav-items">Hotspots</NavLink>
+                        <NavLink to="/routes" className="nav-link nav-items">Routes</NavLink>
+                        <NavLink to="#" className="nav-link nav-items">Ride Buddy</NavLink>
+                        <NavLink to="#" className="nav-link nav-items" >Contact us</NavLink>
                     </div>
-                    <div className="navbar-nav ms-auto">
-                        <NavLink to="#" className="nav-link">Login</NavLink>
+                    <div className="navbar-nav ">
+                        <NavLink to="#" className="nav-link "><button className=" btn login-btn">Login</button></NavLink>
                     </div>
                 </div>
             </div>
