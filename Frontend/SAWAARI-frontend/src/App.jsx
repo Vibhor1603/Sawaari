@@ -31,7 +31,7 @@ function App() {
         <Router>
             <Navbar />
             <Routes>
-              <Route path='/' element={<Root />} />
+              <Route index element={<Root />} />
               <Route path="/hotspots" element={<Hotspots 
               hotspot={hotspot}
               />} />

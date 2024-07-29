@@ -39,27 +39,29 @@ function LocationTracker() {
 
 // Component to display hotspots and handle map interactions
 function Hotspots(prop) {
-  const [selectedDestination, setSelectedDestination] = useState(null);
+  const [selectedDestination, setSelectedDestination] = useState([28.619155291665052, 77.42591115327116]);
   const zoom = 16;
 const {hotspot} = prop;
   // Child component to manage map interactions and updates
-  function MapInteractionHandler() {
-    const map = useMap(); // Access the map instance
-
-    useMapEvent('click', () => {
-      if (selectedDestination) {
-        map.setView(selectedDestination, zoom);
-      }
-    });
-    
-
-    return null; // This component doesn't render anything
-  }
-
-  // Function to handle click on destination name
   function clickHandler(latitude, longitude) {
     setSelectedDestination([latitude, longitude]);
+
   }
+
+  function MapInteractionHandler({ selectedDestination }) {
+    const map = useMap();
+  
+    useEffect(() => {
+      if (selectedDestination) {
+        map.setView(selectedDestination, 16);
+      }
+    }, [map, selectedDestination]);
+  
+    return null;
+  }
+
+
+  
 
   const circleOptions = {
     fillColor: '#f03',
@@ -96,6 +98,7 @@ const {hotspot} = prop;
     </Circle>
   ));
 
+  
   return (
     <div id="map" style={{ height: '80vh', width: '100%' }}>
       <MapContainer center={[28.633043462708848, 77.44792897992077]} zoom={zoom} style={{ height: '100%', width: '100%' }}>
@@ -104,7 +107,7 @@ const {hotspot} = prop;
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
         <LocationTracker />
-        <MapInteractionHandler /> {/* Include the MapInteractionHandler component */}
+        <MapInteractionHandler selectedDestination={selectedDestination}/>
         {hotspotData}
       </MapContainer>
     </div>
