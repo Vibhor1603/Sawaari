@@ -17,9 +17,9 @@
             "text": "The route and fare details are incredibly helpful. Highly recommend this service to everyone."
         },
         {
-            "name": "Amit Kumar",
-            "imageSrc": "https://cdn-icons-png.flaticon.com/512/123/123172.png",
-            "text": "Finding ride buddies through this platform is great. It’s eco-friendly and cost-effective!"
+            "name": "Vinay Sharma",
+            "imageSrc": "../src/assets/papa.jpg",
+            "text": "Very mast and nice"
         }
     ]
 

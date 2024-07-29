@@ -11,13 +11,32 @@ import Root from './Root';
 
 
 function App() {
+
+  const [hotspot,setHotspots]= React.useState([])
+
+  React.useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch('http://localhost:3000/hotspots');
+        const data = await response.json();
+        setHotspots(data);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+    };
+  
+    fetchData();
+  }, []);
     return (
         <Router>
             <Navbar />
             <Routes>
               <Route path='/' element={<Root />} />
-              <Route path="/hotspots" element={<Hotspots />} />
-            </Routes>            
+              <Route path="/hotspots" element={<Hotspots 
+              hotspot={hotspot}
+              />} />
+            </Routes>
+            <Footer />  
         </Router>
     );
 }

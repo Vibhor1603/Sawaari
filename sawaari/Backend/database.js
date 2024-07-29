@@ -21,4 +21,21 @@ const db1= async()=>{
         return "server error"
     }
 }
-module.exports = db1
+const hotspot_db = async () => {
+  try {
+    const client = await MongoClient.connect(
+      'mongodb://localhost:27017/', 
+      
+    );
+    const coll = client.db('Sawaari').collection('hotspots');
+    const result = await coll.find({}).toArray(); 
+    client.close();
+    console.log(result);
+    return result;
+  } catch (error) {
+    console.error("Error connecting to the database or fetching documents:", error);
+    return "server error";
+  }
+};
+
+module.exports = {db1,hotspot_db}

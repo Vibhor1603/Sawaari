@@ -1,5 +1,5 @@
 const express = require('express')
-const db1 = require('../Backend/database')
+const {db1 , hotspot_db} = require('../Backend/database')
 
 const home = async(req,res)=>{
     const result = await db1()
@@ -8,7 +8,8 @@ const home = async(req,res)=>{
 }
 
 const hotspots = async(req,res)=>{
-    res.send("I am in hotspot section ")
+    const result = await hotspot_db()
+    res.send(result)
 }
 const routes = async(req,res)=>{
     res.send("I am in routes section ")

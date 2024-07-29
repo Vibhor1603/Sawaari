@@ -8,7 +8,6 @@ body{
 }
 .navbar{
   background-color: rgb(241, 190, 95);
-  
 
 }
 .nav-link:hover{
@@ -60,13 +59,19 @@ body{
   margin-bottom: -40px;
 }
 .test-box img{
-width: 80px;
-height: auto;
+width: 100px;
+height: 90px;
 align-self: center;
 margin-top: 20px;
+border-radius: 10px;
 }
-.card:hover{
-  transform: scale(1.1);
+
+.test-box img:hover{
+transform: scale(1.2);
+transition: 0.5s;
+}
+.testimonial:hover{
+  transform: scale(1.06);
   transition: 0.5s;
   cursor: pointer;
   background-color: rgb(241, 190, 95);
