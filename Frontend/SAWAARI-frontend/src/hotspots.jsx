@@ -73,38 +73,38 @@ const {hotspot} = prop;
   // Generate hotspot circles with popup content
   const hotspotData = hotspot.map((item) => (
     <Circle
-      key={item._id}
-      center={[item.latitude, item.longitude]}
-      pathOptions={{ ...circleOptions, fillColor: item.color_code }}
-      radius={200}
-    >
-      <Popup>
-        <div className="card mb-4" style={{ width: '13rem' }}>
-          <div className="card-body">
-            <p className="card-text">{`${item.name}:This hotspot will go to -`}</p>
-            {item.destinations.map((result) => (
-              <div key={result.name}>
-                <ul>
-                  <li>
-                    <button onClick={() => clickHandler(result.latitude, result.longitude)}>
-                      {result.name}
-                    </button>
-                    , estimated fare is {result.estimated_fare}
-                  </li>
+            key={item._id}
+            center={[item.latitude, item.longitude]}
+            pathOptions={{ ...circleOptions, fillColor: item.color_code }}
+            radius={200}
+          >
+            <Popup className="custom-popup">
+              <div className="hotspot-popup">
+                <h3 className="hotspot-name">{item.name}</h3>
+                <p className="hotspot-description">Available destinations:</p>
+                <ul className="destination-list">
+                  {item.destinations.map((result) => (
+                    <li key={result.name} className="destination-item">
+                      <button 
+                        className="destination-button"
+                        onClick={() => clickHandler(result.latitude, result.longitude)}
+                      >
+                        <span className="destination-name">{result.name}</span>
+                        <span className="estimated-fare">₹{result.estimated_fare}</span>
+                      </button>
+                    </li>
+                  ))}
                 </ul>
               </div>
-            ))}
-          </div>
-        </div>
-      </Popup>
-    </Circle>
+            </Popup>
+          </Circle>
   ));
 
   
   return (
     <div id="map" className="container mt-100"
     
-    style={{ height: '80vh', width: '100%' }}>
+    style={{ height: '75vh', width: '80%' }}>
       <MapContainer center={[28.633043462708848, 77.44792897992077]} zoom={zoom} style={{ height: '100%', width: '100%' }}>
         <TileLayer
           url="https://tile.openstreetmap.de/{z}/{x}/{y}.png"

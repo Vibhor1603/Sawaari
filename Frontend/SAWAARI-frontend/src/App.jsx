@@ -18,7 +18,7 @@ function App() {
   React.useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch('http://localhost:3000/hotspots');
+        const response = await fetch('http://localhost:5000/hotspots');
         const data = await response.json();
         setHotspots(data);
       } catch (error) {
@@ -28,15 +28,19 @@ function App() {
   
     fetchData();
   }, []);
+
+
     return (
         <Router>
             <Navbar />
             <Routes>
               <Route index element={<Root />} />
+              <Route path="/home" element={<Root />} />
               <Route path="/hotspots" element={<Hotspots 
               hotspot={hotspot}
               />} />
               <Route path="/routes" element={<Routeinfo hotspot={hotspot}
+            
               />} />
             </Routes>
             <Footer />  

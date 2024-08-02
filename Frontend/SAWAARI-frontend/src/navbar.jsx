@@ -13,7 +13,8 @@ export default function Navbar() {
                     <span className="navbar-toggler-icon"></span>
                 </button>
                 <div className="collapse navbar-collapse" id="navbarTogglerDemo01">
-                    <div className="navbar-nav ms-auto ">
+                    <div className="navbar-nav nav-bar ">
+                    <NavLink to="/home" className="nav-link nav-items">Home</NavLink>
                         <NavLink to="/hotspots" className="nav-link nav-items">Hotspots</NavLink>
                         <NavLink to="/routes" className="nav-link nav-items">Routes</NavLink>
                         <NavLink to="#" className="nav-link nav-items">Ride Buddy</NavLink>
