@@ -1,8 +1,8 @@
 /* eslint-disable no-unused-vars */
 import React from 'react'
-import banner1 from '../src/assets/banner-3.jpg';
-import banner2 from '../src/assets/banner2.jpg';
-import logo from '../src/assets/auto-rik.jpeg';
+import banner1 from '/banner-3.jpg';
+import banner2 from '/banner2.jpg';
+import logo from '/auto-rik.jpeg';
 
 export default function Carousel() {
   return (

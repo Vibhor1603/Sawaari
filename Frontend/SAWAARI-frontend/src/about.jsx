@@ -8,7 +8,7 @@ export default function About() {
             <div className="container text-left about">
                 <div className="row align-items-center">
                     <div className="col-md-6">
-                        <img src="../src/assets/download.jpeg" className="img-fluid auto-image" alt="auto-rickshaw" />
+                        <img src="/download.jpeg" className="img-fluid auto-image" alt="auto-rickshaw" />
                     </div>
                     <div className="col-md-6 text-white">
                         <h1 className='headings'>About Us</h1>
@@ -23,7 +23,7 @@ export default function About() {
             <div className="container text-left about">
             <div className='row align-items-center'>
                 <div className='col-md-6'>
-                <img src="../src/assets/auto-rik.jpeg" className="img-fluid auto-image" alt="auto-rickshaw" />
+                <img src="/auto-rik.jpeg" className="img-fluid auto-image" alt="auto-rickshaw" />
                 </div>
                 <div className='col-md-6 text-white'>
                 <h1 className="headings">What we offer</h1>

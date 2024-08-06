@@ -5,7 +5,7 @@ import React from 'react';
 
 export default function Footer() {
     return (
-        <footer className="footer mt-auto py-3 bg-dark text-white">
+        <footer className="footer  py-3 bg-dark text-white fixed-bottom">
             <div className="container text-center">
                 <p className="mb-2">&copy; 2024 Sawaari. All rights reserved.</p>
                 <nav className="mb-3">

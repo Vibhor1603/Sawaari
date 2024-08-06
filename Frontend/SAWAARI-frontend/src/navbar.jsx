@@ -8,7 +8,7 @@ export default function Navbar() {
     return (
         <nav className="navbar fixed-top navbar-expand-lg ">
             <div className="container-fluid">
-                <NavLink to="/" className="navbar-brand "><img src="../src/assets/logo.jpg" alt="logo-img" className="logo-img"/></NavLink>
+                <NavLink to="/" className="navbar-brand "><img src="/logo.jpg" alt="logo-img" className="logo-img"/></NavLink>
                 <button className="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbarTogglerDemo01">
                     <span className="navbar-toggler-icon"></span>
                 </button>
@@ -17,7 +17,7 @@ export default function Navbar() {
                     <NavLink to="/home" className="nav-link nav-items">Home</NavLink>
                         <NavLink to="/hotspots" className="nav-link nav-items">Hotspots</NavLink>
                         <NavLink to="/routes" className="nav-link nav-items">Routes</NavLink>
-                        <NavLink to="#" className="nav-link nav-items">Ride Buddy</NavLink>
+                        <NavLink to="/ridebuddy" className="nav-link nav-items">Ride Buddy</NavLink>
                         <NavLink to="#" className="nav-link nav-items" >Contact us</NavLink>
                     </div>
                     <div className="navbar-nav ">

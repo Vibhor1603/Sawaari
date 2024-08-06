@@ -18,7 +18,7 @@ export function haversineDistance(lat1, lon1, lat2, lon2) {
 }
 
 export function createGraph(hotspots) {
-  console.log('Creating graph with hotspots:', hotspots);
+  
   const graph = new Graph();
 
   // First, add all nodes to the graph

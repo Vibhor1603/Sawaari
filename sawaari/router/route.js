@@ -1,10 +1,11 @@
 const express = require('express')
 const router = express.Router()
-const {home,hotspots,routes,ridebuddy } = require('../controller/controller')
+const {home,hotspots,routes,ridebuddy, findmatch } = require('../controller/controller')
 
 router.route('/').get(home)
 router.route('/hotspots').get(hotspots)
-router.route('/routes').get(routes)
-router.route('/ridebuddy').get(ridebuddy)
+router.route('/routes').post(routes)
+router.route('/ridebuddy').post(ridebuddy)
+router.route('/findmatch').get(findmatch)
 
 module.exports = router;

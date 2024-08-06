@@ -3,11 +3,12 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Navbar from './navbar';
-import About from './about';
+
 import Hotspots from './hotspots';
 import Footer from './footer';
 import Root from './Root';
 import Routeinfo from './RouteInfo';
+import RideBuddy from './RideBuddy';
 
 
 
@@ -42,6 +43,7 @@ function App() {
               <Route path="/routes" element={<Routeinfo hotspot={hotspot}
             
               />} />
+              <Route path="/ridebuddy" element={<RideBuddy hotspot={hotspot} />} />
             </Routes>
             <Footer />  
         </Router>

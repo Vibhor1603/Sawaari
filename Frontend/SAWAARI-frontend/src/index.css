@@ -30,17 +30,21 @@ body {
 
 .login-btn {
   border: 2px solid brown;
-  margin-top: 7px;
+  margin-top: 2px;
+  font-size: large;
+  font-weight: 600;
 }
 
 .login-btn:hover {
   background-color: rgb(146, 60, 60);
   color: wheat;
+  border-radius: 10px;
+  border-bottom: 4.5px solid rgb(34, 3, 3);
 }
 
 .logo-img {
-  width: 95px;
-  height: 73px;
+  width: 90px;
+  height: 70px;
 }
 
 .carousel-item {
@@ -55,6 +59,12 @@ body {
   padding-top: 30px;
   padding-bottom: 70px;
   padding-right: 10px;
+}
+.nav-link{
+color: #290707;
+font-size: larger;
+font-weight: 500;
+
 }
 
 .auto-image {
@@ -81,9 +91,7 @@ body {
   color: rgb(65, 164, 65);
 }
 
-.nav-link {
-  font-size: larger;
-}
+
 
 .test-box {
   display: flex;
@@ -320,5 +328,23 @@ body {
 .estimated-fare:hover{
   background-color: rgba(49, 6, 6, 0.699);
   
+  color: white;
+}
+
+.form{
+  margin: 140px 10px 30px 650px;
+  width: fit-content;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  align-self: center;
+}
+
+#gender{
+  margin-left: 5px;
+}
+
+.matches{
+  margin-bottom: 200px;
   color: white;
 }

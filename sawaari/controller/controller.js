@@ -1,9 +1,9 @@
 const express = require('express')
-const {db1 , hotspot_db} = require('../Backend/database')
+const {ridebuddy_db , hotspot_db, rideInfo_db} = require('../Backend/database')
 
 const home = async(req,res)=>{
-    const result = await db1()
-    res.send(result)
+    console.log("home")
+    res.send("home")
     //res.render('home.ejs',{result})
 }
 
@@ -12,10 +12,16 @@ const hotspots = async(req,res)=>{
     res.send(result)
 }
 const routes = async(req,res)=>{
-    res.send("I am in routes section ")
+    ridebuddy_db(req.body)
 }
 
 const ridebuddy = async(req,res)=>{
-    res.send("I am in ridebuddy section ")
+    ridebuddy_db(req.body)
 }
-module.exports = {home,hotspots,routes,ridebuddy }
+
+const findmatch = async(req,res)=>{
+    const result  = await rideInfo_db()
+    res.json(result)
+    console.log(result)
+}
+module.exports = {home,hotspots,routes,ridebuddy,findmatch }
