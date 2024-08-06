@@ -1,9 +1,8 @@
 const express =  require('express')
-const path = require('path')
 const router = require('./router/route')
 const cors = require('cors')
 const app = express()
-const port = 3000
+const port = 5000
 
  
 app.use(cors())

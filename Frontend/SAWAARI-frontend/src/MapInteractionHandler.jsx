@@ -1,20 +1,15 @@
-// /* eslint-disable no-unused-vars */
-// /* MapInteractionHandler.jsx */
-// import React from 'react';
-// import { useMap, useMapEvent } from 'react-leaflet';
+/* eslint-disable react/prop-types */
+import { useEffect } from 'react';
+import { useMap } from 'react-leaflet';
 
-// function MapInteractionHandler(props) {
-//   const map = useMap();
-//   const zoom = 13;
-//   const onDestinationSelect=props
-//   // Handle map clicks
-//   useMapEvent('click', () => {
-//     if (onDestinationSelect) {
-//       onDestinationSelect(map.getCenter());
-//     }
-//   });
+export default function MapInteractionHandler({ selectedDestination }) {
+  const map = useMap();
 
-//   return null;
-// }
+  useEffect(() => {
+    if (selectedDestination) {
+      map.setView(selectedDestination, 16);
+    }
+  }, [map, selectedDestination]);
 
-// export default MapInteractionHandler;
+  return null;
+}
