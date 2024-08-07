@@ -1,3 +1,4 @@
+
 import { createGraph, findShortestPath } from './utils.jsx';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -30,33 +31,20 @@ export async function storeRoute(userId, source, destination) {
   }
 }
 
-async function fetchRoutesFromDatabase() {
-  try {
-    const response = await fetch('http://localhost:5000/findmatch');
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    const data = await response.json();
-   
-    return data;
-  } catch (error) {
-    console.error('Error fetching routes:', error);
-    throw error;
-  }
-}
 
-export async function findMatchingRoutes(routeData) {
-  const routes = await fetchRoutesFromDatabase();
-  console.log(routes)
+
+export async function findMatchingRoutes(routeData,routes) {
+
   const currentRoute = routes.find(route => route.id === routeData.id);
 
   if (!currentRoute) {
     throw new Error("Route not found");
   }
 
+
   const matches = routes
-    .filter(route => route.id !== routeData.id)
-    .map(route => {
+  .filter(route => route.id !== routeData.id)
+  .map(route => {
       const matchCount = compareWaypoints(currentRoute.waypoints, route.waypoints);
       const matchPercentage = (matchCount / Math.max(currentRoute.waypoints.length, route.waypoints.length)) * 100;
       return {
@@ -66,7 +54,7 @@ export async function findMatchingRoutes(routeData) {
         destination: route.destination
       };
     })
-    .filter(match => match.matchPercentage > 30);  // 30% match threshold
+    .filter(match => match.matchPercentage > 40);  // 30% match threshold
 
   return matches;
 }
