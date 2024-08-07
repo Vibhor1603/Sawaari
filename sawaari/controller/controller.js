@@ -16,7 +16,8 @@ const routes = async(req,res)=>{
 }
 
 const ridebuddy = async(req,res)=>{
-    ridebuddy_db(req.body)
+   await ridebuddy_db(req.body)
+   res.status(200).send("ok")
 }
 
 const findmatch = async(req,res)=>{

@@ -1,7 +1,7 @@
 /* eslint-disable no-unused-vars */
 /* eslint-disable react/prop-types */
 import React, { useState, useEffect } from 'react';
-import { initializeGraph, storeRoute, findMatchingRoutes } from './RouteMatching';
+import { initializeGraph, storeRoute, findMatchingRoutes } from './RouteMatching'
 
 export default function RideBuddy({ hotspot }) {
   const [rideInfo, setRideInfo] = useState({
@@ -22,6 +22,22 @@ export default function RideBuddy({ hotspot }) {
     setRideInfo(prev => ({ ...prev, [name]: value }));
   };
 
+
+  const fetchRoutesFromDatabase = async()=> {
+    try {
+      const response = await fetch('http://localhost:5000/findmatch');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+ 
+      return data;
+    } catch (error) {
+      console.error('Error fetching routes:', error);
+      throw error;
+    }
+  }
+
   const handleRideForm = async (e) => {
     e.preventDefault();
     setError(null);
@@ -36,15 +52,16 @@ export default function RideBuddy({ hotspot }) {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({...rideInfo, id: route.id})
+        body: JSON.stringify({...route})
       }); 
   
       if (!response.ok) {
         throw new Error('Failed to submit ride information');
       }
-  
+      
+      const routes = await fetchRoutesFromDatabase()
       // Finally, find matching routes
-      const matchingRoutes = await findMatchingRoutes(route);
+      const matchingRoutes = await findMatchingRoutes(route,routes);
       setMatches(matchingRoutes);
   
     } catch (error) {
@@ -55,8 +72,10 @@ export default function RideBuddy({ hotspot }) {
       
 
   return (
-    <div>
-      <form className='form' onSubmit={handleRideForm}>
+    <div className="container text-center">
+  <div className="row">
+    <div className="col">
+    <form className='form' onSubmit={handleRideForm}>
         <div className="mb-3">
           <label htmlFor="inputName" className="form-label">Your name</label>
           <input 
@@ -112,29 +131,34 @@ export default function RideBuddy({ hotspot }) {
           Submit
         </button>
       </form>
-
-      {error && (
-        <div className="alert alert-danger mt-3" role="alert">
-          {error}
-        </div>
-      )}
-
-      <div className="container matches mt-4">
-        <h3>Matching Routes:</h3>
-        {matches.length > 0 ? (
-          <ul className="list-group">
-            {matches.map((match, index) => (
-              <li key={index} className="list-group-item">
-                User: {match.userId}, 
-                Match: {match.matchPercentage.toFixed(2)}%,
-                Route: {match.source} to {match.destination}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p>No matching routes found.</p>
-        )}
-      </div>
     </div>
+    <div className="col matches">
+    
+    <div className="container  mt-4">
+      <h3>Matching Routes:</h3>
+      {matches.length > 0 ? (
+        <ol className="list-group">
+          {matches.map((match, index) => (
+            <li key={index} className="list-group-item">
+              UserName: {match.userId} <br /> 
+              Route match percentage: {match.matchPercentage.toFixed(2)}% <br /> 
+              Route taken by user: {match.source} to {match.destination} <br />
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <p>No matching routes found.</p>
+      )}
+    
+  </div>
+    </div>
+
+  </div>
+</div>
   );
 }
+
+
+
+
+
