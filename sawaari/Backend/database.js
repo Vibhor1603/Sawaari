@@ -1,4 +1,5 @@
 const {MongoClient}  = require('mongodb');
+const bcrypt = require('bcrypt')
 
 const hotspot_db = async () => {
   try {
@@ -35,6 +36,32 @@ const ridebuddy_db = async (data) => {
 };
 
 
+
+const userInfo_db = async (data) => {
+  try {
+    const client = await MongoClient.connect(
+      'mongodb://localhost:27017/', 
+      
+    );
+    const coll = client.db('Sawaari').collection('users');
+    const result = await coll.findOne({email:data.email}) 
+    if(result){
+      await client.close()
+      return "user exists"
+    }
+   const newPass  =  await bcrypt.hash(data.password,4)
+   data.password= newPass
+   const cursor = await coll.insertOne(data)
+    client.close();
+   
+   
+  } catch (error) {
+    console.error("Error connecting to the database or fetching documents:", error);
+    return "server error";
+  }
+};
+
+
 const rideInfo_db = async () => {
   try {
     const client = await MongoClient.connect(
@@ -53,4 +80,4 @@ const rideInfo_db = async () => {
 };
 
 
-module.exports = {hotspot_db,ridebuddy_db, rideInfo_db}
+module.exports = {hotspot_db,ridebuddy_db, rideInfo_db,userInfo_db}

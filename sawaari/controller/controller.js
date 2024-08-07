@@ -1,5 +1,5 @@
 const express = require('express')
-const {ridebuddy_db , hotspot_db, rideInfo_db} = require('../Backend/database')
+const {ridebuddy_db , hotspot_db, rideInfo_db, userInfo_db} = require('../Backend/database')
 
 const home = async(req,res)=>{
     console.log("home")
@@ -25,4 +25,7 @@ const findmatch = async(req,res)=>{
     res.json(result)
     console.log(result)
 }
-module.exports = {home,hotspots,routes,ridebuddy,findmatch }
+const users = async(req,res)=>{
+    userInfo_db(req.body)
+}
+module.exports = {home,hotspots,routes,ridebuddy,findmatch,users }
