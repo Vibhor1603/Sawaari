@@ -102,9 +102,11 @@ const {hotspot} = prop;
 
   
   return (
-    <div id="map" className="container mt-100"
+    <>
+    <div className="container hotspot-info"><h3>Click On the hotspots available in your area to get more information about them</h3></div>
+    <div id="map" className="container "
     
-    style={{ height: '75vh', width: '80%' }}>
+    style={{ height: '70vh', width: '75%',border:'5px solid rgb(241, 190, 95)',borderRadius:'5px' }}>
       <MapContainer center={[28.633043462708848, 77.44792897992077]} zoom={zoom} style={{ height: '100%', width: '100%' }}>
         <TileLayer
           url="https://tile.openstreetmap.de/{z}/{x}/{y}.png"
@@ -115,6 +117,7 @@ const {hotspot} = prop;
         {hotspotData}
       </MapContainer>
     </div>
+    </>
   );
 }
 

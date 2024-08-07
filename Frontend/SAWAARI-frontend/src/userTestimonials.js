@@ -12,14 +12,14 @@
             "text": "I love the real-time updates on auto rickshaw availability. It saves me so much time!"
         },
         {
-            "name": "Priya Patel",
-            "imageSrc": "https://cdn-icons-png.flaticon.com/512/123/123172.png",
-            "text": "The route and fare details are incredibly helpful. Highly recommend this service to everyone."
+            "name": "Mr Gaurav Kansal",
+            "imageSrc": "/gaurav-sir.jpg",
+            "text": "The idea is really different and it has made my life really easy"
         },
         {
-            "name": "Vinay Sharma",
-            "imageSrc": "../src/assets/papa.jpg",
-            "text": "Very mast and nice"
+            "name": "Mr Gopal Gupta",
+            "imageSrc": "/gopal-sir.jpeg",
+            "text": "Very mast and nice feature. Very useful and unique"
         }
     ]
 

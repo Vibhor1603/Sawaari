@@ -2,7 +2,7 @@
 import React from 'react'
 import banner1 from '/banner-3.jpg';
 import banner2 from '/banner2.jpg';
-import logo from '/auto-rik.jpeg';
+import logo from '/third-banner.jpg';
 
 export default function Carousel() {
   return (
@@ -11,10 +11,10 @@ export default function Carousel() {
         <div className="carousel-item active" data-bs-interval="2000">
           <img src={banner1} className="d-block w-100" alt="..." /> 
         </div>
-        <div className="carousel-item" data-bs-interval="4000">
+        <div className="carousel-item" data-bs-interval="3000">
           <img src={banner2} className="d-block w-100" alt="..." />
         </div>
-        <div className="carousel-item" data-bs-interval="6000">
+        <div className="carousel-item" data-bs-interval="4000">
           <img src={logo} className="d-block third-img w-100" alt="..." />
         </div>
       </div>
