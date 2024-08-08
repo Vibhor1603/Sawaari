@@ -4,6 +4,8 @@ import React from 'react';
 
 export default function Testimonials({ testimonials }) {
     return (
+        <>
+        <h3 className='text-center'>Some user testimonials</h3>
         <div className="container test-box">
             {testimonials.map((testimonial, index) => (
                 <div className="card mb-4 testimonial" key={index} style={{ width: '18rem' }}>
@@ -15,5 +17,6 @@ export default function Testimonials({ testimonials }) {
                 </div>
             ))}
         </div>
+        </>
     );
 }

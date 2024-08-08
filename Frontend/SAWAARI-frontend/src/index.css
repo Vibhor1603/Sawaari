@@ -30,9 +30,25 @@ body {
 
 .login-btn {
   border: 2px solid brown;
+  padding: 0 10 0 10px;
+  border-radius: 10px;
   margin-top: 2px;
   font-size: large;
   font-weight: 600;
+  margin-left: 10px;
+  color: #340f0f;
+
+}
+
+.signin-btn{
+  border: 2px solid brown;
+  padding: 0 10 0 10px;
+  border-radius: 10px;
+  margin-top: 2px;
+  font-size: large;
+  font-weight: 600;
+  margin-left: 10px;
+  color: #f3ebeb;
 }
 
 .login-btn:hover {
@@ -42,9 +58,82 @@ body {
   border-bottom: 4.5px solid rgb(34, 3, 3);
 }
 
+.signin-btn:hover {
+  background-color: rgb(146, 60, 60);
+  color: wheat;
+  border-radius: 10px;
+  border-bottom: 4.5px solid rgb(34, 3, 3);
+}
+
+.contact {
+  margin-top: 65px;
+  background-color: rgba(134, 249, 62, 0.614);
+  color: #45320f;  
+  padding: 10px 0;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.contact h2 {
+  font-size: 2.5rem;
+  margin-bottom: 20px;
+  text-align: center;
+  color: #ffffff;
+}
+
+.contact form {
+  max-width: 600px;
+  margin: 0 auto;
+  background-color: rgba(255, 255, 255, 0.1);
+  padding: 10px;
+  border-radius: 6px;
+}
+
+.contact label {
+  font-weight: 600;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.contact input,
+.contact textarea {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 20px;
+  border: none;
+  border-radius: 4px;
+  background-color: rgba(11, 72, 24, 0.235);
+  color: #efebe4;
+  font-weight: 500;
+}
+
+.contact input::placeholder,
+.contact textarea::placeholder {
+  color: rgba(245, 222, 179, 0.7);
+}
+
+.contact-submit:hover{
+color: #290707;
+}
+.contact button {
+  background-color: #f5deb3;
+  color: rgba(83, 143, 212, 1);
+  border: none;
+  padding: 12px 24px;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.contact button:hover {
+  background-color: #ffffff;
+}
+
 .logo-img {
-  width: 90px;
-  height: 70px;
+  width: 100px;
+  height: 75px;
 }
 
 .carousel-item {
@@ -91,12 +180,11 @@ font-weight: 500;
   color: rgb(65, 164, 65);
 }
 
-
-
 .test-box {
   display: flex;
   justify-content: space-around;
-  margin-bottom: -40px;
+  margin-bottom: 40px;
+  margin-top: 20px;
 }
 
 .test-box img {
@@ -104,11 +192,11 @@ font-weight: 500;
   height: 90px;
   align-self: center;
   margin-top: 20px;
-  border-radius: 10px;
+  border-radius: 50px;
 }
 
 .test-box img:hover {
-  transform: scale(1.2);
+  transform: scale(1.1);
   transition: 0.5s;
 }
 
@@ -120,10 +208,10 @@ font-weight: 500;
 }
 
 #map {
-  margin-top: 110px;
+  margin-top: 40px;
   padding: 0;
   margin-bottom: 200px;
-  height: 300px;
+  
 }
 
 .route-container {
@@ -331,6 +419,11 @@ font-weight: 500;
   color: white;
 }
 
+.hotspot-info{
+  margin-top: 120px;
+  text-align: center;
+}
+
 .form{
  /* 
   display: flex;
@@ -377,4 +470,25 @@ font-weight: 500;
 .matches:hover{
   transform: scale(1.06);
   transition: 0.5s;
+}
+.signup{
+  background-color: #290707a1;
+  color: #e4e4b2;
+  margin-top: 200px;
+  margin-bottom: 200px;
+  width: 500px;
+  padding: 20px;
+  border-radius: 20px;
+ 
+}
+.sign-btn{
+  margin-left: 190px;
+  background-color: #e4e4b2;
+  color: #340f0f;
+  font-weight: 500;
+}
+.sign-btn:hover{ 
+  background-color: #9e3232;
+  color: #e4e4b2;
+  
 }
