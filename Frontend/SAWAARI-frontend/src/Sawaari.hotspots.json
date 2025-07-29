@@ -1,0 +1,154 @@
+[{
+  "_id": {
+    "$oid": "669f435fc803d615a0cc898f"
+  },
+  "latitude": 28.6201,
+  "longitude": 77.428,
+  "color_code": "yellow",
+  "destinations": [
+    {
+      "name": "charmurti",
+      "estimated_fare": 45,
+      "estimated_time": "2024-07-01T10:30:00.000Z",
+      "latitude": 28.604824363408618,
+      "longitude": 77.42733475889098
+    },
+    {
+      "name": "Taj-Highway",
+      "estimated_fare": 50,
+      "estimated_time": "2024-07-01T11:00:00.000Z",
+      "latitude": 28.64022,
+      "longitude": 77.41064
+    }
+  ],
+  "name": "gaur-city-2"
+},
+{
+  "_id": {
+    "$oid": "66a4e1b10b6c031465cc8988"
+  },
+  "latitude": 28.604824363408618,
+  "longitude": 77.42733475889098,
+  "color_code": "red",
+  "destinations": [
+    {
+      "name": "sec-52 metro",
+      "estimated_fare": 30,
+      "estimated_time": 20,
+      "latitude": 28.63497123950336,
+      "longitude": 77.44531631311946
+    },
+    {
+      "name": "ABES",
+      "estimated_fare": 20,
+      "estimated_time": 15,
+      "latitude": 28.63497123950336,
+      "longitude": 77.44531631311946
+    },
+    {
+      "name": "gaur-city-2",
+      "latitude": 28.6201,
+      "longitude": 77.428,
+      "estimated_fare": 10
+    }
+  ],
+  "name": "charmurti"
+},
+{
+  "_id": {
+    "$oid": "66a4e5e60b6c031465cc8989"
+  },
+  "latitude": 28.63497123950336,
+  "longitude": 77.44531631311946,
+  "color_code": "red",
+  "destinations": [
+    {
+      "name": "sector-62",
+      "estimated_fare": 10,
+      "latitude": 28.6304,
+      "longitude": 77.3702
+    },
+    {
+      "name": "charmurti",
+      "estimated_fare": 20,
+      "latitude": 28.604824363408618,
+      "longitude": 77.42733475889098
+    },
+    {
+      "name": "Taj-Highway",
+      "estimated_fare": 10,
+      "latitude": 28.64022,
+      "longitude": 77.41064
+    }
+  ],
+  "name": "ABES"
+},
+{
+  "_id": {
+    "$oid": "66a7aa830b6c031465cc898a"
+  },
+  "latitude": 28.64022,
+  "longitude": 77.41064,
+  "color_code": "red",
+  "destinations": [
+    {
+      "name": "ABES",
+      "estimated_fare": 10,
+      "latitude": 28.63497123950336,
+      "longitude": 77.44531631311946
+    },
+    {
+      "name": "sec-62",
+      "estimated_fare": 10,
+      "latitude": 28.631011884361527,
+      "longitude": 77.37495116497406
+    }
+  ],
+  "name": "Taj-Highway"
+},
+{
+  "_id": {
+    "$oid": "66a7ab5c0b6c031465cc898b"
+  },
+  "latitude": 28.631011884361527,
+  "longitude": 77.37495116497406,
+  "color_code": "blue",
+  "destinations": [
+    {
+      "name": "JSS College of Technical Communication",
+      "estimated_fare": 20,
+      "latitude": 28.6304,
+      "longitude": 77.3756
+    },
+    {
+      "name": "Noida City Centre",
+      "estimated_fare": 30,
+      "latitude": 28.583,
+      "longitude": 77.317
+    }
+  ],
+  "name": "sec-62"
+},
+{
+  "_id": {
+    "$oid": "66a7ad210b6c031465cc898c"
+  },
+  "latitude": 28.587508136549634,
+  "longitude": 77.37341253683023,
+  "color_code": "green",
+  "destinations": [
+    {
+      "name": "charmurti",
+      "estimated_fare": 30,
+      "latitude": 28.604824363408618,
+      "longitude": 77.42733475889098
+    },
+    {
+      "name": "Ekmurti",
+      "estimated_fare": 40,
+      "latitude": 28.602619401848887,
+      "longitude": 77.44926924132982
+    }
+  ],
+  "name": "sec-52 metro"
+}]

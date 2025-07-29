@@ -1,18 +1,29 @@
 /* eslint-disable no-unused-vars */
 /* eslint-disable react/prop-types */
-import React from 'react';
-import { Circle, Popup } from 'react-leaflet';
+import React from "react";
+import { Circle, Popup } from "react-leaflet";
 
 export default function HotspotMarkers({ hotspot, clickHandler }) {
   const circleOptions = {
     fillOpacity: 0.5,
   };
 
+  // Safety check for hotspot data
+  if (!hotspot || !Array.isArray(hotspot)) {
+    console.warn("HotspotMarkers: hotspot is not an array:", hotspot);
+    return null;
+  }
+
   return (
     <>
       {hotspot.map((item) => {
-        if (!item.latitude || !item.longitude || !item.color_code || !item.destinations) {
-          console.warn('Missing data for hotspot:', item);
+        if (
+          !item.latitude ||
+          !item.longitude ||
+          !item.color_code ||
+          !item.destinations
+        ) {
+          console.warn("Missing data for hotspot:", item);
           return null;
         }
 
@@ -30,12 +41,16 @@ export default function HotspotMarkers({ hotspot, clickHandler }) {
                 <ul className="destination-list">
                   {item.destinations.map((result) => (
                     <li key={result.name} className="destination-item">
-                      <button 
+                      <button
                         className="destination-button"
-                        onClick={() => clickHandler(result.latitude, result.longitude)}
+                        onClick={() =>
+                          clickHandler(result.latitude, result.longitude)
+                        }
                       >
                         <span className="destination-name">{result.name}</span>
-                        <span className="estimated-fare">₹{result.estimated_fare}</span>
+                        <span className="estimated-fare">
+                          ₹{result.estimated_fare}
+                        </span>
                       </button>
                     </li>
                   ))}

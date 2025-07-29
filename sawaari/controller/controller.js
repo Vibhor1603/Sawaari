@@ -1,102 +1,693 @@
-const express = require('express')
-const {ridebuddy_db , rideInfo_db} = require('../Backend/database')
-const {generateAccessToken,verifyAccessToken}  = require('../Backend/jwtToken')
-const {MongoClient}  = require('mongodb');
-require('dotenv').config()
-const bcrypt = require('bcrypt');
+const express = require("express");
+const bcrypt = require("bcrypt");
+const {
+  ridebuddy_db,
+  rideInfo_db,
+  createUser,
+  findUserByEmail,
+  updateUserLoginInfo,
+  getHotspots,
+  saveFeedback,
+  saveRefreshToken,
+  findRefreshToken,
+  revokeRefreshToken,
+} = require("../Backend/database");
+const {
+  JWTService,
+  generateTokenPair,
+  verifyRefreshToken,
+} = require("../Backend/jwtToken");
+const { routeService } = require("../Backend/routeService");
+require("dotenv").config();
 
-const home = async(req,res)=>{
-    res.send("home")
-    
-}
+// Enhanced home endpoint with API info
+const home = async (req, res) => {
+  try {
+    // Test database connection
+    const { dbService } = require("../Backend/database");
+    const testCollection = await dbService.getCollection("users");
+    const userCount = await testCollection.countDocuments();
 
-const hotspots = async(req,res)=>{
-    try {
-        const client = await MongoClient.connect(
-          'mongodb://localhost:27017/', 
-          
-        );
-        const coll = client.db('Sawaari').collection('hotspots');
-        const result = await coll.find({}).toArray(); 
-        client.close();
-    
-        res.send(result)
-      } catch (error) {
-        console.error("Error connecting to the database or fetching documents:", error);
-        return "server error";
+    res.status(200).json({
+      message: "SAWAARI API is running",
+      version: "2.0.0",
+      timestamp: new Date().toISOString(),
+      database: {
+        connected: true,
+        userCount: userCount,
+        dbName: process.env.DB_NAME || "Sawaari",
+      },
+      endpoints: {
+        auth: ["/signin", "/signup", "/refresh-token", "/logout"],
+        data: ["/hotspots", "/feedbacks", "/ridebuddy", "/findmatch"],
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: "Server error",
+      message: "Unable to process request",
+      database: { connected: false, error: error.message },
+    });
+  }
+};
+
+// Enhanced hotspots endpoint with caching and error handling
+const hotspots = async (req, res) => {
+  try {
+    const result = await getHotspots();
+
+    // Add cache headers for better performance
+    res.set({
+      "Cache-Control": "public, max-age=300", // 5 minutes cache
+      ETag: `"hotspots-${Date.now()}"`,
+    });
+
+    res.status(200).json({
+      success: true,
+      data: result,
+      count: result.length,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("Hotspots fetch error:", error);
+    res.status(500).json({
+      error: "Database error",
+      message: "Unable to fetch hotspots data",
+    });
+  }
+};
+
+// Enhanced feedback endpoint with validation
+const feedbacks = async (req, res) => {
+  try {
+    const result = await saveFeedback(req.body);
+
+    res.status(201).json({
+      success: true,
+      message: "Feedback submitted successfully",
+      data: {
+        id: result.insertedId,
+        timestamp: new Date().toISOString(),
+      },
+    });
+  } catch (error) {
+    console.error("Feedback save error:", error);
+    res.status(500).json({
+      error: "Database error",
+      message: "Unable to save feedback",
+    });
+  }
+};
+
+// Enhanced ride buddy endpoint with authentication
+const ridebuddy = async (req, res) => {
+  try {
+    // Add user info from JWT token
+    const enrichedData = {
+      ...req.body,
+      userEmail: req.user?.email,
+      userId: req.user?.userId,
+    };
+
+    console.log("💾 Saving ride buddy request:", enrichedData);
+    const result = await ridebuddy_db(enrichedData);
+    console.log("✅ Ride buddy saved:", result);
+
+    res.status(201).json({
+      success: true,
+      message: "Ride buddy request submitted successfully",
+      data: {
+        id: result.insertedId,
+        timestamp: new Date().toISOString(),
+      },
+    });
+  } catch (error) {
+    console.error("Ride buddy save error:", error);
+    res.status(500).json({
+      error: "Database error",
+      message: "Unable to save ride buddy request",
+    });
+  }
+};
+
+// Enhanced find match endpoint with filtering
+const findmatch = async (req, res) => {
+  try {
+    // Return all requests - let frontend do the filtering for better matching logic
+    const filters = {}; // Remove user filtering to return all requests
+
+    const result = await rideInfo_db(filters);
+
+    res.status(200).json({
+      success: true,
+      data: result,
+      count: result.length,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("Find match error:", error);
+    res.status(500).json({
+      error: "Database error",
+      message: "Unable to fetch matching rides",
+    });
+  }
+};
+
+// Enhanced sign-in with security features
+const signIn = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // Find user with enhanced security checks
+    const user = await findUserByEmail(email);
+
+    if (!user) {
+      // Consistent response time to prevent user enumeration
+      await bcrypt.hash(
+        "dummy-password",
+        parseInt(process.env.BCRYPT_ROUNDS) || 12
+      );
+      return res.status(401).json({
+        error: "Authentication failed",
+        message: "Invalid email or password",
+      });
+    }
+
+    // Check if account is locked (optional feature)
+    if (user.loginAttempts >= 5) {
+      const lockTime = 15 * 60 * 1000; // 15 minutes
+      const timeSinceLastAttempt =
+        Date.now() - new Date(user.lastFailedLogin || 0).getTime();
+
+      if (timeSinceLastAttempt < lockTime) {
+        return res.status(423).json({
+          error: "Account locked",
+          message: "Too many failed login attempts. Please try again later.",
+          retryAfter: Math.ceil((lockTime - timeSinceLastAttempt) / 1000),
+        });
       }
-}
-const feedbacks = async(req,res)=>{
-    try {
-        const client = await MongoClient.connect(
-            'mongodb://localhost:27017/', 
-          
-        );
-        const coll = client.db('Sawaari').collection('feedbacks');
-        const result = await coll.insertOne(req.body)
-        client.close();
-       console.log(result)
-       res.status(200).send("ok")
-      } catch (error) {
-       res.send(error)
+    }
+
+    // Verify password
+    const isValidPassword = await bcrypt.compare(password, user.password);
+
+    if (!isValidPassword) {
+      // Update failed login attempts
+      await updateUserLoginInfo(email, {
+        loginAttempts: (user.loginAttempts || 0) + 1,
+        lastFailedLogin: new Date(),
+      });
+
+      return res.status(401).json({
+        error: "Authentication failed",
+        message: "Invalid email or password",
+      });
+    }
+
+    // Generate token pair
+    const tokens = generateTokenPair(user);
+
+    // Save refresh token to database
+    await saveRefreshToken(user._id.toString(), {
+      tokenId: JWTService.decodeToken(tokens.refreshToken).payload.jti,
+      token: tokens.refreshToken,
+    });
+
+    // Update successful login info
+    await updateUserLoginInfo(email, {
+      loginAttempts: 0,
+      lastFailedLogin: null,
+      lastLogin: new Date(),
+    });
+
+    // Set secure HTTP-only cookie for refresh token
+    res.cookie("refreshToken", tokens.refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Login successful",
+      data: {
+        accessToken: tokens.accessToken,
+        expiresIn: tokens.expiresIn,
+        user: {
+          id: user._id,
+          email: user.email,
+          name: user.name,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Sign-in error:", error);
+    res.status(500).json({
+      error: "Authentication error",
+      message: "Unable to process login request",
+    });
+  }
+};
+
+// Enhanced sign-up with security features
+const signUp = async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+
+    // Check if user already exists
+    const existingUser = await findUserByEmail(email);
+
+    if (existingUser) {
+      return res.status(409).json({
+        error: "User exists",
+        message: "An account with this email already exists",
+      });
+    }
+
+    // Hash password with enhanced security
+    const saltRounds = parseInt(process.env.BCRYPT_ROUNDS) || 12;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    // Create user with enhanced data
+    const userData = {
+      name: name.trim(),
+      email: email.toLowerCase().trim(),
+      password: hashedPassword,
+    };
+
+    const result = await createUser(userData);
+
+    res.status(201).json({
+      success: true,
+      message: "Account created successfully",
+      data: {
+        id: result.insertedId,
+        email: userData.email,
+        name: userData.name,
+      },
+    });
+  } catch (error) {
+    console.error("Sign-up error:", error);
+    res.status(500).json({
+      error: "Registration error",
+      message: "Unable to create account",
+    });
+  }
+};
+
+// New refresh token endpoint
+const refreshToken = async (req, res) => {
+  try {
+    const { refreshToken: token } = req.body;
+    const cookieToken = req.cookies?.refreshToken;
+
+    const refreshTokenToUse = token || cookieToken;
+
+    if (!refreshTokenToUse) {
+      return res.status(401).json({
+        error: "No refresh token",
+        message: "Refresh token is required",
+      });
+    }
+
+    // Verify refresh token
+    const verification = verifyRefreshToken(refreshTokenToUse);
+
+    if (!verification.valid) {
+      return res.status(401).json({
+        error: "Invalid refresh token",
+        message: verification.error,
+      });
+    }
+
+    // Check if token exists in database
+    const tokenData = await findRefreshToken(verification.decoded.jti);
+
+    if (!tokenData) {
+      return res.status(401).json({
+        error: "Token not found",
+        message: "Refresh token has been revoked",
+      });
+    }
+
+    // Get user data
+    const user = await findUserByEmail(verification.decoded.email);
+
+    if (!user) {
+      return res.status(401).json({
+        error: "User not found",
+        message: "Associated user account not found",
+      });
+    }
+
+    // Generate new token pair
+    const tokens = generateTokenPair(user);
+
+    // Revoke old refresh token and save new one
+    await revokeRefreshToken(verification.decoded.jti);
+    await saveRefreshToken(user._id.toString(), {
+      tokenId: JWTService.decodeToken(tokens.refreshToken).payload.jti,
+      token: tokens.refreshToken,
+    });
+
+    // Update cookie
+    res.cookie("refreshToken", tokens.refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Token refreshed successfully",
+      data: {
+        accessToken: tokens.accessToken,
+        expiresIn: tokens.expiresIn,
+      },
+    });
+  } catch (error) {
+    console.error("Token refresh error:", error);
+    res.status(500).json({
+      error: "Token refresh failed",
+      message: "Unable to refresh token",
+    });
+  }
+};
+
+// New logout endpoint
+const logout = async (req, res) => {
+  try {
+    const refreshToken = req.cookies?.refreshToken;
+
+    if (refreshToken) {
+      const verification = verifyRefreshToken(refreshToken);
+      if (verification.valid) {
+        await revokeRefreshToken(verification.decoded.jti);
       }
-}
+    }
 
-const ridebuddy = async(req,res)=>{
-   await ridebuddy_db(req.body)
-   res.status(200).send("ok")
-}
+    // Clear cookies
+    res.clearCookie("refreshToken");
 
-const findmatch = async(req,res)=>{
-    const result  = await rideInfo_db()
-    res.json(result)
-    console.log(result)
-}
-const signIn = async (req,res)=>{
-    try {
-      const client = await MongoClient.connect('mongodb://localhost:27017/');
-      const coll = client.db('Sawaari').collection('users');
-      const result = await coll.findOne({email:req.body.email})
-      client.close();
-      if(result){
-        const isvaliduser = await bcrypt.compare(req.body.password,result.password);
-        if(isvaliduser){
-          const token = await generateAccessToken(req.body.email);
-          console.log(token)
-          return res.json({valid:1,token});
+    res.status(200).json({
+      success: true,
+      message: "Logged out successfully",
+    });
+  } catch (error) {
+    console.error("Logout error:", error);
+    res.status(500).json({
+      error: "Logout failed",
+      message: "Unable to process logout",
+    });
+  }
+};
+
+// ===== NEW ROUTE CALCULATION API ENDPOINTS =====
+
+// Initialize route graph
+const initializeRouteGraph = async (req, res) => {
+  try {
+    const result = await routeService.initializeGraph();
+
+    res.status(200).json({
+      success: true,
+      message: result.message,
+      data: {
+        nodeCount: result.nodeCount,
+        edgeCount: result.edgeCount,
+        timestamp: new Date().toISOString(),
+      },
+    });
+  } catch (error) {
+    console.error("Graph initialization error:", error);
+    res.status(500).json({
+      error: "Initialization failed",
+      message: "Unable to initialize route graph",
+    });
+  }
+};
+
+// Get graph status
+const getRouteGraphStatus = async (req, res) => {
+  try {
+    const status = routeService.getGraphStatus();
+
+    res.status(200).json({
+      success: true,
+      data: status,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("Graph status error:", error);
+    res.status(500).json({
+      error: "Status check failed",
+      message: "Unable to get graph status",
+    });
+  }
+};
+
+// Calculate route between two points
+const calculateRoute = async (req, res) => {
+  try {
+    const { source, destination } = req.body;
+
+    if (!source || !destination) {
+      return res.status(400).json({
+        error: "Validation failed",
+        message: "Source and destination are required",
+      });
+    }
+
+    const result = await routeService.calculateRoute(source, destination);
+
+    res.status(200).json({
+      success: true,
+      message: "Route calculated successfully",
+      data: result.data,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("Route calculation error:", error);
+
+    // Handle specific error types
+    if (
+      error.message.includes("not found") ||
+      error.message.includes("No route found")
+    ) {
+      return res.status(404).json({
+        error: "Route not found",
+        message: error.message,
+      });
+    }
+
+    res.status(500).json({
+      error: "Calculation failed",
+      message: "Unable to calculate route",
+    });
+  }
+};
+
+// Store route for ride buddy (enhanced version)
+const storeRouteForRideBuddy = async (req, res) => {
+  try {
+    const { userId, source, destination } = req.body;
+
+    // Use authenticated user ID if available
+    const actualUserId = req.user?.userId || userId;
+
+    if (!actualUserId || !source || !destination) {
+      return res.status(400).json({
+        error: "Validation failed",
+        message: "User ID, source, and destination are required",
+      });
+    }
+
+    const route = await routeService.storeRoute(
+      actualUserId,
+      source,
+      destination
+    );
+
+    // Save to database
+    const dbResult = await ridebuddy_db({
+      ...route,
+      userEmail: req.user?.email,
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "Route stored successfully",
+      data: {
+        ...route,
+        dbId: dbResult.insertedId,
+      },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("Store route error:", error);
+    res.status(500).json({
+      error: "Storage failed",
+      message: "Unable to store route",
+    });
+  }
+};
+
+// Find matching routes for ride buddy
+const findMatchingRoutesForRideBuddy = async (req, res) => {
+  try {
+    const { routeData } = req.body;
+
+    if (!routeData) {
+      return res.status(400).json({
+        error: "Validation failed",
+        message: "Route data is required",
+      });
+    }
+
+    // Get all routes from database
+    const filters = req.user
+      ? {
+          userId: { $ne: req.user.userId },
         }
-        else
-          return res.json({valid:0});
-      }
-      else{
-        return res.json({valid:0})
-      }
-    } catch (error) {
-      return res.send("Internal Server Error");
-    }
-  
+      : {};
+
+    const allRoutes = await rideInfo_db(filters);
+
+    // Find matches using route service
+    const matches = await routeService.findMatchingRoutes(routeData, allRoutes);
+
+    res.status(200).json({
+      success: true,
+      message: "Matching routes found",
+      data: matches,
+      count: matches.length,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("Find matching routes error:", error);
+    res.status(500).json({
+      error: "Matching failed",
+      message: "Unable to find matching routes",
+    });
   }
+};
 
+// Get available locations
+const getAvailableLocations = async (req, res) => {
+  try {
+    const locations = routeService.getAvailableLocations();
 
-const signUp = async (req,res)=>{
-    try {
-      const client = await MongoClient.connect( 'mongodb://localhost:27017/');
-      const coll = client.db('Sawaari').collection('users');
-      const oldUser = await coll.findOne({email:req.body.email})
-      console.log(oldUser)
-      if(oldUser){
-       return res.send("User Already Exists");
-      }
-      const data = req.body;
-      
-      data.password = await bcrypt.hash(data.password,5)
-      await coll.insertOne(data);
-      client.close();
-     return res.send("Signup Ok Now u can Login")
-    } catch (error) {
-
-      res.send("Internal Server Error");
-    }
-  
+    res.status(200).json({
+      success: true,
+      data: locations,
+      count: locations.length,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("Get locations error:", error);
+    res.status(500).json({
+      error: "Fetch failed",
+      message: "Unable to fetch available locations",
+    });
   }
-module.exports = {home,hotspots,feedbacks,ridebuddy,findmatch,signIn,signUp }
+};
+
+// Get route suggestions
+const getRouteSuggestions = async (req, res) => {
+  try {
+    const { from, limit } = req.query;
+
+    if (!from) {
+      return res.status(400).json({
+        error: "Validation failed",
+        message: "From location is required",
+      });
+    }
+
+    const suggestions = routeService.getRouteSuggestions(
+      from,
+      parseInt(limit) || 5
+    );
+
+    res.status(200).json({
+      success: true,
+      data: suggestions,
+      count: suggestions.length,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("Get suggestions error:", error);
+    res.status(500).json({
+      error: "Suggestions failed",
+      message: "Unable to get route suggestions",
+    });
+  }
+};
+
+// Calculate fare estimates for different times
+const calculateFareEstimates = async (req, res) => {
+  try {
+    const { source, destination, waitingTime } = req.body;
+
+    if (!source || !destination) {
+      return res.status(400).json({
+        error: "Validation failed",
+        message: "Source and destination are required",
+      });
+    }
+
+    const result = await routeService.calculateFareEstimates(
+      source,
+      destination,
+      parseInt(waitingTime) || 0
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Fare estimates calculated successfully",
+      data: result.data,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("Fare estimation error:", error);
+
+    // Handle specific error types
+    if (
+      error.message.includes("not found") ||
+      error.message.includes("No route found")
+    ) {
+      return res.status(404).json({
+        error: "Route not found",
+        message: error.message,
+      });
+    }
+
+    res.status(500).json({
+      error: "Estimation failed",
+      message: "Unable to calculate fare estimates",
+    });
+  }
+};
+
+module.exports = {
+  home,
+  hotspots,
+  feedbacks,
+  ridebuddy,
+  findmatch,
+  signIn,
+  signUp,
+  refreshToken,
+  logout,
+  // New route calculation endpoints
+  initializeRouteGraph,
+  getRouteGraphStatus,
+  calculateRoute,
+  calculateFareEstimates,
+  storeRouteForRideBuddy,
+  findMatchingRoutesForRideBuddy,
+  getAvailableLocations,
+  getRouteSuggestions,
+};

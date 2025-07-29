@@ -10,12 +10,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@rollup/rollup-win32-x64-msvc": "^4.45.1",
     "dotenv": "^16.4.5",
     "leaflet": "^1.9.4",
+    "leaflet-routing-machine": "^3.2.12",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-leaflet": "^4.2.1",
-    "react-router-dom": "^6.25.1"
+    "react-router-dom": "^6.25.1",
+    "socket.io-client": "^4.7.5"
   },
   "devDependencies": {
     "@types/react": "^18.3.3",

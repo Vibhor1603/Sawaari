@@ -1,24 +1,30 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
 export function useHotspotData() {
-  const [hotspotData, setHotspotData] = useState(() => {
-    // Get initial state from local storage if available
-    const savedData = localStorage.getItem('hotspotData');
-    return savedData ? JSON.parse(savedData) : [];
-  });
+  const [hotspotData, setHotspotData] = useState([]);
 
   useEffect(() => {
-    // Fetch data from the database only if not already fetched
-    if (hotspotData.length === 0) {
-      fetch('http://localhost:5000/hotspots') // Replace with your API endpoint
-        .then(response => response.json())
-        .then(data => {
-          setHotspotData(data);
-          localStorage.setItem('hotspotData', JSON.stringify(data));
-        })
-        .catch(error => console.error('Error fetching hotspot data:', error));
-    }
-  }, [hotspotData]);
+    const fetchHotspots = async () => {
+      try {
+        console.log("Fetching hotspot data...");
+        const response = await fetch("http://localhost:5000/hotspots");
+        const result = await response.json();
+        console.log("Hotspot data received:", result);
+
+        // Extract the data array from the response
+        const data = result.success ? result.data : [];
+        console.log("Extracted hotspot data:", data);
+        setHotspotData(data);
+        localStorage.setItem("hotspotData", JSON.stringify(data));
+      } catch (error) {
+        console.error("Error fetching hotspot data:", error);
+        setHotspotData([]); // Set empty array on error
+      }
+    };
+
+    // Always fetch fresh data (remove localStorage caching for now)
+    fetchHotspots();
+  }, []); // Empty dependency array - fetch once on mount
 
   return [hotspotData, setHotspotData];
 }

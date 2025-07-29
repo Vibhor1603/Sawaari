@@ -1,42 +1,77 @@
-/* eslint-disable no-unused-vars */
-// Footer.jsx
-import React from 'react';
-// Assuming you have a separate CSS file for the footer
+import React from "react";
 
 export default function Footer() {
-    return (
-        <footer className="footer  py-3 bg-dark text-white fixed-bottom">
-            <div className="container text-center">
-                <p className="mb-2">&copy; 2024 Sawaari. All rights reserved.</p>
-                <nav className="mb-3">
-                    <ul className="list-inline">
-                        <li className="list-inline-item">
-                            <a href="#" className="btn btn-light text-dark">
-                                <i className="fab fa-facebook-f"></i> Facebook
-                            </a>
-                        </li>
-                        <li className="list-inline-item">
-                            <a href="#" className="btn btn-light text-dark">
-                                <i className="fab fa-instagram"></i> Instagram
-                            </a>
-                        </li>
-                        <li className="list-inline-item">
-                            <a href="#" className="btn btn-light text-dark">
-                                <i className="fab fa-twitter"></i> Twitter
-                            </a>
-                        </li>
-                        <li className="list-inline-item">
-                            <a href="#" className="btn btn-light text-dark">
-                                <i className="fas fa-envelope"></i> Contact Us
-                            </a>
-                        </li>
-                    </ul>
-                </nav>
-                <div className="footer-bottom">
-                    <a href="#" className="text-light">Privacy Policy</a> | 
-                    <a href="#" className="text-light"> Terms of Service</a>
-                </div>
+  return (
+    <footer className="footer">
+      <div className="container">
+        <div className="row align-items-center">
+          <div className="col-md-6">
+            <div className="d-flex align-items-center mb-3 mb-md-0">
+              <img src="/logo.jpg" alt="SAWAARI" className="logo-img me-3" />
+              <div>
+                <h5
+                  className="mb-1"
+                  style={{ color: "var(--accent-green)", fontWeight: "700" }}
+                >
+                  SAWAARI
+                </h5>
+                <p className="mb-0 text-muted">
+                  Smart Transportation Solutions
+                </p>
+              </div>
             </div>
-        </footer>
-    );
+          </div>
+
+          <div className="col-md-6">
+            <div className="d-flex justify-content-md-end justify-content-center">
+              <nav>
+                <ul className="list-inline mb-0">
+                  <li className="list-inline-item">
+                    <a href="#" className="btn btn-light">
+                      <i className="fab fa-facebook-f me-1"></i>
+                      Facebook
+                    </a>
+                  </li>
+                  <li className="list-inline-item">
+                    <a href="#" className="btn btn-light">
+                      <i className="fab fa-instagram me-1"></i>
+                      Instagram
+                    </a>
+                  </li>
+                  <li className="list-inline-item">
+                    <a href="#" className="btn btn-light">
+                      <i className="fab fa-twitter me-1"></i>
+                      Twitter
+                    </a>
+                  </li>
+                  <li className="list-inline-item">
+                    <a href="/feedbacks" className="btn btn-light">
+                      <i className="fas fa-envelope me-1"></i>
+                      Contact
+                    </a>
+                  </li>
+                </ul>
+              </nav>
+            </div>
+          </div>
+        </div>
+
+        <div className="footer-bottom text-center">
+          <p className="mb-2">&copy; 2024 SAWAARI. All rights reserved.</p>
+          <div>
+            <a href="#" className="me-3">
+              Privacy Policy
+            </a>
+            <a href="#" className="me-3">
+              Terms of Service
+            </a>
+            <a href="#" className="me-3">
+              Support
+            </a>
+            <a href="#">About Us</a>
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
 }
