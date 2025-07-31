@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 export default function WhySawaari() {
   const [isVisible, setIsVisible] = useState(false);
   const [activeStory, setActiveStory] = useState(0);
+  const [activeFact, setActiveFact] = useState(0);
   const sectionRef = useRef(null);
 
   const rickshawStories = [
@@ -11,7 +12,7 @@ export default function WhySawaari() {
       title: "The Heartbeat of India",
       hindi: "भारत की धड़कन",
       description:
-        "Auto rickshaws aren&apos;t just vehicles - they&apos;re the pulse of Indian streets, connecting millions of stories every day.",
+        "Auto rickshaws aren't just vehicles - they're the pulse of Indian streets, connecting millions of stories every day.",
       icon: "❤️",
       stat: "50M+",
       statLabel: "Daily Rides",
@@ -22,7 +23,7 @@ export default function WhySawaari() {
       title: "Every Lane, Every Story",
       hindi: "हर गली, हर कहानी",
       description:
-        "From narrow bylanes to busy highways, auto rickshaws navigate where others can&apos;t, making every destination reachable.",
+        "From narrow bylanes to busy highways, auto rickshaws navigate where others can't, making every destination reachable.",
       icon: "🛣️",
       stat: "95%",
       statLabel: "Street Coverage",
@@ -44,7 +45,7 @@ export default function WhySawaari() {
       title: "Eco-Friendly Future",
       hindi: "हरित भविष्य",
       description:
-        "With CNG and electric variants, auto rickshaws are leading India&apos;s green transportation revolution.",
+        "With CNG and electric variants, auto rickshaws are leading India's green transportation revolution.",
       icon: "🌱",
       stat: "60%",
       statLabel: "Less Emissions",
@@ -85,7 +86,21 @@ export default function WhySawaari() {
     return () => clearInterval(interval);
   }, [rickshawStories.length]);
 
+  // Auto-rotate facts (separate from stories)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveFact((prev) => (prev + 1) % rickshawFacts.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [rickshawFacts.length]);
+
   const currentStory = rickshawStories[activeStory];
+  const currentFact = rickshawFacts[activeFact];
+
+  // Safety check to prevent errors
+  if (!currentStory || !currentFact) {
+    return null;
+  }
 
   return (
     <section
@@ -98,244 +113,213 @@ export default function WhySawaari() {
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <div className="absolute inset-0">
           <div className="absolute top-[20%] left-[8%] text-2xl opacity-10 animate-subtle-float">
-            🛒
-          </div>
-          <div className="absolute top-[15%] right-[12%] text-3xl opacity-40 animate-signal-blink">
-            🚦
+            🛺
           </div>
           <div
-            className="absolute bottom-[30%] left-[15%] text-lg opacity-30 animate-float"
-            style={{ animationDelay: "2s" }}
-          >
-            🐕
-          </div>
-          <div
-            className="absolute bottom-[25%] right-[20%] text-2xl opacity-40 animate-float"
+            className="absolute top-[30%] right-[12%] text-2xl opacity-10 animate-subtle-float"
             style={{ animationDelay: "1s" }}
           >
-            🌸
+            🛺
           </div>
-        </div>
-
-        {/* Moving Rickshaws */}
-        <div className="absolute inset-0">
-          {[...Array(6)].map((_, i) => (
-            <div
-              key={i}
-              className={`absolute text-lg opacity-20 animate-parade-move`}
-              style={{
-                top: `${55 + i * 3}%`,
-                animationDelay: `${i * 2.5}s`,
-              }}
-            >
-              🛺
-            </div>
-          ))}
+          <div
+            className="absolute bottom-[25%] left-[15%] text-2xl opacity-10 animate-subtle-float"
+            style={{ animationDelay: "2s" }}
+          >
+            🛺
+          </div>
+          <div
+            className="absolute bottom-[35%] right-[20%] text-2xl opacity-10 animate-subtle-float"
+            style={{ animationDelay: "3s" }}
+          >
+            🛺
+          </div>
         </div>
       </div>
 
-      <div className="container-sawaari relative z-20">
-        {/* Section Header */}
-        <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-4 bg-sawaari-light-yellow border border-sawaari-yellow/20 rounded-full px-6 py-3 mb-8">
-            <span className="text-3xl animate-subtle-float">🛺</span>
-            <div className="flex flex-col">
-              <span className="text-lg font-bold text-sawaari-green font-kalam">
-                क्यों सवारी?
-              </span>
-              <span className="text-sm text-text-secondary">
-                Why Choose the Rickshaw Way?
-              </span>
-            </div>
+      <div className="container-sawaari relative z-10">
+        {/* Hero Section */}
+        <div className="text-center mb-20">
+          <div className="inline-flex items-center gap-3 bg-sawaari-yellow-muted border border-sawaari-yellow-border rounded-full px-6 py-3 mb-6">
+            <span className="text-2xl">🛺</span>
+            <span className="text-sm font-medium text-sawaari-yellow text-readable">
+              Why Auto Rickshaws?
+            </span>
           </div>
-
-          <h2 className="text-4xl lg:text-5xl font-bold text-text-primary mb-6">
-            <span className="gradient-text-sawaari">The Soul</span> of Indian
-            Streets
+          <h2 className="text-4xl lg:text-5xl font-bold text-white mb-6 text-readable">
+            The Soul of Indian Streets
           </h2>
-
-          <p className="text-lg lg:text-xl text-text-secondary max-w-4xl mx-auto leading-relaxed">
-            Auto rickshaws are more than transportation - they are India&apos;s
-            cultural ambassadors, weaving through the fabric of our cities with
-            stories, dreams, and endless possibilities.
+          <p className="text-xl text-gray-200 max-w-4xl mx-auto leading-relaxed text-readable-secondary">
+            Discover why auto rickshaws are more than just transportation -
+            they're the heartbeat of India's urban mobility, connecting
+            communities and stories across every corner of our cities.
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-16 items-center mb-16">
-          {/* Interactive Story Section */}
-          <div className="flex flex-col gap-8">
-            <div className="card p-8 border-2 border-sawaari-yellow transition-all duration-500">
-              <div className="flex items-center gap-8 mb-6">
-                <div className="w-20 h-20 bg-sawaari-light-yellow rounded-full flex items-center justify-center text-4xl border border-sawaari-yellow">
-                  {currentStory.icon}
-                </div>
-                <div className="text-center">
-                  <div className="text-4xl font-black leading-none text-sawaari-green">
-                    {currentStory.stat}
-                  </div>
-                  <div className="text-sm text-text-secondary font-medium">
-                    {currentStory.statLabel}
-                  </div>
-                </div>
-              </div>
-
-              <div className="mb-6">
-                <h3 className="text-2xl font-bold text-text-primary mb-2">
-                  {currentStory.title}
-                </h3>
-                <h4 className="text-lg text-sawaari-yellow font-kalam mb-4">
-                  {currentStory.hindi}
-                </h4>
-                <p className="text-text-secondary leading-relaxed">
-                  {currentStory.description}
-                </p>
-              </div>
-            </div>
-
-            {/* Story Navigation */}
-            <div className="flex justify-center gap-4">
+        {/* Interactive Story Showcase */}
+        <div className="grid lg:grid-cols-2 gap-16 items-center mb-20">
+          {/* Story Navigation */}
+          <div className="space-y-6">
+            <h3 className="text-2xl font-bold text-white mb-8 text-readable">
+              The Auto Rickshaw Story
+            </h3>
+            <div className="space-y-4">
               {rickshawStories.map((story, index) => (
                 <button
                   key={story.id}
-                  className={`w-12 h-12 rounded-full border-2 transition-all duration-300 flex items-center justify-center text-lg hover:scale-110 ${
-                    index === activeStory
-                      ? "scale-125 bg-sawaari-yellow border-sawaari-yellow shadow-sawaari-lg"
-                      : "border-sawaari-yellow hover:bg-sawaari-light-yellow"
-                  }`}
                   onClick={() => setActiveStory(index)}
+                  className={`w-full flex items-center gap-4 p-6 rounded-xl border transition-all duration-300 hover:shadow-lg ${
+                    index === activeStory
+                      ? "border-sawaari-yellow bg-sawaari-yellow-muted"
+                      : "border-white/20 bg-black/40 hover:border-sawaari-yellow/50"
+                  }`}
                 >
-                  <span>{story.icon}</span>
+                  <div className="text-3xl">{story.icon}</div>
+                  <div className="flex-1 text-left">
+                    <div className="text-lg font-bold text-white text-readable">
+                      {story.title}
+                    </div>
+                    <div className="text-sm text-gray-300 text-readable-secondary">
+                      {story.hindi}
+                    </div>
+                  </div>
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Rickshaw Facts Grid */}
-          <div className="flex flex-col gap-8">
-            <h3 className="flex flex-col items-center gap-2 text-2xl font-bold text-text-primary">
-              <span className="text-3xl">📊</span>
-              Amazing Rickshaw Facts
-              <span className="text-lg text-sawaari-yellow font-kalam">
-                रोचक तथ्य
-              </span>
-            </h3>
+          {/* Active Story Display */}
+          <div className="card p-8">
+            <div className="flex items-start gap-6 mb-6">
+              <div className="w-16 h-16 bg-sawaari-yellow-muted border border-sawaari-yellow-border rounded-2xl flex items-center justify-center text-3xl">
+                {currentStory.icon}
+              </div>
+              <div className="flex-1">
+                <h3 className="text-2xl font-bold text-white mb-2 text-readable">
+                  {currentStory.title}
+                </h3>
+                <p className="text-gray-200 leading-relaxed text-readable-secondary">
+                  {currentStory.description}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="text-center">
+                <div className="text-3xl font-black text-sawaari-yellow mb-1">
+                  {currentStory.stat}
+                </div>
+                <div className="text-gray-300 text-readable-secondary">
+                  {currentStory.statLabel}
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-sm text-gray-400 text-readable-secondary">
+                  {currentStory.hindi}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {rickshawFacts.map((fact, index) => (
-                <div
-                  key={index}
-                  className="card p-6 text-center transition-all duration-300 hover:shadow-sawaari-lg hover:-translate-y-1 animate-subtle-fade"
-                  style={{ animationDelay: `${index * 0.1}s` }}
-                >
-                  <div className="text-3xl mb-4">{fact.icon}</div>
-                  <p className="text-text-secondary leading-relaxed text-sm">
+        {/* Interactive Fun Facts */}
+        <div className="mb-20">
+          <h3 className="text-3xl font-bold text-white mb-12 text-center text-readable">
+            Did You Know?
+          </h3>
+
+          {/* Interactive Facts Display */}
+          <div className="max-w-4xl mx-auto mb-8">
+            <div className="card p-8 relative overflow-hidden">
+              {/* Background Pattern */}
+              <div className="absolute top-0 right-0 text-6xl opacity-5 transform rotate-12">
+                💡
+              </div>
+
+              <div className="relative z-10 text-center">
+                {/* Fact Icon */}
+                <div className="w-20 h-20 bg-gradient-to-br from-sawaari-yellow/30 to-sawaari-yellow/10 border-2 border-sawaari-yellow/50 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse-slow">
+                  <span className="text-3xl">{currentFact.icon}</span>
+                </div>
+
+                {/* Fact Text */}
+                <p className="text-2xl lg:text-3xl text-white mb-6 leading-relaxed text-readable">
+                  {currentFact.fact}
+                </p>
+
+                {/* Progress Indicator */}
+                <div className="flex justify-center gap-2 mb-6">
+                  {rickshawFacts.map((_, index) => (
+                    <div
+                      key={index}
+                      className={`w-2 h-2 rounded-full transition-all duration-500 ${
+                        index === activeFact
+                          ? "bg-sawaari-yellow scale-150"
+                          : "bg-white/30"
+                      }`}
+                    />
+                  ))}
+                </div>
+
+                {/* Navigation Buttons */}
+                <div className="flex justify-center gap-4">
+                  <button
+                    onClick={() =>
+                      setActiveFact(
+                        (prev) =>
+                          (prev - 1 + rickshawFacts.length) %
+                          rickshawFacts.length
+                      )
+                    }
+                    className="w-12 h-12 bg-sawaari-yellow/20 border border-sawaari-yellow/40 rounded-full flex items-center justify-center hover:bg-sawaari-yellow/30 transition-all duration-300"
+                  >
+                    <span className="text-sawaari-yellow text-xl">←</span>
+                  </button>
+                  <button
+                    onClick={() =>
+                      setActiveFact((prev) => (prev + 1) % rickshawFacts.length)
+                    }
+                    className="w-12 h-12 bg-sawaari-yellow/20 border border-sawaari-yellow/40 rounded-full flex items-center justify-center hover:bg-sawaari-yellow/30 transition-all duration-300"
+                  >
+                    <span className="text-sawaari-yellow text-xl">→</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Facts Grid */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {rickshawFacts.map((fact, index) => (
+              <button
+                key={index}
+                onClick={() => setActiveFact(index)}
+                className={`card group transition-all duration-500 hover:scale-105 ${
+                  index === activeFact
+                    ? "border-sawaari-yellow/50 bg-sawaari-yellow/5"
+                    : "hover:border-sawaari-yellow/30"
+                }`}
+              >
+                <div className="p-6 text-center">
+                  <div
+                    className={`w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4 transition-all duration-300 ${
+                      index === activeFact
+                        ? "bg-gradient-to-br from-sawaari-yellow/40 to-sawaari-yellow/20 border-2 border-sawaari-yellow/60 scale-110"
+                        : "bg-sawaari-yellow-muted border border-sawaari-yellow-border group-hover:scale-110"
+                    }`}
+                  >
+                    <span className="text-xl">{fact.icon}</span>
+                  </div>
+                  <p
+                    className={`text-sm transition-all duration-300 ${
+                      index === activeFact
+                        ? "text-white font-semibold"
+                        : "text-gray-200 text-readable-secondary"
+                    }`}
+                  >
                     {fact.fact}
                   </p>
                 </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Cultural Connection */}
-        <div className="grid lg:grid-cols-3 gap-8 items-center card p-8 lg:p-12 mb-12">
-          <div className="flex justify-center">
-            <div className="relative flex flex-col items-center gap-4">
-              <div className="text-6xl animate-pulse-slow">🛺</div>
-              <div className="flex gap-2">
-                <span className="text-2xl animate-heart-beat">❤️</span>
-                <span
-                  className="text-2xl animate-heart-beat"
-                  style={{ animationDelay: "0.5s" }}
-                >
-                  💛
-                </span>
-                <span
-                  className="text-2xl animate-heart-beat"
-                  style={{ animationDelay: "1s" }}
-                >
-                  💚
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="lg:col-span-2 flex flex-col gap-6">
-            <div className="flex flex-col gap-2">
-              <h3 className="text-3xl font-bold text-text-primary">
-                More Than Transport
-              </h3>
-              <span className="text-lg text-sawaari-yellow font-kalam">
-                परिवहन से कहीं अधिक
-              </span>
-            </div>
-            <p className="text-lg text-text-secondary leading-relaxed">
-              Every auto rickshaw ride is a journey through India&apos;s heart -
-              where strangers become friends, where every driver has a story,
-              and where the real India comes alive in conversations, laughter,
-              and shared experiences.
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-8">
-              <div className="flex items-center gap-4">
-                <div className="text-3xl">🤝</div>
-                <div>
-                  <div className="text-2xl font-bold text-sawaari-green">
-                    1M+
-                  </div>
-                  <div className="text-sm text-text-muted">
-                    Daily Connections
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="text-3xl">💬</div>
-                <div>
-                  <div className="text-2xl font-bold text-sawaari-green">∞</div>
-                  <div className="text-sm text-text-muted">Stories Shared</div>
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="text-3xl">🌟</div>
-                <div>
-                  <div className="text-2xl font-bold text-sawaari-green">
-                    100%
-                  </div>
-                  <div className="text-sm text-text-muted">Pure Experience</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Call to Action */}
-        <div className="text-center">
-          <div className="max-w-4xl mx-auto">
-            <h3 className="flex flex-col items-center gap-4 text-3xl font-bold text-text-primary mb-6">
-              <span className="text-4xl animate-subtle-float">🛺</span>
-              Ready to Experience the Real India?
-              <span className="text-lg text-sawaari-yellow font-kalam">
-                असली भारत का अनुभव करने के लिए तैयार हैं?
-              </span>
-            </h3>
-            <p className="text-lg text-text-secondary leading-relaxed mb-8">
-              Join millions who choose the rickshaw way - where every journey is
-              an adventure, every ride tells a story, and every destination
-              feels like home.
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button className="btn-primary inline-flex items-center gap-2">
-                <span>Start Your Journey</span>
-                <span className="text-xl">🚀</span>
               </button>
-              <button className="btn-secondary inline-flex items-center gap-2 group">
-                <span>Learn More</span>
-                <span className="text-lg transition-transform duration-300 group-hover:translate-x-1">
-                  →
-                </span>
-              </button>
-            </div>
+            ))}
           </div>
         </div>
       </div>

@@ -98,133 +98,81 @@ export default function About() {
       <div className="container-sawaari relative z-10">
         {/* Hero Introduction */}
         <div className="text-center mb-20">
-          <div className="inline-flex items-center gap-3 bg-sawaari-yellow/20 border border-sawaari-yellow/40 rounded-full px-6 py-3 mb-8">
-            <span className="text-2xl">ℹ️</span>
-            <span className="text-lg font-semibold text-sawaari-yellow">
-              About SAWAARI
+          <div className="inline-flex items-center gap-3 bg-sawaari-yellow-muted border border-sawaari-yellow-border rounded-full px-6 py-3 mb-6">
+            <span className="text-2xl">🚀</span>
+            <span className="text-sm font-medium text-sawaari-yellow text-readable">
+              Why Choose SAWAARI?
             </span>
           </div>
-          <h2 className="text-4xl lg:text-6xl font-bold text-white mb-6">
-            Revolutionizing{" "}
-            <span className="gradient-text-sawaari">Urban Transportation</span>
+          <h2 className="text-4xl lg:text-5xl font-bold text-white mb-6 text-readable">
+            Revolutionizing Urban Mobility
           </h2>
-          <p className="text-lg lg:text-xl text-gray-200 max-w-4xl mx-auto leading-relaxed">
-            We are not just another app – we are the bridge between traditional
-            auto rickshaw services and modern digital convenience, making every
-            journey smarter and more efficient.
+          <p className="text-xl text-gray-200 max-w-3xl mx-auto leading-relaxed text-readable-secondary">
+            Experience the future of transportation with our innovative platform
+            that connects you with reliable auto rickshaw services across India.
           </p>
         </div>
 
-        {/* Interactive Features Showcase */}
-        <div className="grid lg:grid-cols-2 gap-16 items-center mb-20">
-          <div className="space-y-8">
-            {/* Feature Navigation */}
-            <div className="space-y-4">
-              {features.map((feature, index) => (
-                <button
-                  key={index}
-                  className={`w-full flex items-center gap-4 p-6 rounded-xl border transition-all duration-300 hover:shadow-lg ${
-                    index === activeFeature
-                      ? "border-sawaari-yellow bg-sawaari-yellow/20"
-                      : "border-white/20 bg-black/40 hover:border-sawaari-yellow/50"
-                  }`}
-                  onClick={() => setActiveFeature(index)}
-                >
-                  <div className="text-4xl">{feature.icon}</div>
-                  <div className="flex-1 text-left">
-                    <div className="text-lg font-bold text-text-primary">
-                      {feature.title}
-                    </div>
-                    <div className="text-sm text-text-muted">
-                      {feature.stats}
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-
-            {/* Active Feature Details */}
-            <div className="card p-8">
-              <div className="flex items-start gap-6 mb-6">
-                <div className="w-16 h-16 bg-sawaari-yellow/20 border border-sawaari-yellow/40 rounded-2xl flex items-center justify-center text-2xl">
-                  {currentFeature.icon}
+        {/* Feature Showcase */}
+        <div className="grid lg:grid-cols-3 gap-8 mb-16">
+          {features.map((feature, index) => (
+            <div
+              key={feature.id}
+              className={`card group transition-all duration-500 ${
+                index === activeFeature
+                  ? "scale-105 border-sawaari-yellow/50"
+                  : "hover:scale-105"
+              }`}
+            >
+              <div className="p-8 text-center">
+                <div className="w-16 h-16 bg-sawaari-yellow-muted border border-sawaari-yellow-border rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
+                  <span className="text-3xl">{feature.icon}</span>
                 </div>
-                <div className="flex-1">
-                  <h3 className="text-2xl font-bold text-white mb-3">
-                    {currentFeature.title}
-                  </h3>
-                  <p className="text-gray-200 leading-relaxed">
-                    {currentFeature.description}
-                  </p>
+                <h3 className="text-xl font-semibold text-white mb-3 text-readable">
+                  {feature.title}
+                </h3>
+                <p className="text-gray-300 mb-4 text-readable-secondary">
+                  {feature.description}
+                </p>
+                <div className="inline-flex items-center gap-2 bg-sawaari-yellow-muted border border-sawaari-yellow-border rounded-full px-4 py-2">
+                  <span className="text-xs font-semibold text-sawaari-yellow">
+                    {feature.stats}
+                  </span>
                 </div>
+                <NavLink to={feature.link} className="btn-primary w-full mt-4">
+                  Learn More
+                </NavLink>
               </div>
-
-              <NavLink
-                to={currentFeature.link}
-                className="btn-primary inline-flex items-center gap-2"
-              >
-                <span>Explore {currentFeature.title}</span>
-                <span>→</span>
-              </NavLink>
             </div>
-          </div>
-
-          {/* Feature Visual */}
-          <div className="relative">
-            <div className="w-80 h-80 bg-gradient-to-br from-sawaari-yellow/30 to-sawaari-green/30 rounded-2xl flex items-center justify-center shadow-2xl border border-white/10 mx-auto">
-              <div className="text-8xl opacity-80">{currentFeature.icon}</div>
-            </div>
-
-            {/* Floating Elements */}
-            <div className="absolute -top-4 -right-4 w-12 h-12 bg-sawaari-yellow rounded-full flex items-center justify-center animate-subtle-float">
-              <span className="text-white">⚡</span>
-            </div>
-            <div className="absolute top-1/2 -left-4 w-12 h-12 bg-sawaari-green rounded-full flex items-center justify-center animate-subtle-float">
-              <span className="text-white">⭐</span>
-            </div>
-            <div className="absolute -bottom-4 right-1/4 w-12 h-12 bg-sawaari-yellow rounded-full flex items-center justify-center animate-subtle-float">
-              <span className="text-white">❤️</span>
-            </div>
-          </div>
+          ))}
         </div>
 
-        {/* Mission Statement */}
+        {/* Interactive Feature Highlight */}
         <div className="text-center">
-          <div className="max-w-4xl mx-auto">
-            <div className="w-20 h-20 mx-auto mb-8 bg-sawaari-yellow/20 border border-sawaari-yellow/40 rounded-full flex items-center justify-center">
-              <span className="text-3xl">🚀</span>
+          <div className="card max-w-4xl mx-auto p-8">
+            <div className="flex items-center justify-center gap-4 mb-6">
+              <div className="w-16 h-16 bg-sawaari-yellow-muted border border-sawaari-yellow-border rounded-2xl flex items-center justify-center">
+                <span className="text-3xl">{currentFeature.icon}</span>
+              </div>
+              <div className="text-left">
+                <h3 className="text-2xl font-bold text-white text-readable">
+                  {currentFeature.title}
+                </h3>
+                <p className="text-gray-300 text-readable-secondary">
+                  {currentFeature.stats}
+                </p>
+              </div>
             </div>
-            <h3 className="text-3xl lg:text-4xl font-bold text-white mb-6">
-              Our <span className="text-sawaari-yellow">Mission</span>
-            </h3>
-            <p className="text-lg lg:text-xl text-gray-200 leading-relaxed mb-12">
-              To digitize and optimize India&apos;s auto rickshaw ecosystem,
-              creating a seamless bridge between traditional transportation and
-              modern technology. We believe every journey should be efficient,
-              transparent, and accessible to all.
+            <p className="text-lg text-gray-200 mb-6 text-readable-secondary">
+              {currentFeature.description}
             </p>
-
-            {/* Mission Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="card p-8 text-center">
-                <div className="text-4xl font-black text-sawaari-yellow mb-2">
-                  2.5M+
-                </div>
-                <div className="text-gray-200">Auto Rickshaws</div>
-              </div>
-              <div className="card p-8 text-center">
-                <div className="text-4xl font-black text-sawaari-yellow mb-2">
-                  50M+
-                </div>
-                <div className="text-gray-200">Daily Passengers</div>
-              </div>
-              <div className="card p-8 text-center">
-                <div className="text-4xl font-black text-sawaari-yellow mb-2">
-                  100%
-                </div>
-                <div className="text-gray-200">Digital Future</div>
-              </div>
-            </div>
+            <NavLink
+              to={currentFeature.link}
+              className="btn-primary inline-flex items-center gap-2"
+            >
+              <span>Explore {currentFeature.title}</span>
+              <span className="text-xl">→</span>
+            </NavLink>
           </div>
         </div>
       </div>

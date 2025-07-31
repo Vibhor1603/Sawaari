@@ -24,6 +24,7 @@ export default function RouteInfo({ hotspot }) {
   const [routeData, setRouteData] = useState(null);
   const [fareBreakdown, setFareBreakdown] = useState(null);
   const [distance, setDistance] = useState(0);
+  const [showResults, setShowResults] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -59,6 +60,7 @@ export default function RouteInfo({ hotspot }) {
     setPathCoordinates([]);
     setTotalFare(0);
     setIsLoading(true);
+    setShowResults(false);
 
     if (!source || !destination) {
       setError("Please enter both source and destination.");
@@ -86,6 +88,7 @@ export default function RouteInfo({ hotspot }) {
         setFareBreakdown(fareBreakdown);
         setDistance(distance);
         setRouteData(result.data);
+        setShowResults(true);
 
         if (result.cached) {
           console.log("✅ Used cached route data");
@@ -103,6 +106,17 @@ export default function RouteInfo({ hotspot }) {
 
   const clickHandler = (latitude, longitude) => {
     setSelectedDestination([latitude, longitude]);
+  };
+
+  const handleNewSearch = () => {
+    setShowResults(false);
+    setShortestPath([]);
+    setPathCoordinates([]);
+    setTotalFare(0);
+    setRouteData(null);
+    setFareBreakdown(null);
+    setDistance(0);
+    setError("");
   };
 
   return (
@@ -146,44 +160,65 @@ export default function RouteInfo({ hotspot }) {
       {/* Main Content Area */}
       <div className="container-sawaari pt-24 pb-8">
         <div className="grid lg:grid-cols-5 gap-8">
-          {/* Left Column - Route Form */}
+          {/* Left Column - Route Form or Results */}
           <div className="lg:col-span-2 space-y-6">
-            <div className="glass-strong rounded-2xl p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 bg-sawaari-yellow/20 border border-sawaari-yellow/40 rounded-full flex items-center justify-center">
-                  <span className="text-xl">🗺️</span>
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold text-white">
-                    Route Planner
-                  </h1>
-                  <p className="text-sm text-gray-200">Smart navigation</p>
-                </div>
-              </div>
-
-              <RouteForm
-                source={source}
-                setSource={setSource}
-                destination={destination}
-                setDestination={setDestination}
-                handleRouteSearch={handleRouteSearch}
-                hotspot={hotspot}
-                isLoading={isLoading}
-              />
-
-              {error && (
-                <div className="mt-4 p-3 bg-red-500/20 border border-red-500/40 rounded-lg">
-                  <p className="text-sm text-red-200">{error}</p>
-                </div>
-              )}
-            </div>
-
-            {/* Route Results */}
-            {shortestPath.length > 0 && (
+            {!showResults ? (
+              /* Route Form */
               <div className="glass-strong rounded-2xl p-6">
-                <h3 className="text-lg font-semibold text-white mb-4">
-                  Route Details
-                </h3>
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-12 h-12 bg-sawaari-yellow-muted border border-sawaari-yellow-border rounded-full flex items-center justify-center">
+                    <span className="text-xl">🗺️</span>
+                  </div>
+                  <div>
+                    <h1 className="text-xl font-bold text-white text-readable">
+                      Route Planner
+                    </h1>
+                    <p className="text-sm text-gray-200 text-readable-secondary">
+                      Smart navigation
+                    </p>
+                  </div>
+                </div>
+
+                <RouteForm
+                  source={source}
+                  setSource={setSource}
+                  destination={destination}
+                  setDestination={setDestination}
+                  handleRouteSearch={handleRouteSearch}
+                  hotspot={hotspot}
+                  isLoading={isLoading}
+                />
+
+                {error && (
+                  <div className="mt-4 p-3 bg-red-500/20 border border-red-500/40 rounded-lg">
+                    <p className="text-sm text-red-200">{error}</p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* Route Results */
+              <div className="glass-strong rounded-2xl p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-sawaari-yellow-muted border border-sawaari-yellow-border rounded-full flex items-center justify-center">
+                      <span className="text-xl">✅</span>
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-white text-readable">
+                        Route Found
+                      </h3>
+                      <p className="text-sm text-gray-200 text-readable-secondary">
+                        {source} → {destination}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleNewSearch}
+                    className="px-4 py-2 bg-sawaari-yellow text-black rounded-lg hover:bg-sawaari-yellow/80 transition-colors text-sm font-semibold"
+                  >
+                    New Search
+                  </button>
+                </div>
 
                 {/* Route Steps */}
                 <div className="max-h-48 overflow-y-auto mb-4 space-y-2">
@@ -192,10 +227,10 @@ export default function RouteInfo({ hotspot }) {
                       key={index}
                       className="flex items-center gap-3 p-2 bg-black/40 rounded-lg"
                     >
-                      <span className="w-8 h-8 bg-sawaari-yellow/20 rounded-full flex items-center justify-center text-sm font-bold text-sawaari-yellow">
+                      <span className="w-8 h-8 bg-sawaari-yellow-muted border border-sawaari-yellow-border rounded-full flex items-center justify-center text-sm font-bold text-sawaari-yellow">
                         {index + 1}
                       </span>
-                      <span className="text-sm text-gray-200 flex-1">
+                      <span className="text-sm text-gray-200 flex-1 text-readable-secondary">
                         {node}
                       </span>
                     </div>
@@ -205,28 +240,34 @@ export default function RouteInfo({ hotspot }) {
                 {/* Fare Summary */}
                 <div className="bg-black/60 rounded-lg p-4 space-y-3">
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-200">Distance:</span>
-                    <span className="text-white font-semibold">
+                    <span className="text-gray-200 text-readable-secondary">
+                      Distance:
+                    </span>
+                    <span className="text-white font-semibold text-readable">
                       {distance.toFixed(1)} km
                     </span>
                   </div>
                   {routeData?.estimatedTime && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-200">Time:</span>
-                      <span className="text-white font-semibold">
+                      <span className="text-gray-200 text-readable-secondary">
+                        Time:
+                      </span>
+                      <span className="text-white font-semibold text-readable">
                         {routeData.estimatedTime.formatted}
                       </span>
                     </div>
                   )}
                   <div className="flex justify-between text-xl border-t border-white/10 pt-3">
-                    <span className="text-gray-200">Total Fare:</span>
-                    <span className="text-sawaari-yellow font-bold">
+                    <span className="text-gray-200 text-readable-secondary">
+                      Total Fare:
+                    </span>
+                    <span className="text-sawaari-yellow font-bold text-readable">
                       ₹{totalFare}
                     </span>
                   </div>
                   {fareBreakdown && fareBreakdown.timeType !== "regular" && (
                     <div className="text-center">
-                      <span className="inline-flex items-center gap-1 px-3 py-1 bg-sawaari-yellow/20 border border-sawaari-yellow/40 rounded-full text-xs text-sawaari-yellow">
+                      <span className="inline-flex items-center gap-1 px-3 py-1 bg-sawaari-yellow-muted border border-sawaari-yellow-border rounded-full text-xs text-sawaari-yellow">
                         {fareBreakdown.timeType === "night"
                           ? "🌙 Night Rate"
                           : "⚡ Peak Rate"}
@@ -241,7 +282,7 @@ export default function RouteInfo({ hotspot }) {
           {/* Right Column - Map */}
           <div className="lg:col-span-3">
             <div className="glass-strong rounded-2xl p-4">
-              <h2 className="text-xl font-bold text-white mb-4">
+              <h2 className="text-xl font-bold text-white mb-4 text-readable">
                 Interactive Route Map
               </h2>
               <div className="h-[600px] rounded-xl overflow-hidden border border-white/10">

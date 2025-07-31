@@ -57,98 +57,119 @@ export default function Footer() {
           {/* Brand Section */}
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 bg-sawaari-yellow rounded-full flex items-center justify-center">
-              <span className="text-white font-bold text-2xl">S</span>
+              <span className="text-black font-bold text-2xl">S</span>
             </div>
             <div>
-              <h5 className="text-2xl font-bold text-sawaari-green mb-1">
+              <h5 className="text-2xl font-bold text-sawaari-yellow mb-1 text-readable">
                 SAWAARI
               </h5>
-              <p className="text-text-muted font-medium">
+              <p className="text-gray-300 font-medium text-readable-secondary">
                 Smart Transportation Solutions
               </p>
-              <p className="text-sm text-text-secondary font-kalam">
+              <p className="text-sm text-gray-400 text-readable-secondary">
                 हर सफर, एक नई कहानी
               </p>
             </div>
           </div>
+        </div>
 
-          {/* Social Links */}
-          <div className="flex justify-center md:justify-end">
-            <nav className="flex flex-wrap gap-3">
-              <a
-                href="#"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-neutral-200 rounded-full text-text-secondary hover:text-sawaari-yellow hover:border-sawaari-yellow hover:bg-sawaari-light-yellow transition-all duration-300 transform hover:scale-105"
-              >
-                <span>📘</span>
-                <span className="hidden sm:inline">Facebook</span>
-              </a>
-              <a
-                href="#"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-neutral-200 rounded-full text-text-secondary hover:text-sawaari-yellow hover:border-sawaari-yellow hover:bg-sawaari-light-yellow transition-all duration-300 transform hover:scale-105"
-              >
-                <span>📷</span>
-                <span className="hidden sm:inline">Instagram</span>
-              </a>
-              <a
-                href="#"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-neutral-200 rounded-full text-text-secondary hover:text-sawaari-yellow hover:border-sawaari-yellow hover:bg-sawaari-light-yellow transition-all duration-300 transform hover:scale-105"
-              >
-                <span>🐦</span>
-                <span className="hidden sm:inline">Twitter</span>
-              </a>
-              <a
-                href="/feedbacks"
-                className="inline-flex items-center gap-2 px-4 py-2 glass border border-white/20 rounded-full text-text-secondary hover:text-accent-green hover:border-accent-green hover:bg-accent-green/10 transition-all duration-300 transform hover:scale-105"
-              >
-                <i className="fas fa-envelope"></i>
-                <span className="hidden sm:inline">Contact</span>
-              </a>
-            </nav>
+        {/* Main Footer Content */}
+        <div className="grid md:grid-cols-4 gap-8 mb-8">
+          {/* Company Info */}
+          <div className="space-y-4">
+            <h6 className="text-lg font-semibold text-white text-readable">
+              About SAWAARI
+            </h6>
+            <p className="text-gray-300 leading-relaxed text-readable-secondary">
+              Revolutionizing urban mobility by connecting passengers with
+              reliable auto rickshaw services across India.
+            </p>
+          </div>
+
+          {/* Quick Links */}
+          <div className="space-y-4">
+            <h6 className="text-lg font-semibold text-white text-readable">
+              Quick Links
+            </h6>
+            <ul className="space-y-2">
+              <li>
+                <a
+                  href="/hotspots"
+                  className="text-gray-300 hover:text-sawaari-yellow transition-colors duration-300 text-readable-secondary"
+                >
+                  Find Hotspots
+                </a>
+              </li>
+              <li>
+                <a
+                  href="/routes"
+                  className="text-gray-300 hover:text-sawaari-yellow transition-colors duration-300 text-readable-secondary"
+                >
+                  Plan Routes
+                </a>
+              </li>
+              <li>
+                <a
+                  href="/ridebuddy"
+                  className="text-gray-300 hover:text-sawaari-yellow transition-colors duration-300 text-readable-secondary"
+                >
+                  Ride Buddy
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          {/* Support */}
+          <div className="space-y-4">
+            <h6 className="text-lg font-semibold text-white text-readable">
+              Support
+            </h6>
+            <ul className="space-y-2">
+              <li>
+                <a
+                  href="/contact"
+                  className="text-gray-300 hover:text-sawaari-yellow transition-colors duration-300 text-readable-secondary"
+                >
+                  Contact Us
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          {/* Contact Info */}
+          <div className="space-y-4">
+            <h6 className="text-lg font-semibold text-white text-readable">
+              Contact Info
+            </h6>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <span className="text-sawaari-yellow">📧</span>
+                <span className="text-gray-300 text-readable-secondary">
+                  support@sawaari.com
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-sawaari-yellow">📍</span>
+                <span className="text-gray-300 text-readable-secondary">
+                  Noida, Uttar Pradesh
+                </span>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Footer Bottom */}
-        <div className="border-t border-border-color pt-8 text-center">
-          <div className="flex flex-col items-center gap-4">
-            {/* Copyright */}
-            <p className="text-text-secondary">
-              &copy; 2024 SAWAARI. All rights reserved. | Made with ❤️ for
-              India&apos;s Streets
-            </p>
-
-            {/* Links */}
-            <div className="flex flex-wrap justify-center gap-6">
-              <a
-                href="#"
-                className="text-text-muted hover:text-accent-yellow transition-colors duration-300 text-sm"
-              >
-                Privacy Policy
-              </a>
-              <a
-                href="#"
-                className="text-text-muted hover:text-accent-yellow transition-colors duration-300 text-sm"
-              >
-                Terms of Service
-              </a>
-              <a
-                href="#"
-                className="text-text-muted hover:text-accent-yellow transition-colors duration-300 text-sm"
-              >
-                Support
-              </a>
-              <a
-                href="#"
-                className="text-text-muted hover:text-accent-yellow transition-colors duration-300 text-sm"
-              >
-                About Us
-              </a>
+        <div className="border-t border-white/10 pt-8">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="text-center md:text-left">
+              <p className="text-gray-400 text-readable-secondary">
+                © 2024 SAWAARI. All rights reserved.
+              </p>
             </div>
-
-            {/* Cultural Touch */}
-            <div className="flex items-center gap-2 text-sm text-text-muted">
-              <span>🛺</span>
-              <span className="font-kalam">भारत की सड़कों का साथी</span>
-              <span>🛺</span>
+            <div className="flex items-center gap-6">
+              <span className="text-gray-400 text-readable-secondary">
+                Made with ❤️ in India
+              </span>
             </div>
           </div>
         </div>

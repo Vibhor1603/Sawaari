@@ -39,20 +39,20 @@ export default function Navbar() {
     >
       <div className="container-sawaari">
         <div className="flex items-center justify-between h-16">
-          {/* Brand */}
+          {/* Enhanced Brand */}
           <NavLink
             to="/"
             className="flex items-center space-x-3 text-white hover:text-sawaari-yellow transition-colors duration-300"
           >
-            <div className="w-10 h-10 bg-sawaari-yellow rounded-full flex items-center justify-center">
+            <div className="w-10 h-10 bg-gradient-to-br from-sawaari-yellow to-sawaari-yellow/80 rounded-full flex items-center justify-center shadow-sawaari-subtle">
               <span className="text-black font-bold text-lg">S</span>
             </div>
-            <span className="text-xl font-bold text-sawaari-yellow">
+            <span className="text-xl font-bold text-sawaari-yellow text-readable">
               SAWAARI
             </span>
           </NavLink>
 
-          {/* Desktop Navigation */}
+          {/* Enhanced Desktop Navigation */}
           <div className="hidden lg:flex items-center space-x-8">
             <div className="flex items-center space-x-1">
               <NavLink
@@ -60,8 +60,8 @@ export default function Navbar() {
                 className={({ isActive }) =>
                   `px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
                     isActive
-                      ? "text-sawaari-yellow bg-sawaari-yellow/20"
-                      : "text-gray-300 hover:text-sawaari-yellow hover:bg-sawaari-yellow/10"
+                      ? "text-sawaari-yellow bg-sawaari-yellow-muted border border-sawaari-yellow-border text-readable"
+                      : "text-gray-300 hover:text-sawaari-yellow hover:bg-sawaari-yellow-muted/50 text-readable-secondary"
                   }`
                 }
               >
@@ -72,8 +72,8 @@ export default function Navbar() {
                 className={({ isActive }) =>
                   `px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
                     isActive
-                      ? "text-sawaari-yellow bg-sawaari-yellow/20"
-                      : "text-gray-300 hover:text-sawaari-yellow hover:bg-sawaari-yellow/10"
+                      ? "text-sawaari-yellow bg-sawaari-yellow-muted border border-sawaari-yellow-border text-readable"
+                      : "text-gray-300 hover:text-sawaari-yellow hover:bg-sawaari-yellow-muted/50 text-readable-secondary"
                   }`
                 }
               >
@@ -84,8 +84,8 @@ export default function Navbar() {
                 className={({ isActive }) =>
                   `px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
                     isActive
-                      ? "text-sawaari-yellow bg-sawaari-yellow/20"
-                      : "text-gray-300 hover:text-sawaari-yellow hover:bg-sawaari-yellow/10"
+                      ? "text-sawaari-yellow bg-sawaari-yellow-muted border border-sawaari-yellow-border text-readable"
+                      : "text-gray-300 hover:text-sawaari-yellow hover:bg-sawaari-yellow-muted/50 text-readable-secondary"
                   }`
                 }
               >
@@ -96,199 +96,187 @@ export default function Navbar() {
                 className={({ isActive }) =>
                   `px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
                     isActive
-                      ? "text-sawaari-yellow bg-sawaari-yellow/20"
-                      : "text-gray-300 hover:text-sawaari-yellow hover:bg-sawaari-yellow/10"
+                      ? "text-sawaari-yellow bg-sawaari-yellow-muted border border-sawaari-yellow-border text-readable"
+                      : "text-gray-300 hover:text-sawaari-yellow hover:bg-sawaari-yellow-muted/50 text-readable-secondary"
                   }`
                 }
               >
                 Ride Buddy
               </NavLink>
-              <NavLink
-                to="/feedbacks"
-                className={({ isActive }) =>
-                  `px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
-                    isActive
-                      ? "text-sawaari-yellow bg-sawaari-yellow/20"
-                      : "text-gray-300 hover:text-sawaari-yellow hover:bg-sawaari-yellow/10"
-                  }`
-                }
-              >
-                Contact
-              </NavLink>
             </div>
 
-            {/* Auth Buttons */}
-            <div className="flex items-center space-x-3">
-              {!isAuthenticated ? (
-                <>
-                  <NavLink to="/signin" className="btn-secondary">
-                    Sign In
-                  </NavLink>
-                  <NavLink to="/signup" className="btn-primary">
-                    Sign Up
-                  </NavLink>
-                </>
-              ) : (
-                <>
-                  {user && (
-                    <span className="text-sm text-gray-200">
-                      Welcome,{" "}
-                      <span className="text-sawaari-yellow font-medium">
-                        {user.email?.split("@")[0]}
+            {/* Enhanced User Menu */}
+            <div className="flex items-center space-x-4">
+              {isAuthenticated ? (
+                <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-8 h-8 bg-sawaari-yellow-muted border border-sawaari-yellow-border rounded-full flex items-center justify-center">
+                      <span className="text-sawaari-yellow text-sm font-medium text-readable">
+                        {user.email?.charAt(0).toUpperCase() || "U"}
                       </span>
+                    </div>
+                    <span className="text-sm text-gray-300 hidden md:block text-readable-secondary">
+                      {user.email?.split("@")[0] || "User"}
                     </span>
-                  )}
-                  <NavLink to="/logout" className="btn-primary">
+                  </div>
+                  <NavLink
+                    to="/logout"
+                    className="px-4 py-2 text-sm font-medium text-gray-300 hover:text-sawaari-yellow hover:bg-sawaari-yellow-muted/50 rounded-lg transition-all duration-300 text-readable-secondary"
+                  >
                     Logout
                   </NavLink>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Mobile menu button */}
-          <button
-            onClick={toggleNav}
-            className="lg:hidden p-2 rounded-lg text-gray-300 hover:text-sawaari-yellow hover:bg-sawaari-yellow/10 transition-all duration-300"
-            aria-controls="mobile-menu"
-            aria-expanded={isNavOpen}
-            aria-label="Toggle navigation"
-          >
-            <div className="w-6 h-6 flex flex-col justify-center items-center">
-              <span
-                className={`block h-0.5 w-6 bg-current transition-all duration-300 ${
-                  isNavOpen ? "rotate-45 translate-y-1" : "-translate-y-1"
-                }`}
-              ></span>
-              <span
-                className={`block h-0.5 w-6 bg-current transition-all duration-300 ${
-                  isNavOpen ? "opacity-0" : "opacity-100"
-                }`}
-              ></span>
-              <span
-                className={`block h-0.5 w-6 bg-current transition-all duration-300 ${
-                  isNavOpen ? "-rotate-45 -translate-y-1" : "translate-y-1"
-                }`}
-              ></span>
-            </div>
-          </button>
-        </div>
-
-        {/* Mobile Navigation */}
-        <div
-          className={`lg:hidden transition-all duration-300 ease-in-out ${
-            isNavOpen
-              ? "max-h-96 opacity-100"
-              : "max-h-0 opacity-0 overflow-hidden"
-          }`}
-        >
-          <div className="px-2 pt-2 pb-3 space-y-1 bg-black/90 border border-white/20 rounded-lg mt-2 mb-4 shadow-lg">
-            <NavLink
-              to="/home"
-              onClick={closeNav}
-              className={({ isActive }) =>
-                `block px-4 py-3 rounded-lg text-base font-medium transition-all duration-300 ${
-                  isActive
-                    ? "text-sawaari-yellow bg-sawaari-yellow/20"
-                    : "text-gray-300 hover:text-sawaari-yellow hover:bg-sawaari-yellow/10"
-                }`
-              }
-            >
-              Home
-            </NavLink>
-            <NavLink
-              to="/hotspots"
-              onClick={closeNav}
-              className={({ isActive }) =>
-                `block px-4 py-3 rounded-lg text-base font-medium transition-all duration-300 ${
-                  isActive
-                    ? "text-sawaari-yellow bg-sawaari-yellow/20"
-                    : "text-gray-300 hover:text-sawaari-yellow hover:bg-sawaari-yellow/10"
-                }`
-              }
-            >
-              Hotspots
-            </NavLink>
-            <NavLink
-              to="/routes"
-              onClick={closeNav}
-              className={({ isActive }) =>
-                `block px-4 py-3 rounded-lg text-base font-medium transition-all duration-300 ${
-                  isActive
-                    ? "text-sawaari-yellow bg-sawaari-yellow/20"
-                    : "text-gray-300 hover:text-sawaari-yellow hover:bg-sawaari-yellow/10"
-                }`
-              }
-            >
-              Routes
-            </NavLink>
-            <NavLink
-              to="/ridebuddy"
-              onClick={closeNav}
-              className={({ isActive }) =>
-                `block px-4 py-3 rounded-lg text-base font-medium transition-all duration-300 ${
-                  isActive
-                    ? "text-sawaari-yellow bg-sawaari-yellow/20"
-                    : "text-gray-300 hover:text-sawaari-yellow hover:bg-sawaari-yellow/10"
-                }`
-              }
-            >
-              Ride Buddy
-            </NavLink>
-            <NavLink
-              to="/feedbacks"
-              onClick={closeNav}
-              className={({ isActive }) =>
-                `block px-4 py-3 rounded-lg text-base font-medium transition-all duration-300 ${
-                  isActive
-                    ? "text-sawaari-yellow bg-sawaari-yellow/20"
-                    : "text-gray-300 hover:text-sawaari-yellow hover:bg-sawaari-yellow/10"
-                }`
-              }
-            >
-              Contact
-            </NavLink>
-
-            <div className="border-t border-white/20 pt-4 mt-4">
-              {!isAuthenticated ? (
-                <div className="space-y-2">
+                </div>
+              ) : (
+                <div className="flex items-center space-x-3">
                   <NavLink
                     to="/signin"
-                    onClick={closeNav}
-                    className="btn-secondary w-full"
+                    className="px-4 py-2 text-sm font-medium text-gray-300 hover:text-sawaari-yellow hover:bg-sawaari-yellow-muted/50 rounded-lg transition-all duration-300 text-readable-secondary"
                   >
                     Sign In
                   </NavLink>
                   <NavLink
                     to="/signup"
-                    onClick={closeNav}
-                    className="btn-primary w-full"
+                    className="btn-primary px-4 py-2 text-sm"
                   >
                     Sign Up
-                  </NavLink>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {user && (
-                    <div className="px-3 py-2 text-sm text-gray-300 text-center">
-                      Welcome,{" "}
-                      <span className="text-sawaari-yellow font-medium">
-                        {user.email?.split("@")[0]}
-                      </span>
-                    </div>
-                  )}
-                  <NavLink
-                    to="/logout"
-                    onClick={closeNav}
-                    className="btn-primary w-full"
-                  >
-                    Logout
                   </NavLink>
                 </div>
               )}
             </div>
           </div>
+
+          {/* Enhanced Mobile Menu Button */}
+          <button
+            onClick={toggleNav}
+            className="lg:hidden p-2 rounded-lg text-gray-300 hover:text-sawaari-yellow hover:bg-sawaari-yellow-muted/50 transition-all duration-300"
+            aria-label="Toggle navigation menu"
+          >
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              {isNavOpen ? (
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              ) : (
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
+              )}
+            </svg>
+          </button>
         </div>
+
+        {/* Enhanced Mobile Navigation */}
+        {isNavOpen && (
+          <div className="lg:hidden py-4 border-t border-white/10">
+            <div className="flex flex-col space-y-2">
+              <NavLink
+                to="/home"
+                onClick={closeNav}
+                className={({ isActive }) =>
+                  `px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+                    isActive
+                      ? "text-sawaari-yellow bg-sawaari-yellow-muted border border-sawaari-yellow-border text-readable"
+                      : "text-gray-300 hover:text-sawaari-yellow hover:bg-sawaari-yellow-muted/50 text-readable-secondary"
+                  }`
+                }
+              >
+                Home
+              </NavLink>
+              <NavLink
+                to="/hotspots"
+                onClick={closeNav}
+                className={({ isActive }) =>
+                  `px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+                    isActive
+                      ? "text-sawaari-yellow bg-sawaari-yellow-muted border border-sawaari-yellow-border text-readable"
+                      : "text-gray-300 hover:text-sawaari-yellow hover:bg-sawaari-yellow-muted/50 text-readable-secondary"
+                  }`
+                }
+              >
+                Hotspots
+              </NavLink>
+              <NavLink
+                to="/routes"
+                onClick={closeNav}
+                className={({ isActive }) =>
+                  `px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+                    isActive
+                      ? "text-sawaari-yellow bg-sawaari-yellow-muted border border-sawaari-yellow-border text-readable"
+                      : "text-gray-300 hover:text-sawaari-yellow hover:bg-sawaari-yellow-muted/50 text-readable-secondary"
+                  }`
+                }
+              >
+                Routes
+              </NavLink>
+              <NavLink
+                to="/ridebuddy"
+                onClick={closeNav}
+                className={({ isActive }) =>
+                  `px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+                    isActive
+                      ? "text-sawaari-yellow bg-sawaari-yellow-muted border border-sawaari-yellow-border text-readable"
+                      : "text-gray-300 hover:text-sawaari-yellow hover:bg-sawaari-yellow-muted/50 text-readable-secondary"
+                  }`
+                }
+              >
+                Ride Buddy
+              </NavLink>
+
+              {/* Enhanced Mobile User Menu */}
+              <div className="pt-4 border-t border-white/10">
+                {isAuthenticated ? (
+                  <div className="flex flex-col space-y-2">
+                    <div className="flex items-center space-x-3 px-4 py-3">
+                      <div className="w-8 h-8 bg-sawaari-yellow-muted border border-sawaari-yellow-border rounded-full flex items-center justify-center">
+                        <span className="text-sawaari-yellow text-sm font-medium text-readable">
+                          {user.email?.charAt(0).toUpperCase() || "U"}
+                        </span>
+                      </div>
+                      <span className="text-sm text-gray-300 text-readable-secondary">
+                        {user.email?.split("@")[0] || "User"}
+                      </span>
+                    </div>
+                    <NavLink
+                      to="/logout"
+                      onClick={closeNav}
+                      className="px-4 py-3 text-sm font-medium text-gray-300 hover:text-sawaari-yellow hover:bg-sawaari-yellow-muted/50 rounded-lg transition-all duration-300 text-readable-secondary"
+                    >
+                      Logout
+                    </NavLink>
+                  </div>
+                ) : (
+                  <div className="flex flex-col space-y-2">
+                    <NavLink
+                      to="/signin"
+                      onClick={closeNav}
+                      className="px-4 py-3 text-sm font-medium text-gray-300 hover:text-sawaari-yellow hover:bg-sawaari-yellow-muted/50 rounded-lg transition-all duration-300 text-readable-secondary"
+                    >
+                      Sign In
+                    </NavLink>
+                    <NavLink
+                      to="/signup"
+                      onClick={closeNav}
+                      className="btn-primary px-4 py-3 text-sm w-full text-center"
+                    >
+                      Sign Up
+                    </NavLink>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </nav>
   );
