@@ -232,26 +232,49 @@ const RideBuddy = () => {
   }
 
   return (
-    <div className="min-h-screen bg-black pt-16">
-      {/* Animated Background */}
+    <div className="min-h-screen bg-gradient-to-br from-black via-neutral-900 to-black pt-16 relative overflow-hidden">
+      {/* Enhanced Animated Background */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute inset-0 bg-gradient-to-br from-black via-neutral-900 to-black"></div>
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-sawaari-yellow/5 rounded-full blur-3xl animate-pulse-slow"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-sawaari-green/5 rounded-full blur-3xl animate-pulse-slow delay-1000"></div>
+
+        {/* Floating Auto-Rickshaw Elements */}
+        <div className="absolute top-20 left-10 text-6xl opacity-10 animate-drift text-sawaari-yellow">
+          🛺
+        </div>
+        <div className="absolute top-40 right-20 text-4xl opacity-15 animate-drift delay-1000 text-sawaari-green">
+          🚗
+        </div>
+        <div className="absolute bottom-40 left-20 text-5xl opacity-10 animate-drift delay-2000 text-orange-400">
+          🛺
+        </div>
+        <div className="absolute bottom-20 right-10 text-3xl opacity-20 animate-drift delay-3000 text-sawaari-yellow">
+          👥
+        </div>
+
+        {/* Glowing Orbs */}
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-r from-sawaari-yellow/10 to-orange-500/10 rounded-full blur-3xl animate-pulse-slow"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gradient-to-r from-sawaari-green/10 to-emerald-500/10 rounded-full blur-3xl animate-pulse-slow delay-1000"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-to-r from-blue-500/5 to-purple-500/5 rounded-full blur-2xl animate-pulse-slow delay-2000"></div>
+
+        {/* Moving Road Lines */}
+        <div className="absolute top-0 left-0 w-full h-full">
+          <div className="absolute top-1/3 left-0 w-full h-px bg-gradient-to-r from-transparent via-sawaari-yellow/20 to-transparent animate-move-bg"></div>
+          <div className="absolute top-2/3 left-0 w-full h-px bg-gradient-to-r from-transparent via-sawaari-green/20 to-transparent animate-move-bg delay-1000"></div>
+        </div>
       </div>
 
       {/* Compact Header */}
       <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <div className="text-center mb-6">
-          <div className="inline-flex items-center gap-2 glass-strong border border-sawaari-yellow/30 rounded-full px-4 py-2 mb-4 hover:border-sawaari-yellow/50 transition-all duration-300">
-            <span className="text-xl">🚗👥</span>
-            <span className="text-lg font-bold text-sawaari-yellow">
+          <div className="inline-flex items-center gap-2 glass-strong border-2 border-sawaari-yellow/30 rounded-full px-4 py-2 mb-4 hover:border-sawaari-yellow hover:neon-yellow hover:scale-105 transition-all duration-300 hover-lift group">
+            <span className="text-xl group-hover:rickshaw-bounce">🚗👥</span>
+            <span className="text-lg font-bold text-sawaari-yellow group-hover:text-white">
               Ride Buddy
             </span>
           </div>
           <h1 className="text-2xl lg:text-3xl font-bold text-white mb-3 leading-tight">
             Find Your{" "}
-            <span className="bg-gradient-to-r from-sawaari-yellow to-sawaari-green bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-sawaari-yellow via-orange-500 to-sawaari-green bg-clip-text text-transparent animate-pulse">
               Travel Companion
             </span>
           </h1>
@@ -259,63 +282,83 @@ const RideBuddy = () => {
             Connect with travelers, share rides, and split costs
           </p>
 
-          {/* Compact Stats */}
+          {/* Enhanced Stats */}
           <div className="flex justify-center gap-6 mt-4">
-            <div className="text-center">
-              <div className="text-lg font-bold text-sawaari-yellow">
+            <div className="text-center group hover-lift cursor-pointer">
+              <div className="text-lg font-bold text-sawaari-yellow group-hover:text-emerald-400 transition-colors duration-300">
                 {activeConnections.length}
               </div>
-              <div className="text-xs text-neutral-500">Connections</div>
+              <div className="text-xs text-neutral-500 group-hover:text-neutral-400">
+                Connections
+              </div>
             </div>
-            <div className="text-center">
-              <div className="text-lg font-bold text-sawaari-yellow">
+            <div className="text-center group hover-lift cursor-pointer">
+              <div className="text-lg font-bold text-sawaari-yellow group-hover:text-orange-400 transition-colors duration-300">
                 {incomingRequests.length}
               </div>
-              <div className="text-xs text-neutral-500">Requests</div>
+              <div className="text-xs text-neutral-500 group-hover:text-neutral-400">
+                Requests
+              </div>
             </div>
-            <div className="text-center">
-              <div className="text-lg font-bold text-sawaari-yellow">
+            <div className="text-center group hover-lift cursor-pointer">
+              <div className="text-lg font-bold text-sawaari-yellow group-hover:text-blue-400 transition-colors duration-300">
                 {searchResults.length}
               </div>
-              <div className="text-xs text-neutral-500">Matches</div>
+              <div className="text-xs text-neutral-500 group-hover:text-neutral-400">
+                Matches
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Compact Tab Navigation */}
+        {/* Enhanced Tab Navigation */}
         <div className="flex justify-center mb-6">
-          <div className="glass-strong rounded-xl p-1 flex gap-1 border border-neutral-800">
+          <div className="glass-strong rounded-xl p-1 flex gap-1 border-2 border-neutral-800 hover:border-sawaari-yellow/30 transition-all duration-300">
             {[
               {
                 id: "search",
                 label: "Find Buddies",
                 icon: "🔍",
                 count: searchResults.length,
+                color: "from-sawaari-yellow to-orange-500",
+                hoverColor:
+                  "hover:bg-gradient-to-r hover:from-sawaari-yellow/20 hover:to-orange-500/20",
               },
               {
                 id: "connections",
                 label: "My Network",
                 icon: "🤝",
                 count: activeConnections.length + incomingRequests.length,
+                color: "from-sawaari-green to-emerald-500",
+                hoverColor:
+                  "hover:bg-gradient-to-r hover:from-sawaari-green/20 hover:to-emerald-500/20",
               },
             ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`relative px-4 py-2 rounded-lg font-semibold transition-all duration-300 flex items-center gap-2 ${
+                className={`relative px-4 py-2 rounded-lg font-semibold transition-all duration-300 flex items-center gap-2 group hover-lift ${
                   activeTab === tab.id
-                    ? "bg-gradient-to-r from-sawaari-yellow to-sawaari-green text-black shadow-lg"
-                    : "text-neutral-400 hover:text-white hover:bg-neutral-800/50"
+                    ? `bg-gradient-to-r ${tab.color} text-black shadow-lg neon-yellow`
+                    : `text-neutral-400 hover:text-white ${tab.hoverColor} hover:shadow-lg`
                 }`}
               >
-                <span className="text-lg">{tab.icon}</span>
+                <span
+                  className={`text-lg transition-transform duration-300 ${
+                    activeTab === tab.id
+                      ? "rickshaw-bounce"
+                      : "group-hover:scale-110"
+                  }`}
+                >
+                  {tab.icon}
+                </span>
                 <span className="text-sm">{tab.label}</span>
                 {tab.count > 0 && (
                   <div
-                    className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${
+                    className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
                       activeTab === tab.id
-                        ? "bg-black text-sawaari-yellow"
-                        : "bg-sawaari-yellow text-black"
+                        ? "bg-black text-sawaari-yellow animate-pulse"
+                        : "bg-sawaari-yellow text-black group-hover:scale-110"
                     }`}
                   >
                     {tab.count}
@@ -329,14 +372,16 @@ const RideBuddy = () => {
         {/* Compact Search Tab */}
         {activeTab === "search" && (
           <div className="max-w-4xl mx-auto">
-            {/* Compact Search Form */}
-            <div className="glass-strong rounded-xl p-4 mb-4 border border-neutral-800 hover:border-sawaari-yellow/30 transition-all duration-300">
+            {/* Enhanced Search Form */}
+            <div className="glass-strong rounded-xl p-4 mb-4 border-2 border-neutral-800 hover:border-sawaari-yellow/50 hover:shadow-lg hover:shadow-sawaari-yellow/20 transition-all duration-300 hover-lift">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-gradient-to-br from-sawaari-yellow/20 to-sawaari-green/20 rounded-lg flex items-center justify-center">
-                  <span className="text-xl">🔍</span>
+                <div className="w-10 h-10 bg-gradient-to-br from-sawaari-yellow/30 to-orange-500/30 rounded-lg flex items-center justify-center hover:scale-110 transition-transform duration-300 cursor-pointer group">
+                  <span className="text-xl group-hover:rickshaw-bounce">
+                    🔍
+                  </span>
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-white">
+                  <h2 className="text-xl font-bold bg-gradient-to-r from-white to-sawaari-yellow bg-clip-text text-transparent">
                     Search Ride Buddies
                   </h2>
                   <p className="text-sm text-neutral-400">
@@ -372,7 +417,7 @@ const RideBuddy = () => {
                           },
                         }));
                       }}
-                      className="w-full p-3 bg-neutral-900/80 border border-neutral-700 rounded-lg text-white focus:border-sawaari-yellow focus:ring-1 focus:ring-sawaari-yellow/20 focus:outline-none transition-all duration-300"
+                      className="w-full p-3 bg-neutral-900/80 border-2 border-neutral-700 rounded-lg text-white focus:border-sawaari-yellow focus:ring-2 focus:ring-sawaari-yellow/30 focus:outline-none transition-all duration-300 hover:border-neutral-600 hover:shadow-lg"
                       required
                     >
                       <option value="" className="bg-neutral-900">
@@ -415,7 +460,7 @@ const RideBuddy = () => {
                           },
                         }));
                       }}
-                      className="w-full p-3 bg-neutral-900/80 border border-neutral-700 rounded-lg text-white focus:border-sawaari-yellow focus:ring-1 focus:ring-sawaari-yellow/20 focus:outline-none transition-all duration-300"
+                      className="w-full p-3 bg-neutral-900/80 border-2 border-neutral-700 rounded-lg text-white focus:border-sawaari-green focus:ring-2 focus:ring-sawaari-green/30 focus:outline-none transition-all duration-300 hover:border-neutral-600 hover:shadow-lg"
                       required
                     >
                       <option value="" className="bg-neutral-900">
@@ -456,20 +501,27 @@ const RideBuddy = () => {
                 <button
                   type="submit"
                   disabled={searchLoading}
-                  className="w-full flex items-center justify-center gap-3 p-4 bg-gradient-to-r from-sawaari-yellow to-sawaari-green text-black font-bold rounded-xl shadow-lg hover:shadow-sawaari-yellow/25 hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full flex items-center justify-center gap-3 p-4 bg-gradient-to-r from-sawaari-yellow via-orange-500 to-sawaari-green text-black font-bold rounded-xl shadow-lg hover:shadow-sawaari-yellow/40 hover:-translate-y-1 hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed group relative overflow-hidden"
                 >
-                  {searchLoading ? (
-                    <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-black"></div>
-                      <span>Searching...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="text-lg">🔍</span>
-                      <span>Find Ride Buddies</span>
-                      <span className="text-lg">👥</span>
-                    </>
-                  )}
+                  <div className="absolute inset-0 bg-gradient-to-r from-sawaari-green via-emerald-500 to-sawaari-yellow opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <div className="relative z-10 flex items-center gap-3">
+                    {searchLoading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-black"></div>
+                        <span>Searching...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-lg group-hover:rickshaw-bounce">
+                          🔍
+                        </span>
+                        <span>Find Ride Buddies</span>
+                        <span className="text-lg group-hover:animate-pulse">
+                          👥
+                        </span>
+                      </>
+                    )}
+                  </div>
                 </button>
               </form>
             </div>
@@ -486,21 +538,23 @@ const RideBuddy = () => {
                   {searchResults.map((buddy, index) => (
                     <div
                       key={buddy.id}
-                      className="glass-strong rounded-lg p-4 border border-neutral-800 hover:border-sawaari-yellow/30 transition-all duration-300"
+                      className="glass-strong rounded-lg p-4 border-2 border-neutral-800 hover:border-sawaari-yellow/50 hover:shadow-lg hover:shadow-sawaari-yellow/20 transition-all duration-300 hover-lift group"
                       style={{ animationDelay: `${index * 50}ms` }}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
                           <div className="relative">
-                            <div className="w-12 h-12 bg-gradient-to-br from-sawaari-yellow/20 to-sawaari-green/20 rounded-lg flex items-center justify-center">
-                              <span className="text-xl">👤</span>
+                            <div className="w-12 h-12 bg-gradient-to-br from-sawaari-yellow/30 to-sawaari-green/30 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-300 border border-sawaari-yellow/20">
+                              <span className="text-xl group-hover:rickshaw-wiggle">
+                                👤
+                              </span>
                             </div>
-                            <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-sawaari-green rounded-full flex items-center justify-center">
-                              <span className="text-xs">✓</span>
+                            <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-gradient-to-r from-sawaari-green to-emerald-500 rounded-full flex items-center justify-center animate-pulse">
+                              <span className="text-xs text-white">✓</span>
                             </div>
                           </div>
                           <div className="space-y-1">
-                            <h4 className="text-lg font-bold text-white">
+                            <h4 className="text-lg font-bold bg-gradient-to-r from-white to-sawaari-yellow bg-clip-text text-transparent group-hover:from-sawaari-yellow group-hover:to-orange-500 transition-all duration-300">
                               {buddy.name}
                             </h4>
                             <div className="flex items-center gap-2 text-sm text-neutral-300">
@@ -525,16 +579,22 @@ const RideBuddy = () => {
                         <button
                           onClick={() => sendRideRequest(buddy.id)}
                           disabled={sentRequestIds.has(buddy.id.toString())}
-                          className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-300 ${
+                          className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-300 hover:scale-105 ${
                             sentRequestIds.has(buddy.id.toString())
-                              ? "bg-neutral-700 text-neutral-400 cursor-not-allowed"
-                              : "bg-gradient-to-r from-sawaari-yellow to-sawaari-green text-black hover:shadow-lg"
+                              ? "bg-gradient-to-r from-gray-600 to-gray-700 text-gray-300 cursor-not-allowed"
+                              : "bg-gradient-to-r from-sawaari-yellow via-orange-500 to-sawaari-green text-black hover:shadow-lg hover:shadow-sawaari-yellow/30 hover-lift"
                           }`}
                         >
                           {sentRequestIds.has(buddy.id.toString()) ? (
-                            <span>✓ Sent</span>
+                            <span className="flex items-center gap-1">
+                              <span className="animate-pulse">✓</span>
+                              <span>Sent</span>
+                            </span>
                           ) : (
-                            <span>📤 Request</span>
+                            <span className="flex items-center gap-1">
+                              <span>📤</span>
+                              <span>Request</span>
+                            </span>
                           )}
                         </button>
                       </div>
@@ -583,11 +643,11 @@ const RideBuddy = () => {
             {incomingRequests.length > 0 && (
               <div>
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 bg-gradient-to-br from-sawaari-yellow/20 to-orange-500/20 rounded-lg flex items-center justify-center">
-                    <span className="text-xl">📨</span>
+                  <div className="w-10 h-10 bg-gradient-to-br from-sawaari-yellow/30 to-orange-500/30 rounded-lg flex items-center justify-center hover:scale-110 transition-transform duration-300 cursor-pointer border border-orange-500/20">
+                    <span className="text-xl animate-pulse">📨</span>
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-white">
+                    <h3 className="text-xl font-bold bg-gradient-to-r from-white to-orange-500 bg-clip-text text-transparent">
                       Incoming Requests ({incomingRequests.length})
                     </h3>
                     <p className="text-sm text-neutral-400">
@@ -667,11 +727,11 @@ const RideBuddy = () => {
             {activeConnections.length > 0 && (
               <div>
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 bg-gradient-to-br from-sawaari-green/20 to-green-600/20 rounded-lg flex items-center justify-center">
-                    <span className="text-xl">🤝</span>
+                  <div className="w-10 h-10 bg-gradient-to-br from-sawaari-green/30 to-emerald-500/30 rounded-lg flex items-center justify-center hover:scale-110 transition-transform duration-300 cursor-pointer border border-emerald-500/20">
+                    <span className="text-xl animate-pulse">🤝</span>
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-white">
+                    <h3 className="text-xl font-bold bg-gradient-to-r from-white to-emerald-500 bg-clip-text text-transparent">
                       Active Connections ({activeConnections.length})
                     </h3>
                     <p className="text-sm text-neutral-400">
@@ -765,14 +825,14 @@ const RideBuddy = () => {
       {/* Compact Live Chat Modal */}
       {activeChatId && chatPartner && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-neutral-900 border border-neutral-700 rounded-xl w-full max-w-md h-[500px] flex flex-col shadow-2xl">
-            <div className="flex items-center justify-between p-4 border-b border-neutral-700">
+          <div className="bg-neutral-900 border-2 border-sawaari-yellow/30 rounded-xl w-full max-w-md h-[500px] flex flex-col shadow-2xl hover:border-sawaari-yellow/50 transition-all duration-300">
+            <div className="flex items-center justify-between p-4 border-b border-neutral-700 bg-gradient-to-r from-neutral-900 to-neutral-800">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gradient-to-br from-sawaari-yellow/20 to-sawaari-green/20 rounded-lg flex items-center justify-center">
+                <div className="w-8 h-8 bg-gradient-to-br from-sawaari-yellow/30 to-sawaari-green/30 rounded-lg flex items-center justify-center border border-sawaari-yellow/20 animate-pulse">
                   <span className="text-lg">👤</span>
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-white">
+                  <h3 className="text-lg font-bold bg-gradient-to-r from-white to-sawaari-yellow bg-clip-text text-transparent">
                     {chatPartner.name}
                   </h3>
                   <p className="text-xs text-neutral-400">Travel companion</p>
@@ -780,7 +840,7 @@ const RideBuddy = () => {
               </div>
               <button
                 onClick={closeChat}
-                className="w-8 h-8 bg-neutral-800 hover:bg-neutral-700 rounded-lg flex items-center justify-center text-neutral-400 hover:text-white transition-all duration-300"
+                className="w-8 h-8 bg-gradient-to-r from-red-500/20 to-red-600/20 hover:from-red-500 hover:to-red-600 rounded-lg flex items-center justify-center text-neutral-400 hover:text-white transition-all duration-300 hover:scale-110"
               >
                 <svg
                   className="w-4 h-4"

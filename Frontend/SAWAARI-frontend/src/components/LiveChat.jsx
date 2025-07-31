@@ -329,25 +329,25 @@ const LiveChat = ({ chatId, partnerName, onClose }) => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-neutral-900">
-      {/* Compact Status Bar */}
-      <div className="px-4 py-2 bg-neutral-800 border-b border-neutral-700">
+    <div className="h-full flex flex-col bg-gradient-to-b from-neutral-900 to-neutral-800">
+      {/* Enhanced Status Bar */}
+      <div className="px-4 py-2 bg-gradient-to-r from-neutral-800 to-neutral-700 border-b border-neutral-600">
         <div className="flex items-center gap-2">
           <div
-            className={`w-2 h-2 rounded-full ${
+            className={`w-3 h-3 rounded-full ${
               chatExpired
-                ? "bg-red-500"
+                ? "bg-red-500 animate-pulse"
                 : connected
-                ? "bg-green-500 animate-pulse"
-                : "bg-yellow-500"
+                ? "bg-green-500 animate-pulse shadow-lg shadow-green-500/50"
+                : "bg-yellow-500 animate-pulse"
             }`}
           ></div>
           <span className="text-xs font-medium text-white">
             {chatExpired ? (
-              <span className="text-red-400">⏰ Expired</span>
+              <span className="text-red-400 font-bold">⏰ Expired</span>
             ) : connected ? (
               <span
-                className={`${
+                className={`font-bold ${
                   timeRemaining <= 60
                     ? "text-red-400"
                     : timeRemaining <= 180
@@ -358,7 +358,9 @@ const LiveChat = ({ chatId, partnerName, onClose }) => {
                 🟢 Active • ⏱️ {formatTime(timeRemaining)}
               </span>
             ) : (
-              <span className="text-yellow-400">⏳ Connecting...</span>
+              <span className="text-yellow-400 font-bold">
+                ⏳ Connecting...
+              </span>
             )}
           </span>
         </div>
@@ -398,10 +400,10 @@ const LiveChat = ({ chatId, partnerName, onClose }) => {
                 }`}
               >
                 <div
-                  className={`max-w-xs px-3 py-2 rounded-xl ${
+                  className={`max-w-xs px-3 py-2 rounded-xl shadow-lg transition-all duration-300 hover:scale-105 ${
                     isOwnMessage
-                      ? "bg-gradient-to-r from-sawaari-yellow to-sawaari-green text-black"
-                      : "bg-neutral-800 text-white"
+                      ? "bg-gradient-to-r from-sawaari-yellow via-orange-500 to-sawaari-green text-black border border-sawaari-yellow/30"
+                      : "bg-gradient-to-r from-neutral-800 to-neutral-700 text-white border border-neutral-600"
                   }`}
                 >
                   <div className="flex items-center gap-1 mb-1">

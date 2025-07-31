@@ -5,7 +5,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Base styles for clean, modern look */
+/* Base styles for vibrant, modern look */
 @layer base {
   * {
     @apply antialiased;
@@ -13,9 +13,55 @@
 
   body {
     @apply font-sans text-white;
-    background: #000000;
+    background: linear-gradient(135deg, #000000 0%, #1a1a1a 50%, #000000 100%);
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* Animated background pattern */
+  body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: radial-gradient(
+        circle at 20% 80%,
+        rgba(244, 185, 66, 0.1) 0%,
+        transparent 50%
+      ),
+      radial-gradient(
+        circle at 80% 20%,
+        rgba(45, 80, 22, 0.1) 0%,
+        transparent 50%
+      ),
+      radial-gradient(
+        circle at 40% 40%,
+        rgba(244, 185, 66, 0.05) 0%,
+        transparent 50%
+      );
+    animation: backgroundShift 20s ease-in-out infinite;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  @keyframes backgroundShift {
+    0%,
+    100% {
+      transform: translateX(0) translateY(0);
+    }
+    25% {
+      transform: translateX(-10px) translateY(-10px);
+    }
+    50% {
+      transform: translateX(10px) translateY(10px);
+    }
+    75% {
+      transform: translateX(-5px) translateY(5px);
+    }
   }
 
   h1,
@@ -30,33 +76,73 @@
 
 /* Component styles following SAWAARI design guidelines */
 @layer components {
-  /* Primary Button - 44px height, 16px padding, 8px corners */
+  /* Enhanced Primary Button with auto-rickshaw theme */
   .btn-primary {
-    @apply inline-flex items-center justify-center px-6 py-3 text-white font-semibold text-base rounded-lg transition-all duration-300 hover:shadow-lg transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center px-6 py-3 text-black font-semibold text-base rounded-lg transition-all duration-300 hover:shadow-lg transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden;
     background: linear-gradient(135deg, #f4b942 0%, #e6a635 100%);
     box-shadow: 0 4px 15px rgba(244, 185, 66, 0.3);
   }
 
+  .btn-primary::before {
+    content: "🛺";
+    position: absolute;
+    top: -20px;
+    right: -20px;
+    font-size: 2rem;
+    opacity: 0.1;
+    transform: rotate(15deg);
+    transition: all 0.3s ease;
+  }
+
   .btn-primary:hover {
     background: linear-gradient(135deg, #e6a635 0%, #d49429 100%);
-    box-shadow: 0 6px 20px rgba(244, 185, 66, 0.4);
+    box-shadow: 0 6px 25px rgba(244, 185, 66, 0.5);
+    transform: scale(1.05) translateY(-2px);
+  }
+
+  .btn-primary:hover::before {
+    opacity: 0.2;
+    transform: rotate(25deg) scale(1.1);
   }
 
   .btn-primary:focus {
     box-shadow: 0 0 0 3px rgba(244, 185, 66, 0.5);
   }
 
-  /* Secondary Button - outline style for dark theme */
+  /* Enhanced Secondary Button with glow effect */
   .btn-secondary {
-    @apply inline-flex items-center justify-center px-6 py-3 bg-transparent font-semibold text-base border-2 rounded-lg transition-all duration-300 hover:shadow-lg transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center px-6 py-3 bg-transparent font-semibold text-base border-2 rounded-lg transition-all duration-300 hover:shadow-lg transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed relative;
     color: #f4b942;
     border-color: #f4b942;
+    background: linear-gradient(
+      135deg,
+      transparent 0%,
+      rgba(244, 185, 66, 0.05) 100%
+    );
+  }
+
+  .btn-secondary::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 2px;
+    background: linear-gradient(135deg, #f4b942, #2d5016);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 0.3s ease;
   }
 
   .btn-secondary:hover {
-    background-color: #f4b942;
+    background: linear-gradient(135deg, #f4b942 0%, #e6a635 100%);
     color: black;
-    box-shadow: 0 4px 15px rgba(244, 185, 66, 0.3);
+    box-shadow: 0 4px 20px rgba(244, 185, 66, 0.4);
+    transform: scale(1.05) translateY(-2px);
+  }
+
+  .btn-secondary:hover::before {
+    opacity: 1;
   }
 
   .btn-secondary:focus {
@@ -71,28 +157,81 @@
       0 2px 4px -1px rgba(0, 0, 0, 0.2);
   }
 
-  /* Dark glass effect */
+  /* Enhanced glass effects with color accents */
   .glass {
-    @apply bg-black/60 backdrop-blur-md border border-white/10;
+    @apply bg-black/60 backdrop-blur-md border border-white/10 relative;
     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+    background: linear-gradient(
+      135deg,
+      rgba(0, 0, 0, 0.6) 0%,
+      rgba(244, 185, 66, 0.05) 50%,
+      rgba(0, 0, 0, 0.6) 100%
+    );
+  }
+
+  .glass::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(244, 185, 66, 0.3),
+      transparent
+    );
   }
 
   .glass-strong {
-    @apply bg-black/80 backdrop-blur-lg border border-white/20;
+    @apply bg-black/80 backdrop-blur-lg border relative;
+    border-color: rgba(244, 185, 66, 0.2);
     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.7);
+    background: linear-gradient(
+      135deg,
+      rgba(0, 0, 0, 0.8) 0%,
+      rgba(244, 185, 66, 0.08) 30%,
+      rgba(45, 80, 22, 0.05) 70%,
+      rgba(0, 0, 0, 0.8) 100%
+    );
+    transition: all 0.3s ease;
   }
 
-  /* Dark form input styling */
+  .glass-strong:hover {
+    border-color: rgba(244, 185, 66, 0.4);
+    box-shadow: 0 12px 40px 0 rgba(244, 185, 66, 0.1);
+    transform: translateY(-2px);
+  }
+
+  /* Enhanced form input with glow effects */
   .form-input {
-    @apply w-full px-4 py-3 bg-neutral-900/90 backdrop-blur-sm border rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:border-transparent;
-    border-color: #444444;
+    @apply w-full px-4 py-3 backdrop-blur-sm border rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:border-transparent relative;
+    background: linear-gradient(
+      135deg,
+      rgba(26, 26, 26, 0.9) 0%,
+      rgba(244, 185, 66, 0.05) 100%
+    );
+    border-color: rgba(68, 68, 68, 0.8);
     color: #ffffff;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
   }
 
   .form-input:focus {
-    box-shadow: 0 0 0 3px rgba(244, 185, 66, 0.3);
+    box-shadow: 0 0 0 3px rgba(244, 185, 66, 0.3),
+      inset 0 1px 3px rgba(0, 0, 0, 0.3), 0 0 20px rgba(244, 185, 66, 0.1);
     border-color: #f4b942;
-    background-color: #1a1a1a;
+    background: linear-gradient(
+      135deg,
+      rgba(26, 26, 26, 0.95) 0%,
+      rgba(244, 185, 66, 0.08) 100%
+    );
+  }
+
+  .form-input:hover {
+    border-color: rgba(244, 185, 66, 0.5);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3),
+      0 0 10px rgba(244, 185, 66, 0.05);
   }
 
   .form-input::placeholder {
@@ -314,6 +453,174 @@
     }
     75% {
       transform: translateX(-20px) translateY(-5px) rotate(1deg);
+    }
+  }
+
+  /* Auto-rickshaw themed animations */
+  .rickshaw-bounce {
+    animation: rickshawBounce 2s ease-in-out infinite;
+  }
+
+  @keyframes rickshawBounce {
+    0%,
+    100% {
+      transform: translateY(0px) rotate(0deg);
+    }
+    50% {
+      transform: translateY(-8px) rotate(1deg);
+    }
+  }
+
+  .rickshaw-wiggle {
+    animation: rickshawWiggle 3s ease-in-out infinite;
+  }
+
+  @keyframes rickshawWiggle {
+    0%,
+    100% {
+      transform: rotate(0deg);
+    }
+    25% {
+      transform: rotate(2deg);
+    }
+    75% {
+      transform: rotate(-2deg);
+    }
+  }
+
+  /* Colorful gradient borders */
+  .gradient-border {
+    position: relative;
+    background: linear-gradient(45deg, #f4b942, #2d5016, #f97316);
+    background-size: 300% 300%;
+    animation: gradientShift 4s ease infinite;
+  }
+
+  .gradient-border::before {
+    content: "";
+    position: absolute;
+    inset: 2px;
+    background: inherit;
+    border-radius: inherit;
+    background: #000;
+  }
+
+  @keyframes gradientShift {
+    0%,
+    100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+
+  /* Neon glow effects */
+  .neon-yellow {
+    box-shadow: 0 0 10px #f4b942, 0 0 20px #f4b942, 0 0 30px #f4b942;
+    animation: neonPulse 2s ease-in-out infinite alternate;
+  }
+
+  .neon-green {
+    box-shadow: 0 0 10px #2d5016, 0 0 20px #2d5016, 0 0 30px #2d5016;
+    animation: neonPulse 2s ease-in-out infinite alternate;
+  }
+
+  @keyframes neonPulse {
+    from {
+      filter: brightness(1);
+    }
+    to {
+      filter: brightness(1.3);
+    }
+  }
+
+  /* Colorful hover effects */
+  .hover-lift {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 10px 25px rgba(244, 185, 66, 0.3);
+  }
+
+  /* Animated background patterns */
+  .pattern-dots {
+    background-image: radial-gradient(circle, #f4b942 1px, transparent 1px);
+    background-size: 20px 20px;
+    animation: patternMove 20s linear infinite;
+  }
+
+  @keyframes patternMove {
+    0% {
+      background-position: 0 0;
+    }
+    100% {
+      background-position: 20px 20px;
+    }
+  }
+
+  /* Auto-rickshaw hover effects */
+  .rickshaw-hover {
+    position: relative;
+    transition: all 0.3s ease;
+  }
+
+  .rickshaw-hover::before {
+    content: "🛺";
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    font-size: 1.5rem;
+    opacity: 0;
+    transform: scale(0.5) rotate(-15deg);
+    transition: all 0.3s ease;
+    pointer-events: none;
+  }
+
+  .rickshaw-hover:hover::before {
+    opacity: 0.7;
+    transform: scale(1) rotate(0deg);
+    animation: rickshawBounce 0.6s ease-in-out;
+  }
+
+  @keyframes rickshawBounce {
+    0%,
+    100% {
+      transform: scale(1) rotate(0deg);
+    }
+    50% {
+      transform: scale(1.2) rotate(5deg);
+    }
+  }
+
+  /* Tab active effects */
+  .tab-active {
+    position: relative;
+    background: linear-gradient(135deg, #f4b942 0%, #2d5016 100%);
+    box-shadow: 0 4px 20px rgba(244, 185, 66, 0.3);
+  }
+
+  .tab-active::after {
+    content: "";
+    position: absolute;
+    bottom: -2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #f4b942, transparent);
+    animation: tabGlow 2s ease-in-out infinite;
+  }
+
+  @keyframes tabGlow {
+    0%,
+    100% {
+      opacity: 0.5;
+    }
+    50% {
+      opacity: 1;
     }
   }
 
