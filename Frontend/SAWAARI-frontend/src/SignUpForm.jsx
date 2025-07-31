@@ -1,4 +1,3 @@
-/* eslint-disable react/prop-types */
 import { useState } from "react";
 
 export default function SignUpForm({
@@ -43,365 +42,214 @@ export default function SignUpForm({
   const passwordStrength = getPasswordStrength(userinfo.password);
 
   return (
-    <div className="container signup">
-      <div className="text-center mb-4">
-        <h2 className="headings">Join SAWAARI</h2>
-        <p style={{ color: "var(--text-secondary)" }}>
-          Create your account and start your smart travel journey
+    <div className="glass-strong rounded-2xl p-6 border border-white/20 shadow-2xl">
+      {/* Header */}
+      <div className="text-center mb-6">
+        <div className="flex items-center justify-center gap-2 mb-3">
+          <span className="text-2xl">👤</span>
+          <h2 className="text-2xl font-bold text-white">Join SAWAARI</h2>
+          <span className="text-2xl">🛺</span>
+        </div>
+        <p className="text-gray-200 text-sm">
+          Create your account and start your journey
         </p>
       </div>
 
-      <form method="POST" onSubmit={handleSubmit} noValidate>
-        {/* Name Field */}
-        <div className="mb-3">
-          <label
-            htmlFor="name"
-            className="form-label"
-            style={{ color: "var(--text-secondary)", fontWeight: "600" }}
-          >
-            Full Name
-          </label>
-          <div className="input-group">
-            <span
-              className="input-group-text"
-              style={{
-                background: "var(--tertiary-dark)",
-                border: "2px solid var(--border-color)",
-                color: "var(--accent-green)",
-              }}
+      <form
+        method="POST"
+        onSubmit={handleSubmit}
+        noValidate
+        className="space-y-4"
+      >
+        {/* Name and Email Row */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label
+              htmlFor="name"
+              className="block text-sm font-medium text-sawaari-yellow mb-1"
             >
-              <i className="fas fa-user"></i>
-            </span>
+              👤 Full Name
+            </label>
             <input
               type="text"
-              className="form-control"
               id="name"
               name="name"
-              placeholder="Enter your full name"
+              placeholder="Your full name"
               value={userinfo.name}
               onChange={handleInput}
               required
               autoComplete="name"
               disabled={isSubmitting}
-              style={{
-                background: "var(--tertiary-dark)",
-                border: "2px solid var(--border-color)",
-                color: "var(--text-primary)",
-              }}
+              className="form-input h-10"
             />
           </div>
-        </div>
 
-        {/* Email Field */}
-        <div className="mb-3">
-          <label
-            htmlFor="email"
-            className="form-label"
-            style={{ color: "var(--text-secondary)", fontWeight: "600" }}
-          >
-            Email Address
-          </label>
-          <div className="input-group">
-            <span
-              className="input-group-text"
-              style={{
-                background: "var(--tertiary-dark)",
-                border: "2px solid var(--border-color)",
-                color: "var(--accent-green)",
-              }}
+          <div>
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-sawaari-yellow mb-1"
             >
-              <i className="fas fa-envelope"></i>
-            </span>
+              📧 Email
+            </label>
             <input
               type="email"
-              className="form-control"
               id="email"
               name="email"
-              placeholder="Enter your email address"
+              placeholder="Your email"
               value={userinfo.email}
               onChange={handleInput}
               required
               autoComplete="email"
               disabled={isSubmitting}
-              style={{
-                background: "var(--tertiary-dark)",
-                border: "2px solid var(--border-color)",
-                color: "var(--text-primary)",
-              }}
+              className="form-input h-10"
             />
           </div>
         </div>
 
-        {/* Phone Number Field */}
-        <div className="mb-3">
+        {/* Phone Field */}
+        <div>
           <label
             htmlFor="phone"
-            className="form-label"
-            style={{ color: "var(--text-secondary)", fontWeight: "600" }}
+            className="block text-sm font-medium text-sawaari-yellow mb-1"
           >
-            Phone Number
+            📱 Phone Number
           </label>
-          <div className="input-group">
-            <span
-              className="input-group-text"
-              style={{
-                background: "var(--tertiary-dark)",
-                border: "2px solid var(--border-color)",
-                color: "var(--accent-green)",
-              }}
-            >
-              <i className="fas fa-mobile-alt"></i>
-            </span>
-            <input
-              type="tel"
-              className="form-control"
-              id="phone"
-              name="phone"
-              placeholder="Enter your 10-digit phone number"
-              value={userinfo.phone || ""}
-              onChange={handleInput}
-              required
-              autoComplete="tel"
-              disabled={isSubmitting}
-              maxLength="10"
-              pattern="[6-9][0-9]{9}"
-              style={{
-                background: "var(--tertiary-dark)",
-                border: "2px solid var(--border-color)",
-                color: "var(--text-primary)",
-              }}
-            />
-          </div>
-          <small
-            className="form-text"
-            style={{ color: "var(--text-secondary)", fontSize: "0.875rem" }}
-          >
-            Enter a valid 10-digit Indian mobile number (starting with 6-9)
-          </small>
+          <input
+            type="tel"
+            id="phone"
+            name="phone"
+            placeholder="10-digit mobile number"
+            value={userinfo.phone || ""}
+            onChange={handleInput}
+            required
+            autoComplete="tel"
+            disabled={isSubmitting}
+            maxLength="10"
+            pattern="[6-9][0-9]{9}"
+            className="form-input h-10"
+          />
         </div>
 
-        {/* Password Field */}
-        <div className="mb-3">
-          <label
-            htmlFor="password"
-            className="form-label"
-            style={{ color: "var(--text-secondary)", fontWeight: "600" }}
-          >
-            Password
-          </label>
-          <div className="input-group">
-            <span
-              className="input-group-text"
-              style={{
-                background: "var(--tertiary-dark)",
-                border: "2px solid var(--border-color)",
-                color: "var(--accent-green)",
-              }}
+        {/* Password Fields Row */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-sawaari-yellow mb-1"
             >
-              <i className="fas fa-lock"></i>
-            </span>
-            <input
-              type={showPassword ? "text" : "password"}
-              className="form-control"
-              id="password"
-              name="password"
-              placeholder="Create a strong password"
-              value={userinfo.password}
-              onChange={handleInput}
-              required
-              autoComplete="new-password"
-              disabled={isSubmitting}
-              style={{
-                background: "var(--tertiary-dark)",
-                border: "2px solid var(--border-color)",
-                color: "var(--text-primary)",
-              }}
-            />
-            <button
-              type="button"
-              className="btn"
-              onClick={togglePasswordVisibility}
-              disabled={isSubmitting}
-              style={{
-                background: "var(--tertiary-dark)",
-                border: "2px solid var(--border-color)",
-                color: "var(--text-secondary)",
-              }}
-            >
-              <i
-                className={`fas ${showPassword ? "fa-eye-slash" : "fa-eye"}`}
-              ></i>
-            </button>
-          </div>
-
-          {/* Password Requirements */}
-          <div className="mt-2">
-            <small
-              style={{ color: "var(--text-secondary)", fontSize: "0.8rem" }}
-            >
-              Password must contain: 8+ characters, uppercase, lowercase,
-              number, and special character (@$!%*?&)
-            </small>
-          </div>
-
-          {/* Password Strength Indicator */}
-          {userinfo.password && (
-            <div className="mt-2">
-              <div className="d-flex justify-content-between align-items-center mb-1">
-                <small style={{ color: "var(--text-secondary)" }}>
-                  Password Strength:
-                </small>
-                <small
-                  style={{ color: passwordStrength.color, fontWeight: "600" }}
-                >
-                  {passwordStrength.text}
-                </small>
-              </div>
-              <div
-                className="progress"
-                style={{ height: "4px", background: "var(--border-color)" }}
+              🔒 Password
+            </label>
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                id="password"
+                name="password"
+                placeholder="Create password"
+                value={userinfo.password}
+                onChange={handleInput}
+                required
+                autoComplete="new-password"
+                disabled={isSubmitting}
+                className="form-input h-10 pr-10"
+              />
+              <button
+                type="button"
+                onClick={togglePasswordVisibility}
+                disabled={isSubmitting}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-sawaari-yellow transition-colors duration-300"
               >
-                <div
-                  className="progress-bar"
-                  style={{
-                    width: `${(passwordStrength.strength / 5) * 100}%`,
-                    backgroundColor: passwordStrength.color,
-                    transition: "all 0.3s ease",
-                  }}
-                ></div>
-              </div>
+                <span className="text-sm">{showPassword ? "👁️‍🗨️" : "👁️"}</span>
+              </button>
             </div>
-          )}
-        </div>
-
-        {/* Confirm Password Field */}
-        <div className="mb-4">
-          <label
-            htmlFor="confirmPassword"
-            className="form-label"
-            style={{ color: "var(--text-secondary)", fontWeight: "600" }}
-          >
-            Confirm Password
-          </label>
-          <div className="input-group">
-            <span
-              className="input-group-text"
-              style={{
-                background: "var(--tertiary-dark)",
-                border: "2px solid var(--border-color)",
-                color: "var(--accent-green)",
-              }}
-            >
-              <i className="fas fa-lock"></i>
-            </span>
-            <input
-              type={showConfirmPassword ? "text" : "password"}
-              className="form-control"
-              id="confirmPassword"
-              name="confirmPassword"
-              placeholder="Confirm your password"
-              value={userinfo.confirmPassword}
-              onChange={handleInput}
-              required
-              autoComplete="new-password"
-              disabled={isSubmitting}
-              style={{
-                background: "var(--tertiary-dark)",
-                border: "2px solid var(--border-color)",
-                color: "var(--text-primary)",
-              }}
-            />
-            <button
-              type="button"
-              className="btn"
-              onClick={toggleConfirmPasswordVisibility}
-              disabled={isSubmitting}
-              style={{
-                background: "var(--tertiary-dark)",
-                border: "2px solid var(--border-color)",
-                color: "var(--text-secondary)",
-              }}
-            >
-              <i
-                className={`fas ${
-                  showConfirmPassword ? "fa-eye-slash" : "fa-eye"
-                }`}
-              ></i>
-            </button>
           </div>
 
-          {/* Password Match Indicator */}
-          {userinfo.confirmPassword && (
-            <div className="mt-2">
-              {userinfo.password === userinfo.confirmPassword ? (
-                <small style={{ color: "var(--accent-green)" }}>
-                  <i className="fas fa-check me-1"></i>
-                  Passwords match
-                </small>
-              ) : (
-                <small style={{ color: "#dc3545" }}>
-                  <i className="fas fa-times me-1"></i>
-                  Passwords do not match
-                </small>
-              )}
+          <div>
+            <label
+              htmlFor="confirmPassword"
+              className="block text-sm font-medium text-sawaari-yellow mb-1"
+            >
+              🔒 Confirm
+            </label>
+            <div className="relative">
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                id="confirmPassword"
+                name="confirmPassword"
+                placeholder="Confirm password"
+                value={userinfo.confirmPassword}
+                onChange={handleInput}
+                required
+                autoComplete="new-password"
+                disabled={isSubmitting}
+                className="form-input h-10 pr-10"
+              />
+              <button
+                type="button"
+                onClick={toggleConfirmPasswordVisibility}
+                disabled={isSubmitting}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-sawaari-yellow transition-colors duration-300"
+              >
+                <span className="text-sm">
+                  {showConfirmPassword ? "👁️‍🗨️" : "👁️"}
+                </span>
+              </button>
             </div>
+          </div>
+        </div>
+
+        {/* Password Requirements & Match Status */}
+        <div className="text-xs text-gray-200 space-y-1">
+          <p>
+            Password: 8+ chars, uppercase, lowercase, number, special (@$!%*?&)
+          </p>
+          {userinfo.confirmPassword && (
+            <p
+              className={
+                userinfo.password === userinfo.confirmPassword
+                  ? "text-green-400"
+                  : "text-red-400"
+              }
+            >
+              {userinfo.password === userinfo.confirmPassword
+                ? "✅ Passwords match"
+                : "❌ Passwords don't match"}
+            </p>
           )}
         </div>
 
         {/* Terms and Conditions */}
-        <div className="mb-4">
-          <div className="form-check">
-            <input
-              className="form-check-input"
-              type="checkbox"
-              id="agreeTerms"
-              name="agreeTerms"
-              checked={userinfo.agreeTerms}
-              onChange={handleInput}
-              required
-              disabled={isSubmitting}
-              style={{
-                backgroundColor: userinfo.agreeTerms
-                  ? "var(--accent-green)"
-                  : "transparent",
-                borderColor: "var(--border-color)",
-              }}
-            />
-            <label
-              className="form-check-label"
-              htmlFor="agreeTerms"
-              style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}
+        <div className="flex items-start gap-2">
+          <input
+            type="checkbox"
+            id="agreeTerms"
+            name="agreeTerms"
+            checked={userinfo.agreeTerms}
+            onChange={handleInput}
+            required
+            disabled={isSubmitting}
+            className="mt-1 w-4 h-4 text-sawaari-yellow bg-transparent border-2 border-white/20 rounded focus:ring-sawaari-yellow focus:ring-2"
+          />
+          <label htmlFor="agreeTerms" className="text-xs text-gray-200">
+            I agree to the{" "}
+            <a
+              href="/terms"
+              className="text-sawaari-yellow hover:text-white transition-colors duration-300"
             >
-              I agree to the{" "}
-              <a
-                href="/terms"
-                style={{ color: "var(--accent-green)", textDecoration: "none" }}
-                onMouseOver={(e) =>
-                  (e.target.style.textDecoration = "underline")
-                }
-                onMouseOut={(e) => (e.target.style.textDecoration = "none")}
-              >
-                Terms of Service
-              </a>{" "}
-              and{" "}
-              <a
-                href="/privacy"
-                style={{ color: "var(--accent-green)", textDecoration: "none" }}
-                onMouseOver={(e) =>
-                  (e.target.style.textDecoration = "underline")
-                }
-                onMouseOut={(e) => (e.target.style.textDecoration = "none")}
-              >
-                Privacy Policy
-              </a>
-            </label>
-          </div>
+              Terms
+            </a>{" "}
+            and{" "}
+            <a
+              href="/privacy"
+              className="text-sawaari-yellow hover:text-white transition-colors duration-300"
+            >
+              Privacy Policy
+            </a>
+          </label>
         </div>
 
         {/* Submit Button */}
         <button
           type="submit"
-          className="sign-btn"
           disabled={
             isSubmitting ||
             !userinfo.name ||
@@ -412,95 +260,43 @@ export default function SignUpForm({
             !userinfo.agreeTerms ||
             userinfo.password !== userinfo.confirmPassword
           }
-          style={{
-            opacity:
-              isSubmitting ||
-              !userinfo.name ||
-              !userinfo.email ||
-              !userinfo.phone ||
-              !userinfo.password ||
-              !userinfo.confirmPassword ||
-              !userinfo.agreeTerms ||
-              userinfo.password !== userinfo.confirmPassword
-                ? 0.6
-                : 1,
-            cursor:
-              isSubmitting ||
-              !userinfo.name ||
-              !userinfo.email ||
-              !userinfo.phone ||
-              !userinfo.password ||
-              !userinfo.confirmPassword ||
-              !userinfo.agreeTerms ||
-              userinfo.password !== userinfo.confirmPassword
-                ? "not-allowed"
-                : "pointer",
-          }}
+          className={`btn-primary w-full h-11 ${
+            isSubmitting ||
+            !userinfo.name ||
+            !userinfo.email ||
+            !userinfo.phone ||
+            !userinfo.password ||
+            !userinfo.confirmPassword ||
+            !userinfo.agreeTerms ||
+            userinfo.password !== userinfo.confirmPassword
+              ? "opacity-50 cursor-not-allowed"
+              : ""
+          }`}
         >
           {isSubmitting ? (
-            <>
-              <span
-                className="spinner-border spinner-border-sm me-2"
-                role="status"
-                aria-hidden="true"
-              ></span>
-              Creating Account...
-            </>
+            <div className="flex items-center justify-center gap-2">
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              <span>Creating Account...</span>
+            </div>
           ) : (
-            <>
-              <i className="fas fa-user-plus me-2"></i>
-              Create Account
-            </>
+            <div className="flex items-center justify-center gap-2">
+              <span>👤</span>
+              <span>Create SAWAARI Account</span>
+            </div>
           )}
         </button>
 
-        <div className="text-center mt-4">
-          <p style={{ color: "var(--text-secondary)" }}>
-            Already have an account?{" "}
-            <a
-              href="/signin"
-              style={{
-                color: "var(--accent-green)",
-                textDecoration: "none",
-                fontWeight: "600",
-              }}
-              onMouseOver={(e) => (e.target.style.textDecoration = "underline")}
-              onMouseOut={(e) => (e.target.style.textDecoration = "none")}
-            >
-              Sign In
-            </a>
-          </p>
+        {/* Sign In Link */}
+        <div className="text-center text-sm">
+          <span className="text-gray-200">Already have an account? </span>
+          <a
+            href="/signin"
+            className="text-sawaari-yellow hover:text-white transition-colors duration-300"
+          >
+            Sign In
+          </a>
         </div>
       </form>
-
-      {/* Security Features */}
-      <div
-        className="mt-4 p-3"
-        style={{
-          background: "var(--primary-dark)",
-          border: "1px solid var(--border-color)",
-          borderRadius: "12px",
-          fontSize: "0.9rem",
-        }}
-      >
-        <div className="d-flex align-items-center mb-2">
-          <i
-            className="fas fa-shield-alt me-2"
-            style={{ color: "var(--accent-green)" }}
-          ></i>
-          <strong style={{ color: "var(--accent-green)" }}>
-            Your Data is Secure
-          </strong>
-        </div>
-        <ul
-          className="mb-0 ps-3"
-          style={{ color: "var(--text-secondary)", lineHeight: "1.5" }}
-        >
-          <li>Passwords are encrypted with industry-standard security</li>
-          <li>Your personal information is never shared with third parties</li>
-          <li>All data transmission is secured with HTTPS encryption</li>
-        </ul>
-      </div>
     </div>
   );
 }

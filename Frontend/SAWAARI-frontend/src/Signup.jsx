@@ -185,47 +185,67 @@ export default function SignUp() {
   // Show loading state
   if (isLoading) {
     return (
-      <div
-        className="container d-flex justify-content-center align-items-center"
-        style={{ minHeight: "50vh", paddingTop: "80px" }}
-      >
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-dark via-secondary-dark to-tertiary-dark pt-20">
         <div className="text-center">
-          <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Loading...</span>
-          </div>
-          <p className="mt-3" style={{ color: "var(--text-secondary)" }}>
-            Checking authentication...
-          </p>
+          <div className="w-12 h-12 border-4 border-accent-yellow border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-text-secondary">Checking authentication...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <>
-      {/* Success Message */}
-      {successMessage && (
-        <div className="alert alert-success">
-          <i className="fas fa-check-circle me-2"></i>
-          {successMessage}
+    <div className="min-h-screen bg-black pt-16 flex items-center justify-center p-4">
+      {/* Background Elements */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[15%] left-[8%] text-2xl opacity-10 animate-float">
+          👤
         </div>
-      )}
-
-      {/* Error Message */}
-      {localError && (
-        <div className="alert alert-danger">
-          <i className="fas fa-exclamation-triangle me-2"></i>
-          {localError}
+        <div
+          className="absolute top-[25%] right-[12%] text-2xl opacity-10 animate-float"
+          style={{ animationDelay: "1s" }}
+        >
+          📝
         </div>
-      )}
+        <div
+          className="absolute bottom-[20%] left-[15%] text-2xl opacity-10 animate-float"
+          style={{ animationDelay: "2s" }}
+        >
+          🛺
+        </div>
+        <div
+          className="absolute bottom-[30%] right-[20%] text-2xl opacity-10 animate-float"
+          style={{ animationDelay: "3s" }}
+        >
+          🚀
+        </div>
+      </div>
 
-      <SignUpForm
-        userinfo={userinfo}
-        handleInput={handleInput}
-        handleSubmit={handleSubmit}
-        isSubmitting={isSubmitting}
-        error={localError}
-      />
-    </>
+      <div className="relative z-10 w-full max-w-md">
+        {/* Success Message */}
+        {successMessage && (
+          <div className="mb-4 p-3 bg-green-500/20 border border-green-500/50 rounded-lg text-green-200 flex items-center gap-2 text-sm">
+            <span>✅</span>
+            <span>{successMessage}</span>
+          </div>
+        )}
+
+        {/* Error Message */}
+        {localError && (
+          <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200 flex items-center gap-2 text-sm">
+            <span>⚠️</span>
+            <span>{localError}</span>
+          </div>
+        )}
+
+        <SignUpForm
+          userinfo={userinfo}
+          handleInput={handleInput}
+          handleSubmit={handleSubmit}
+          isSubmitting={isSubmitting}
+          error={localError}
+        />
+      </div>
+    </div>
   );
 }

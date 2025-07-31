@@ -92,7 +92,6 @@ export default function SignIn() {
 
       if (result.success) {
         console.log("✅ SignIn: Login successful, navigating...");
-        // Navigation will be handled by the useEffect above
         const from = location.state?.from?.pathname || "/";
         navigate(from, { replace: true });
       } else {
@@ -114,17 +113,10 @@ export default function SignIn() {
   // Show loading state
   if (isLoading) {
     return (
-      <div
-        className="container d-flex justify-content-center align-items-center"
-        style={{ minHeight: "50vh", paddingTop: "80px" }}
-      >
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-dark via-secondary-dark to-tertiary-dark pt-20">
         <div className="text-center">
-          <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Loading...</span>
-          </div>
-          <p className="mt-3" style={{ color: "var(--text-secondary)" }}>
-            Checking authentication...
-          </p>
+          <div className="w-12 h-12 border-4 border-accent-yellow border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-text-secondary">Checking authentication...</p>
         </div>
       </div>
     );
@@ -133,21 +125,49 @@ export default function SignIn() {
   const displayError = localError || error;
 
   return (
-    <>
-      {displayError && (
-        <div className="alert alert-danger">
-          <i className="fas fa-exclamation-triangle me-2"></i>
-          {displayError}
+    <div className="min-h-screen bg-black pt-16 flex items-center justify-center p-4">
+      {/* Background Elements */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[20%] left-[10%] text-2xl opacity-10 animate-float">
+          🔐
         </div>
-      )}
+        <div
+          className="absolute top-[30%] right-[15%] text-2xl opacity-10 animate-float"
+          style={{ animationDelay: "1s" }}
+        >
+          🛺
+        </div>
+        <div
+          className="absolute bottom-[25%] left-[20%] text-2xl opacity-10 animate-float"
+          style={{ animationDelay: "2s" }}
+        >
+          👤
+        </div>
+        <div
+          className="absolute bottom-[35%] right-[25%] text-2xl opacity-10 animate-float"
+          style={{ animationDelay: "3s" }}
+        >
+          🚀
+        </div>
+      </div>
 
-      <SigninForm
-        userinfo={userinfo}
-        handleInput={handleInput}
-        handleSubmit={handleSubmit}
-        isSubmitting={isSubmitting}
-        error={displayError}
-      />
-    </>
+      <div className="relative z-10 w-full max-w-md">
+        {/* Error Alert */}
+        {displayError && (
+          <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200 flex items-center gap-2 text-sm">
+            <span>⚠️</span>
+            <span>{displayError}</span>
+          </div>
+        )}
+
+        <SigninForm
+          userinfo={userinfo}
+          handleInput={handleInput}
+          handleSubmit={handleSubmit}
+          isSubmitting={isSubmitting}
+          error={displayError}
+        />
+      </div>
+    </div>
   );
 }

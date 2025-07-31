@@ -329,163 +329,174 @@ const LiveChat = ({ chatId, partnerName, onClose }) => {
   };
 
   return (
-    <div className="live-chat-overlay">
-      <div className="live-chat-container">
-        {/* Chat Header */}
-        <div className="chat-header">
-          <div className="chat-header-info">
-            <div className="partner-avatar">
-              <i className="fas fa-user"></i>
-            </div>
-            <div className="partner-details">
-              <h4>{partnerName}</h4>
-              <span className="chat-status">
-                {chatExpired ? (
-                  <span className="status-expired">
-                    <i className="fas fa-clock"></i> Chat Expired
-                  </span>
-                ) : connected ? (
-                  <span
-                    className={`status-active ${
-                      timeRemaining <= 60
-                        ? "time-warning"
-                        : timeRemaining <= 180
-                        ? "time-caution"
-                        : ""
-                    }`}
-                  >
-                    <i className="fas fa-circle"></i> Active •
-                    <span className="countdown-timer">
-                      <i className="fas fa-clock"></i>{" "}
-                      {formatTime(timeRemaining)} left
-                    </span>
-                  </span>
-                ) : (
-                  <span className="status-connecting">
-                    <i className="fas fa-spinner fa-spin"></i> Connecting...
-                  </span>
-                )}
+    <div className="h-full flex flex-col bg-neutral-900">
+      {/* Compact Status Bar */}
+      <div className="px-4 py-2 bg-neutral-800 border-b border-neutral-700">
+        <div className="flex items-center gap-2">
+          <div
+            className={`w-2 h-2 rounded-full ${
+              chatExpired
+                ? "bg-red-500"
+                : connected
+                ? "bg-green-500 animate-pulse"
+                : "bg-yellow-500"
+            }`}
+          ></div>
+          <span className="text-xs font-medium text-white">
+            {chatExpired ? (
+              <span className="text-red-400">⏰ Expired</span>
+            ) : connected ? (
+              <span
+                className={`${
+                  timeRemaining <= 60
+                    ? "text-red-400"
+                    : timeRemaining <= 180
+                    ? "text-yellow-400"
+                    : "text-green-400"
+                }`}
+              >
+                🟢 Active • ⏱️ {formatTime(timeRemaining)}
               </span>
-            </div>
-          </div>
-          <button className="close-chat-btn" onClick={onClose}>
-            <i className="fas fa-times"></i>
-          </button>
+            ) : (
+              <span className="text-yellow-400">⏳ Connecting...</span>
+            )}
+          </span>
         </div>
+      </div>
 
-        {/* Chat Messages */}
-        <div className="chat-messages">
-          {!connected ? (
-            <div className="chat-welcome">
-              <div className="welcome-icon">
-                <i className="fas fa-spinner fa-spin"></i>
-              </div>
-              <h3>Connecting to chat...</h3>
-              <p>Please wait while we connect you to {partnerName}</p>
+      {/* Compact Messages */}
+      <div className="flex-1 overflow-y-auto p-3 space-y-3">
+        {!connected ? (
+          <div className="flex flex-col items-center justify-center h-full text-center">
+            <div className="w-12 h-12 bg-neutral-800 rounded-lg flex items-center justify-center mb-3">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-sawaari-yellow"></div>
             </div>
-          ) : messages.length === 0 ? (
-            <div className="chat-welcome">
-              <div className="welcome-icon">
-                <i className="fas fa-comments"></i>
-              </div>
-              <h3>Chat started!</h3>
-              <p>
-                You have 10 minutes to coordinate your ride with {partnerName}
-              </p>
+            <h3 className="text-sm font-bold text-white mb-1">Connecting...</h3>
+            <p className="text-xs text-neutral-400">
+              Connecting to {partnerName}
+            </p>
+          </div>
+        ) : messages.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-center">
+            <div className="w-12 h-12 bg-gradient-to-br from-sawaari-yellow/20 to-sawaari-green/20 rounded-lg flex items-center justify-center mb-3">
+              <span className="text-2xl">💬</span>
             </div>
-          ) : (
-            messages.map((message) => {
-              const isOwnMessage =
-                message.senderId === user?.id || message.senderId === userId;
-              return (
+            <h3 className="text-sm font-bold text-white mb-1">Chat started!</h3>
+            <p className="text-xs text-neutral-400 max-w-xs">
+              10 minutes to coordinate with {partnerName}
+            </p>
+          </div>
+        ) : (
+          messages.map((message) => {
+            const isOwnMessage =
+              message.senderId === user?.id || message.senderId === userId;
+            return (
+              <div
+                key={message.id}
+                className={`flex ${
+                  isOwnMessage ? "justify-end" : "justify-start"
+                }`}
+              >
                 <div
-                  key={message.id}
-                  className={`message ${
-                    isOwnMessage ? "own-message" : "partner-message"
+                  className={`max-w-xs px-3 py-2 rounded-xl ${
+                    isOwnMessage
+                      ? "bg-gradient-to-r from-sawaari-yellow to-sawaari-green text-black"
+                      : "bg-neutral-800 text-white"
                   }`}
                 >
-                  <div className="message-content">
-                    <div className="message-header">
-                      <span className="message-sender">
-                        {isOwnMessage ? "You" : partnerName}
-                      </span>
-                      <span className="message-indicator">
-                        {isOwnMessage ? (
-                          <i className="fas fa-arrow-right sent-indicator"></i>
-                        ) : (
-                          <i className="fas fa-arrow-left received-indicator"></i>
-                        )}
-                      </span>
-                    </div>
-                    <p className="message-text">{message.message}</p>
-                    <div className="message-footer">
-                      <span className="message-time">
-                        {formatMessageTime(message.timestamp)}
-                      </span>
-                      {isOwnMessage && (
-                        <span className="message-status">
-                          <i className="fas fa-check delivered"></i>
-                        </span>
-                      )}
-                    </div>
+                  <div className="flex items-center gap-1 mb-1">
+                    <span className="text-xs font-semibold opacity-70">
+                      {isOwnMessage ? "You" : partnerName}
+                    </span>
+                    <span className="text-xs opacity-50">
+                      {formatMessageTime(message.timestamp)}
+                    </span>
                   </div>
+                  <p className="text-sm">{message.message}</p>
+                  {isOwnMessage && (
+                    <div className="flex justify-end mt-1">
+                      <span className="text-xs opacity-70">✓</span>
+                    </div>
+                  )}
                 </div>
-              );
-            })
-          )}
-
-          {partnerTyping && connected && (
-            <div className="typing-indicator">
-              <div className="typing-dots">
-                <span></span>
-                <span></span>
-                <span></span>
               </div>
-              <span className="typing-text">{partnerName} is typing...</span>
-            </div>
-          )}
+            );
+          })
+        )}
 
-          <div ref={messagesEndRef} />
-        </div>
+        {partnerTyping && connected && (
+          <div className="flex justify-start">
+            <div className="bg-neutral-800 px-3 py-2 rounded-xl">
+              <div className="flex items-center gap-2">
+                <div className="flex gap-1">
+                  <div className="w-1.5 h-1.5 bg-neutral-400 rounded-full animate-bounce"></div>
+                  <div
+                    className="w-1.5 h-1.5 bg-neutral-400 rounded-full animate-bounce"
+                    style={{ animationDelay: "0.1s" }}
+                  ></div>
+                  <div
+                    className="w-1.5 h-1.5 bg-neutral-400 rounded-full animate-bounce"
+                    style={{ animationDelay: "0.2s" }}
+                  ></div>
+                </div>
+                <span className="text-xs text-neutral-400">
+                  {partnerName} typing...
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
 
-        {/* Chat Input */}
-        <div className="chat-input-container">
-          {chatExpired ? (
-            <div className="chat-expired-notice">
-              <i className="fas fa-clock"></i>
-              <span>
-                Chat session has expired. Use the contact details above to
-                continue communication.
-              </span>
-            </div>
-          ) : !connected ? (
-            <div className="chat-connecting-notice">
-              <i className="fas fa-spinner fa-spin"></i>
-              <span>Connecting to chat...</span>
-            </div>
-          ) : (
-            <form onSubmit={handleSendMessage} className="chat-input-form">
-              <div className="input-group">
-                <input
-                  type="text"
-                  value={newMessage}
-                  onChange={handleInputChange}
-                  placeholder="Type your message..."
-                  className="message-input"
-                  maxLength={500}
-                  disabled={chatExpired || !connected}
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Compact Input */}
+      <div className="p-3 border-t border-neutral-700 bg-neutral-800">
+        {chatExpired ? (
+          <div className="flex items-center justify-center gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+            <span className="text-red-400">⏰</span>
+            <span className="text-xs text-red-400 text-center">
+              Chat expired. Use contact details to continue.
+            </span>
+          </div>
+        ) : !connected ? (
+          <div className="flex items-center justify-center gap-2 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-yellow-400"></div>
+            <span className="text-xs text-yellow-400">Connecting...</span>
+          </div>
+        ) : (
+          <form onSubmit={handleSendMessage} className="flex gap-2">
+            <input
+              type="text"
+              value={newMessage}
+              onChange={handleInputChange}
+              placeholder="Type message..."
+              className="flex-1 px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-sm placeholder-neutral-400 focus:border-sawaari-yellow focus:ring-1 focus:ring-sawaari-yellow/20 focus:outline-none transition-all duration-300"
+              maxLength={500}
+              disabled={chatExpired || !connected}
+            />
+            <button
+              type="submit"
+              disabled={!newMessage.trim() || chatExpired || !connected}
+              className="px-4 py-2 bg-gradient-to-r from-sawaari-yellow to-sawaari-green text-black rounded-lg font-semibold hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+            >
+              <span className="text-sm">Send</span>
+              <svg
+                className="w-3 h-3"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
                 />
-                <button
-                  type="submit"
-                  className="send-btn"
-                  disabled={!newMessage.trim() || chatExpired || !connected}
-                >
-                  <i className="fas fa-paper-plane"></i>
-                </button>
-              </div>
-            </form>
-          )}
-        </div>
+              </svg>
+            </button>
+          </form>
+        )}
       </div>
     </div>
   );

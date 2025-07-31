@@ -1,12 +1,8 @@
-/* eslint-disable no-unused-vars */
 import React, { useContext } from "react";
 import { NavLink } from "react-router-dom";
 import { AuthContext } from "./AuthContext";
 import About from "./about";
-import Testimonials from "./testimonials";
 import WhySawaari from "./WhySawaari";
-import Footer from "./footer";
-import { testimonials } from "./userTestimonials";
 import InteractiveHero from "./Carousel";
 
 export default function Root() {
@@ -16,78 +12,77 @@ export default function Root() {
     <>
       <InteractiveHero />
 
-      {/* User Dashboard Section - Only show for authenticated users */}
+      {/* User Dashboard Section - Clean modern design */}
       {isAuthenticated && user && (
-        <section className="user-dashboard-section">
-          <div className="container">
-            <div className="row">
-              <div className="col-12">
-                <div className="dashboard-header text-center mb-4">
-                  <h2 className="dashboard-title">
-                    Welcome back, {user.email?.split("@")[0] || "User"}!
-                  </h2>
-                  <p className="dashboard-subtitle text-muted">
-                    Quick access to your favorite SAWAARI features
-                  </p>
-                </div>
+        <section className="section section-dark">
+          <div className="container-sawaari">
+            <div className="text-center mb-16">
+              <div className="inline-flex items-center gap-3 bg-sawaari-yellow/20 border border-sawaari-yellow/40 rounded-full px-6 py-3 mb-6">
+                <span className="text-2xl">👋</span>
+                <span className="text-sm font-medium text-sawaari-yellow">
+                  Welcome back, {user.email?.split("@")[0] || "User"}!
+                </span>
               </div>
+              <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">
+                Your SAWAARI Dashboard
+              </h2>
+              <p className="text-lg text-gray-300 max-w-2xl mx-auto">
+                Quick access to your favorite transportation features
+              </p>
             </div>
 
-            <div className="row g-4">
-              {/* Ride Buddy Quick Access */}
-              <div className="col-md-4">
-                <div className="dashboard-card h-100">
-                  <div className="card-body text-center">
-                    <div className="dashboard-icon ride-buddy-icon mb-3">
-                      <i className="fas fa-users"></i>
-                    </div>
-                    <h5 className="card-title">Ride Buddy</h5>
-                    <p className="card-text text-muted">
-                      Find travel companions and share rides to save money
-                    </p>
-                    <NavLink to="/ridebuddy" className="btn btn-primary">
-                      <i className="fas fa-search me-2"></i>
-                      Find Ride Buddy
-                    </NavLink>
+            <div className="grid md:grid-cols-3 gap-8">
+              {/* Ride Buddy Card */}
+              <div className="card group hover:shadow-sawaari-lg transition-all duration-300">
+                <div className="p-8 text-center">
+                  <div className="w-16 h-16 bg-sawaari-yellow/20 border border-sawaari-yellow/40 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
+                    <span className="text-2xl">👥</span>
                   </div>
+                  <h3 className="text-xl font-semibold text-white mb-3">
+                    Ride Buddy
+                  </h3>
+                  <p className="text-gray-300 mb-6">
+                    Find travel companions and share rides to save money
+                  </p>
+                  <NavLink to="/ridebuddy" className="btn-primary w-full">
+                    Find Ride Buddy
+                  </NavLink>
                 </div>
               </div>
 
-              {/* Hotspots Quick Access */}
-              <div className="col-md-4">
-                <div className="dashboard-card h-100">
-                  <div className="card-body text-center">
-                    <div className="dashboard-icon hotspots-icon mb-3">
-                      <i className="fas fa-map-marker-alt"></i>
-                    </div>
-                    <h5 className="card-title">Smart Hotspots</h5>
-                    <p className="card-text text-muted">
-                      Discover nearby auto rickshaw availability in real-time
-                    </p>
-                    <NavLink to="/hotspots" className="btn btn-success">
-                      <i className="fas fa-location-arrow me-2"></i>
-                      View Hotspots
-                    </NavLink>
+              {/* Hotspots Card */}
+              <div className="card group hover:shadow-sawaari-lg transition-all duration-300">
+                <div className="p-8 text-center">
+                  <div className="w-16 h-16 bg-sawaari-yellow/20 border border-sawaari-yellow/40 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
+                    <span className="text-2xl">🔥</span>
                   </div>
+                  <h3 className="text-xl font-semibold text-white mb-3">
+                    Smart Hotspots
+                  </h3>
+                  <p className="text-gray-300 mb-6">
+                    Discover nearby auto rickshaw availability in real-time
+                  </p>
+                  <NavLink to="/hotspots" className="btn-primary w-full">
+                    View Hotspots
+                  </NavLink>
                 </div>
               </div>
 
-              {/* Routes Quick Access */}
-              <div className="col-md-4">
-                <div className="dashboard-card h-100">
-                  <div className="card-body text-center">
-                    <div className="dashboard-icon routes-icon mb-3">
-                      <i className="fas fa-route"></i>
-                    </div>
-                    <h5 className="card-title">Intelligent Routes</h5>
-                    <p className="card-text text-muted">
-                      Get optimal routes with dynamic fare estimates
-                    </p>
-                    <NavLink to="/routes" className="btn btn-warning">
-                      <i className="fas fa-directions me-2"></i>
-                      Plan Route
-                    </NavLink>
+              {/* Routes Card */}
+              <div className="card group hover:shadow-sawaari-lg transition-all duration-300">
+                <div className="p-8 text-center">
+                  <div className="w-16 h-16 bg-sawaari-yellow/20 border border-sawaari-yellow/40 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
+                    <span className="text-2xl">🗺️</span>
                   </div>
+                  <h3 className="text-xl font-semibold text-white mb-3">
+                    Intelligent Routes
+                  </h3>
+                  <p className="text-gray-300 mb-6">
+                    Get optimal routes with dynamic fare estimates
+                  </p>
+                  <NavLink to="/routes" className="btn-primary w-full">
+                    Plan Route
+                  </NavLink>
                 </div>
               </div>
             </div>

@@ -1,6 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import authService from "./services/authService";
 import toast from "./utils/toast";
 
 const ForgotPassword = () => {
@@ -20,7 +19,7 @@ const ForgotPassword = () => {
   });
 
   // Timer for OTP expiry
-  useState(() => {
+  useEffect(() => {
     let interval;
     if (step === 2 && otpData.timeRemaining > 0) {
       interval = setInterval(() => {
@@ -49,7 +48,6 @@ const ForgotPassword = () => {
       return;
     }
 
-    // Validate that it's an email address
     if (
       !formData.identifier.includes("@") ||
       !formData.identifier.includes(".")
@@ -206,184 +204,274 @@ const ForgotPassword = () => {
     return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
   };
 
-  const isEmail = formData.identifier.includes("@");
-
   return (
-    <div className="auth-container">
-      <div className="auth-card">
-        <div className="auth-header">
-          <h2>Reset Password</h2>
-          <p>
-            {step === 1 && "Enter your email address to receive an OTP"}
-            {step === 2 && "Enter the OTP sent to your email"}
-            {step === 3 && "Create a new password for your account"}
-          </p>
+    <div className="min-h-screen bg-black pt-16 flex items-center justify-center p-4">
+      {/* Background Elements */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[20%] left-[10%] text-2xl opacity-10 animate-float">
+          🔑
         </div>
+        <div
+          className="absolute top-[30%] right-[15%] text-2xl opacity-10 animate-float"
+          style={{ animationDelay: "1s" }}
+        >
+          📧
+        </div>
+        <div
+          className="absolute bottom-[25%] left-[20%] text-2xl opacity-10 animate-float"
+          style={{ animationDelay: "2s" }}
+        >
+          🔒
+        </div>
+        <div
+          className="absolute bottom-[35%] right-[25%] text-2xl opacity-10 animate-float"
+          style={{ animationDelay: "3s" }}
+        >
+          🛺
+        </div>
+      </div>
 
-        {/* Step 1: Enter identifier */}
-        {step === 1 && (
-          <form onSubmit={handleSendOTP} className="auth-form">
-            <div className="form-group">
-              <label htmlFor="identifier">Email Address</label>
-              <input
-                type="email"
-                id="identifier"
-                name="identifier"
-                value={formData.identifier}
-                onChange={handleInputChange}
-                placeholder="Enter your email address"
-                className="form-control"
-                disabled={loading}
-                required
-              />
-              <small className="form-text">
-                We'll send you an OTP to reset your password
-              </small>
+      <div className="relative z-10 w-full max-w-md">
+        <div className="glass-strong rounded-2xl p-6 border border-white/20 shadow-2xl">
+          {/* Header */}
+          <div className="text-center mb-6">
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <span className="text-2xl">🔑</span>
+              <h2 className="text-2xl font-bold text-white">Reset Password</h2>
             </div>
+            <p className="text-gray-200 text-sm">
+              {step === 1 && "Enter your email to receive an OTP"}
+              {step === 2 && "Enter the OTP sent to your email"}
+              {step === 3 && "Create a new password"}
+            </p>
+          </div>
 
-            <button
-              type="submit"
-              className="auth-btn primary"
-              disabled={loading}
-            >
-              {loading ? (
-                <>
-                  <i className="fas fa-spinner fa-spin"></i>
-                  Sending OTP...
-                </>
-              ) : (
-                <>
-                  <i className="fas fa-paper-plane"></i>
-                  Send OTP
-                </>
-              )}
-            </button>
-          </form>
-        )}
-
-        {/* Step 2: Enter OTP */}
-        {step === 2 && (
-          <form onSubmit={handleVerifyOTP} className="auth-form">
-            <div className="otp-info">
-              <div className="otp-sent-to">
-                <i className="fas fa-envelope"></i>
-                <span>OTP sent to {formData.identifier}</span>
-              </div>
-              {otpData.timeRemaining > 0 && (
-                <div className="otp-timer">
-                  <i className="fas fa-clock"></i>
-                  <span>Expires in {formatTime(otpData.timeRemaining)}</span>
+          {/* Step Indicator */}
+          <div className="flex items-center justify-center mb-6">
+            <div className="flex items-center space-x-2">
+              {[1, 2, 3].map((stepNumber) => (
+                <div key={stepNumber} className="flex items-center">
+                  <div
+                    className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
+                      step >= stepNumber
+                        ? "bg-sawaari-yellow text-black"
+                        : "bg-white/20 text-gray-400"
+                    }`}
+                  >
+                    {stepNumber}
+                  </div>
+                  {stepNumber < 3 && (
+                    <div
+                      className={`w-6 h-0.5 mx-1 transition-all duration-300 ${
+                        step > stepNumber ? "bg-sawaari-yellow" : "bg-white/20"
+                      }`}
+                    ></div>
+                  )}
                 </div>
-              )}
+              ))}
             </div>
+          </div>
 
-            <div className="form-group">
-              <label htmlFor="otp">Enter OTP</label>
-              <input
-                type="text"
-                id="otp"
-                name="otp"
-                value={formData.otp}
-                onChange={handleInputChange}
-                placeholder="Enter 6-digit OTP"
-                className="form-control otp-input"
-                maxLength="6"
-                disabled={loading || otpData.timeRemaining === 0}
-                required
-              />
-            </div>
+          {/* Step 1: Enter identifier */}
+          {step === 1 && (
+            <form onSubmit={handleSendOTP} className="space-y-4">
+              <div>
+                <label
+                  htmlFor="identifier"
+                  className="block text-sm font-medium text-sawaari-yellow mb-1"
+                >
+                  📧 Email Address
+                </label>
+                <input
+                  type="email"
+                  id="identifier"
+                  name="identifier"
+                  value={formData.identifier}
+                  onChange={handleInputChange}
+                  placeholder="Enter your email address"
+                  disabled={loading}
+                  required
+                  className="form-input h-11"
+                />
+                <p className="text-xs text-gray-200 mt-1">
+                  We'll send you an OTP to reset your password
+                </p>
+              </div>
 
-            <div className="form-actions">
               <button
                 type="submit"
-                className="auth-btn primary"
-                disabled={loading || otpData.timeRemaining === 0}
+                disabled={loading}
+                className={`btn-primary w-full h-11 ${
+                  loading ? "opacity-50 cursor-not-allowed" : ""
+                }`}
               >
                 {loading ? (
-                  <>
-                    <i className="fas fa-spinner fa-spin"></i>
-                    Verifying...
-                  </>
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>Sending OTP...</span>
+                  </div>
                 ) : (
-                  <>
-                    <i className="fas fa-check"></i>
-                    Verify OTP
-                  </>
+                  <div className="flex items-center justify-center gap-2">
+                    <span>📧</span>
+                    <span>Send OTP</span>
+                  </div>
                 )}
               </button>
+            </form>
+          )}
 
-              {otpData.timeRemaining === 0 && (
-                <button
-                  type="button"
-                  className="auth-btn secondary"
-                  onClick={() => setStep(1)}
+          {/* Step 2: Enter OTP */}
+          {step === 2 && (
+            <form onSubmit={handleVerifyOTP} className="space-y-4">
+              {/* OTP Info */}
+              <div className="bg-black/40 rounded-lg p-3 space-y-1">
+                <div className="flex items-center gap-2 text-sawaari-yellow text-sm">
+                  <span>📧</span>
+                  <span>OTP sent to {formData.identifier}</span>
+                </div>
+                {otpData.timeRemaining > 0 && (
+                  <div className="flex items-center gap-2 text-gray-200 text-sm">
+                    <span>⏰</span>
+                    <span>Expires in {formatTime(otpData.timeRemaining)}</span>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label
+                  htmlFor="otp"
+                  className="block text-sm font-medium text-sawaari-yellow mb-1"
                 >
-                  <i className="fas fa-redo"></i>
-                  Send New OTP
+                  🔢 Enter OTP
+                </label>
+                <input
+                  type="text"
+                  id="otp"
+                  name="otp"
+                  value={formData.otp}
+                  onChange={handleInputChange}
+                  placeholder="Enter 6-digit OTP"
+                  maxLength="6"
+                  disabled={loading || otpData.timeRemaining === 0}
+                  required
+                  className="form-input h-11 text-center text-lg tracking-widest"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <button
+                  type="submit"
+                  disabled={loading || otpData.timeRemaining === 0}
+                  className={`btn-primary w-full h-11 ${
+                    loading || otpData.timeRemaining === 0
+                      ? "opacity-50 cursor-not-allowed"
+                      : ""
+                  }`}
+                >
+                  {loading ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>Verifying...</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center gap-2">
+                      <span>✅</span>
+                      <span>Verify OTP</span>
+                    </div>
+                  )}
                 </button>
-              )}
-            </div>
-          </form>
-        )}
 
-        {/* Step 3: Reset password */}
-        {step === 3 && (
-          <form onSubmit={handleResetPassword} className="auth-form">
-            <div className="form-group">
-              <label htmlFor="newPassword">New Password</label>
-              <input
-                type="password"
-                id="newPassword"
-                name="newPassword"
-                value={formData.newPassword}
-                onChange={handleInputChange}
-                placeholder="Enter new password (min 6 characters)"
-                className="form-control"
+                {otpData.timeRemaining === 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setStep(1)}
+                    className="btn-secondary w-full h-10"
+                  >
+                    <div className="flex items-center justify-center gap-2">
+                      <span>🔄</span>
+                      <span>Send New OTP</span>
+                    </div>
+                  </button>
+                )}
+              </div>
+            </form>
+          )}
+
+          {/* Step 3: Reset password */}
+          {step === 3 && (
+            <form onSubmit={handleResetPassword} className="space-y-4">
+              <div>
+                <label
+                  htmlFor="newPassword"
+                  className="block text-sm font-medium text-sawaari-yellow mb-1"
+                >
+                  🔒 New Password
+                </label>
+                <input
+                  type="password"
+                  id="newPassword"
+                  name="newPassword"
+                  value={formData.newPassword}
+                  onChange={handleInputChange}
+                  placeholder="Enter new password (min 6 characters)"
+                  disabled={loading}
+                  required
+                  className="form-input h-11"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="confirmPassword"
+                  className="block text-sm font-medium text-sawaari-yellow mb-1"
+                >
+                  🔒 Confirm Password
+                </label>
+                <input
+                  type="password"
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleInputChange}
+                  placeholder="Confirm your new password"
+                  disabled={loading}
+                  required
+                  className="form-input h-11"
+                />
+              </div>
+
+              <button
+                type="submit"
                 disabled={loading}
-                required
-              />
-            </div>
+                className={`btn-primary w-full h-11 ${
+                  loading ? "opacity-50 cursor-not-allowed" : ""
+                }`}
+              >
+                {loading ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>Resetting...</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center gap-2">
+                    <span>🔑</span>
+                    <span>Reset Password</span>
+                  </div>
+                )}
+              </button>
+            </form>
+          )}
 
-            <div className="form-group">
-              <label htmlFor="confirmPassword">Confirm Password</label>
-              <input
-                type="password"
-                id="confirmPassword"
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleInputChange}
-                placeholder="Confirm your new password"
-                className="form-control"
-                disabled={loading}
-                required
-              />
-            </div>
-
-            <button
-              type="submit"
-              className="auth-btn primary"
-              disabled={loading}
+          {/* Back to Sign In */}
+          <div className="text-center mt-6 pt-4 border-t border-white/20">
+            <Link
+              to="/signin"
+              className="inline-flex items-center gap-2 text-sawaari-yellow hover:text-white font-medium transition-colors duration-300 text-sm"
             >
-              {loading ? (
-                <>
-                  <i className="fas fa-spinner fa-spin"></i>
-                  Resetting...
-                </>
-              ) : (
-                <>
-                  <i className="fas fa-key"></i>
-                  Reset Password
-                </>
-              )}
-            </button>
-          </form>
-        )}
-
-        <div className="auth-footer">
-          <Link to="/signin" className="auth-link">
-            <i className="fas fa-arrow-left"></i>
-            Back to Sign In
-          </Link>
+              <span>←</span>
+              <span>Back to Sign In</span>
+            </Link>
+          </div>
         </div>
       </div>
     </div>

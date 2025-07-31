@@ -1,4 +1,3 @@
-/* eslint-disable react/prop-types */
 import { useState } from "react";
 
 export default function Signinform({
@@ -15,205 +14,116 @@ export default function Signinform({
   };
 
   return (
-    <>
-      <div className="container signup">
-        <div className="text-center mb-4">
-          <h2 className="headings">Welcome Back</h2>
-          <p style={{ color: "var(--text-secondary)" }}>
-            Sign in to your SAWAARI account
-          </p>
+    <div className="glass-strong rounded-2xl p-6 border border-white/20 shadow-2xl">
+      {/* Header */}
+      <div className="text-center mb-6">
+        <div className="flex items-center justify-center gap-2 mb-3">
+          <span className="text-2xl">🔐</span>
+          <h2 className="text-2xl font-bold text-white">Welcome Back</h2>
+          <span className="text-2xl">🛺</span>
         </div>
-
-        <form method="POST" onSubmit={handleSubmit} noValidate>
-          <div className="mb-3">
-            <label
-              htmlFor="email"
-              className="form-label"
-              style={{ color: "var(--text-secondary)", fontWeight: "600" }}
-            >
-              Email Address
-            </label>
-            <div className="input-group">
-              <span
-                className="input-group-text"
-                style={{
-                  background: "var(--tertiary-dark)",
-                  border: "2px solid var(--border-color)",
-                  color: "var(--accent-green)",
-                }}
-              >
-                <i className="fas fa-envelope"></i>
-              </span>
-              <input
-                type="email"
-                className="form-control"
-                id="email"
-                name="email"
-                placeholder="Enter your email address"
-                value={userinfo.email}
-                onChange={handleInput}
-                required
-                autoComplete="email"
-                disabled={isSubmitting}
-                style={{
-                  background: "var(--tertiary-dark)",
-                  border: "2px solid var(--border-color)",
-                  color: "var(--text-primary)",
-                }}
-              />
-            </div>
-          </div>
-
-          <div className="mb-4">
-            <label
-              htmlFor="password"
-              className="form-label"
-              style={{ color: "var(--text-secondary)", fontWeight: "600" }}
-            >
-              Password
-            </label>
-            <div className="input-group">
-              <span
-                className="input-group-text"
-                style={{
-                  background: "var(--tertiary-dark)",
-                  border: "2px solid var(--border-color)",
-                  color: "var(--accent-green)",
-                }}
-              >
-                <i className="fas fa-lock"></i>
-              </span>
-              <input
-                type={showPassword ? "text" : "password"}
-                className="form-control"
-                id="password"
-                name="password"
-                placeholder="Enter your password"
-                value={userinfo.password}
-                onChange={handleInput}
-                required
-                autoComplete="current-password"
-                disabled={isSubmitting}
-                style={{
-                  background: "var(--tertiary-dark)",
-                  border: "2px solid var(--border-color)",
-                  color: "var(--text-primary)",
-                }}
-              />
-              <button
-                type="button"
-                className="btn"
-                onClick={togglePasswordVisibility}
-                disabled={isSubmitting}
-                style={{
-                  background: "var(--tertiary-dark)",
-                  border: "2px solid var(--border-color)",
-                  color: "var(--text-secondary)",
-                }}
-              >
-                <i
-                  className={`fas ${showPassword ? "fa-eye-slash" : "fa-eye"}`}
-                ></i>
-              </button>
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            className="sign-btn"
-            disabled={isSubmitting || !userinfo.email || !userinfo.password}
-            style={{
-              opacity:
-                isSubmitting || !userinfo.email || !userinfo.password ? 0.6 : 1,
-              cursor:
-                isSubmitting || !userinfo.email || !userinfo.password
-                  ? "not-allowed"
-                  : "pointer",
-            }}
-          >
-            {isSubmitting ? (
-              <>
-                <span
-                  className="spinner-border spinner-border-sm me-2"
-                  role="status"
-                  aria-hidden="true"
-                ></span>
-                Signing In...
-              </>
-            ) : (
-              <>
-                <i className="fas fa-sign-in-alt me-2"></i>
-                Sign In
-              </>
-            )}
-          </button>
-
-          <div className="text-center mt-3">
-            <a
-              href="/forgot-password"
-              style={{
-                color: "var(--accent-green)",
-                textDecoration: "none",
-                fontWeight: "500",
-                fontSize: "14px",
-              }}
-              onMouseOver={(e) => (e.target.style.textDecoration = "underline")}
-              onMouseOut={(e) => (e.target.style.textDecoration = "none")}
-            >
-              <i className="fas fa-key me-1"></i>
-              Forgot Password?
-            </a>
-          </div>
-
-          <div className="text-center mt-4">
-            <p style={{ color: "var(--text-secondary)" }}>
-              Don't have an account?{" "}
-              <a
-                href="/signup"
-                style={{
-                  color: "var(--accent-green)",
-                  textDecoration: "none",
-                  fontWeight: "600",
-                }}
-                onMouseOver={(e) =>
-                  (e.target.style.textDecoration = "underline")
-                }
-                onMouseOut={(e) => (e.target.style.textDecoration = "none")}
-              >
-                Sign Up
-              </a>
-            </p>
-          </div>
-        </form>
-
-        {/* Security Notice */}
-        <div
-          className="mt-4 p-3"
-          style={{
-            background: "var(--primary-dark)",
-            border: "1px solid var(--border-color)",
-            borderRadius: "12px",
-            fontSize: "0.9rem",
-          }}
-        >
-          <div className="d-flex align-items-center mb-2">
-            <i
-              className="fas fa-shield-alt me-2"
-              style={{ color: "var(--accent-green)" }}
-            ></i>
-            <strong style={{ color: "var(--accent-green)" }}>
-              Security Notice
-            </strong>
-          </div>
-          <p
-            className="mb-0"
-            style={{ color: "var(--text-secondary)", lineHeight: "1.5" }}
-          >
-            Your account is protected with industry-standard security measures
-            including encrypted passwords and secure JWT tokens.
-          </p>
-        </div>
+        <p className="text-gray-200 text-sm">Sign in to your SAWAARI account</p>
       </div>
-    </>
+
+      <form
+        method="POST"
+        onSubmit={handleSubmit}
+        noValidate
+        className="space-y-4"
+      >
+        {/* Email Field */}
+        <div>
+          <label
+            htmlFor="email"
+            className="block text-sm font-medium text-sawaari-yellow mb-1"
+          >
+            📧 Email Address
+          </label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            placeholder="Enter your email address"
+            value={userinfo.email}
+            onChange={handleInput}
+            required
+            autoComplete="email"
+            disabled={isSubmitting}
+            className="form-input h-11"
+          />
+        </div>
+
+        {/* Password Field */}
+        <div>
+          <label
+            htmlFor="password"
+            className="block text-sm font-medium text-sawaari-yellow mb-1"
+          >
+            🔒 Password
+          </label>
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              id="password"
+              name="password"
+              placeholder="Enter your password"
+              value={userinfo.password}
+              onChange={handleInput}
+              required
+              autoComplete="current-password"
+              disabled={isSubmitting}
+              className="form-input h-11 pr-12"
+            />
+            <button
+              type="button"
+              onClick={togglePasswordVisibility}
+              disabled={isSubmitting}
+              className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-sawaari-yellow transition-colors duration-300 disabled:opacity-50"
+            >
+              <span className="text-sm">{showPassword ? "👁️‍🗨️" : "👁️"}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Submit Button */}
+        <button
+          type="submit"
+          disabled={isSubmitting || !userinfo.email || !userinfo.password}
+          className={`btn-primary w-full h-11 ${
+            isSubmitting || !userinfo.email || !userinfo.password
+              ? "opacity-50 cursor-not-allowed"
+              : ""
+          }`}
+        >
+          {isSubmitting ? (
+            <div className="flex items-center justify-center gap-2">
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              <span>Signing In...</span>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center gap-2">
+              <span>🔐</span>
+              <span>Sign In to SAWAARI</span>
+            </div>
+          )}
+        </button>
+
+        {/* Links */}
+        <div className="flex justify-between items-center text-sm pt-2">
+          <a
+            href="/forgot-password"
+            className="text-sawaari-yellow hover:text-white transition-colors duration-300"
+          >
+            Forgot Password?
+          </a>
+          <a
+            href="/signup"
+            className="text-sawaari-yellow hover:text-white transition-colors duration-300"
+          >
+            Sign Up
+          </a>
+        </div>
+      </form>
+    </div>
   );
 }

@@ -1,5 +1,4 @@
-/* eslint-disable no-unused-vars */
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const ContactPage = () => {
@@ -44,66 +43,61 @@ const ContactPage = () => {
   };
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-
-        padding: "var(--spacing-md)",
-      }}
-    >
-      <div
-        style={{
-          width: "100%",
-          maxWidth: "500px",
-        }}
-      >
+    <div className="min-h-screen flex items-center justify-center bg-black p-4 pt-24">
+      {/* Background Elements */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[20%] left-[10%] text-2xl opacity-10 animate-subtle-float">
+          📞
+        </div>
         <div
-          style={{
-            borderRadius: "var(--radius-lg)",
-            boxShadow: "var(--shadow-xl)",
-            padding: "var(--spacing-2xl)",
-            border: "1px solid var(--border-color)",
-          }}
+          className="absolute top-[30%] right-[15%] text-2xl opacity-10 animate-subtle-float"
+          style={{ animationDelay: "1s" }}
         >
-          <h2
-            style={{
-              textAlign: "center",
-              marginBottom: "var(--spacing-lg)",
-              color: "var(--accent-yellow-hover)",
-              fontSize: "var(--text-3xl)",
-              fontWeight: "bold",
-            }}
-          >
-            Contact Us
-          </h2>
+          ✉️
+        </div>
+        <div
+          className="absolute bottom-[25%] left-[20%] text-2xl opacity-10 animate-subtle-float"
+          style={{ animationDelay: "2s" }}
+        >
+          🛺
+        </div>
+        <div
+          className="absolute bottom-[35%] right-[25%] text-2xl opacity-10 animate-subtle-float"
+          style={{ animationDelay: "3s" }}
+        >
+          💬
+        </div>
+      </div>
 
-          <p
-            style={{
-              textAlign: "center",
-              marginBottom: "var(--spacing-xl)",
-              color: "var(--text-secondary)",
-              fontSize: "var(--text-lg)",
-            }}
-          >
-            <b>We would love to hear from you!</b>
-          </p>
+      <div className="w-full max-w-lg relative z-10">
+        <div className="glass-strong shadow-sawaari-xl p-8 rounded-2xl">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center gap-3 mb-4">
+              <span className="text-3xl animate-subtle-float">📞</span>
+              <h2 className="text-3xl font-bold gradient-text-sawaari">
+                Contact Us
+              </h2>
+              <span className="text-3xl animate-subtle-float">📞</span>
+            </div>
+            <p className="text-lg text-text-secondary">
+              <span className="font-bold text-sawaari-yellow">
+                We would love to hear from you!
+              </span>
+            </p>
+            <p className="text-sm text-text-muted font-kalam mt-2">
+              आपकी राय हमारे लिए महत्वपूर्ण है
+            </p>
+          </div>
 
-          <form onSubmit={handleSubmit}>
-            <div style={{ marginBottom: "var(--spacing-lg)" }}>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Email Field */}
+            <div>
               <label
                 htmlFor="email"
-                style={{
-                  display: "block",
-                  marginBottom: "var(--spacing-sm)",
-                  color: "var(--accent-yellow-hover)",
-                  fontSize: "var(--text-base)",
-                  fontWeight: "500",
-                }}
+                className="block mb-2 text-sawaari-green font-medium"
               >
-                Email address
+                📧 Email address
               </label>
               <input
                 type="email"
@@ -111,40 +105,19 @@ const ContactPage = () => {
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                placeholder="Enter email address"
+                placeholder="Enter your email address"
                 required
-                style={{
-                  width: "100%",
-                  padding: "var(--spacing-md)",
-                  backgroundColor: "var(--tertiary-dark)",
-                  border: `1px solid var(--border-color)`,
-                  borderRadius: "var(--radius-sm)",
-                  color: "var(--text-primary)",
-                  fontSize: "var(--text-base)",
-                  outline: "none",
-                  transition: "border-color 0.3s ease",
-                }}
-                onFocus={(e) =>
-                  (e.target.style.borderColor = "var(--accent-green)")
-                }
-                onBlur={(e) =>
-                  (e.target.style.borderColor = "var(--border-color)")
-                }
+                className="form-input"
               />
             </div>
 
-            <div style={{ marginBottom: "var(--spacing-lg)" }}>
+            {/* Mobile Field */}
+            <div>
               <label
                 htmlFor="mobile"
-                style={{
-                  display: "block",
-                  marginBottom: "var(--spacing-sm)",
-                  color: "var(--accent-yellow-hover)",
-                  fontSize: "var(--text-base)",
-                  fontWeight: "500",
-                }}
+                className="block mb-2 text-sawaari-green font-medium"
               >
-                Mobile number
+                📱 Mobile number
               </label>
               <input
                 type="tel"
@@ -152,40 +125,19 @@ const ContactPage = () => {
                 name="mobile"
                 value={formData.mobile}
                 onChange={handleChange}
-                placeholder="Enter mobile number"
+                placeholder="Enter your mobile number"
                 required
-                style={{
-                  width: "100%",
-                  padding: "var(--spacing-md)",
-                  backgroundColor: "var(--tertiary-dark)",
-                  border: `1px solid var(--border-color)`,
-                  borderRadius: "var(--radius-sm)",
-                  color: "var(--text-primary)",
-                  fontSize: "var(--text-base)",
-                  outline: "none",
-                  transition: "border-color 0.3s ease",
-                }}
-                onFocus={(e) =>
-                  (e.target.style.borderColor = "var(--accent-green)")
-                }
-                onBlur={(e) =>
-                  (e.target.style.borderColor = "var(--border-color)")
-                }
+                className="form-input"
               />
             </div>
 
-            <div style={{ marginBottom: "var(--spacing-xl)" }}>
+            {/* Feedback Field */}
+            <div>
               <label
                 htmlFor="feedback"
-                style={{
-                  display: "block",
-                  marginBottom: "var(--spacing-sm)",
-                  color: "var(--accent-yellow-hover)",
-                  fontSize: "var(--text-base)",
-                  fontWeight: "500",
-                }}
+                className="block mb-2 text-sawaari-green font-medium"
               >
-                Your feedback
+                💭 Your feedback
               </label>
               <textarea
                 id="feedback"
@@ -193,59 +145,34 @@ const ContactPage = () => {
                 rows="4"
                 value={formData.feedback}
                 onChange={handleChange}
-                placeholder="Enter your feedback"
+                placeholder="Share your thoughts, suggestions, or experiences with SAWAARI..."
                 required
-                style={{
-                  width: "100%",
-                  padding: "var(--spacing-md)",
-                  backgroundColor: "var(--tertiary-dark)",
-                  border: `1px solid var(--border-color)`,
-                  borderRadius: "var(--radius-sm)",
-                  color: "var(--text-primary)",
-                  fontSize: "var(--text-base)",
-                  outline: "none",
-                  transition: "border-color 0.3s ease",
-                  resize: "vertical",
-                  minHeight: "100px",
-                }}
-                onFocus={(e) =>
-                  (e.target.style.borderColor = "var(--accent-green)")
-                }
-                onBlur={(e) =>
-                  (e.target.style.borderColor = "var(--border-color)")
-                }
+                className="form-input resize-vertical min-h-[120px]"
               />
             </div>
 
-            <button
-              type="submit"
-              style={{
-                width: "100%",
-                padding: "var(--spacing-md) var(--spacing-lg)",
-                backgroundColor: "var(--accent-yellow)",
-                color: "var(--primary-dark)",
-                border: "none",
-                borderRadius: "var(--radius-sm)",
-                fontSize: "var(--text-lg)",
-                fontWeight: "bold",
-                cursor: "pointer",
-                transition: "all 0.3s ease",
-                boxShadow: "var(--shadow-md)",
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.backgroundColor = "var(--accent-yellow-hover)";
-                e.target.style.transform = "translateY(-2px)";
-                e.target.style.boxShadow = "var(--shadow-lg)";
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.backgroundColor = "var(--accent-yellow)";
-                e.target.style.transform = "translateY(0)";
-                e.target.style.boxShadow = "var(--shadow-md)";
-              }}
-            >
-              Submit Feedback
+            {/* Submit Button */}
+            <button type="submit" className="btn-primary w-full group">
+              <span className="flex items-center justify-center gap-2">
+                Submit Feedback
+                <span className="text-xl group-hover:animate-subtle-float">
+                  🚀
+                </span>
+              </span>
             </button>
           </form>
+
+          {/* Additional Info */}
+          <div className="mt-8 pt-6 border-t border-neutral-200 text-center">
+            <p className="text-sm text-gray-200 mb-2">
+              🛺 Join the SAWAARI community and help us improve!
+            </p>
+            <div className="flex justify-center gap-4 text-xs text-gray-200">
+              <span>📧 Quick Response</span>
+              <span>🔒 Secure & Private</span>
+              <span>💝 Much Appreciated</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
