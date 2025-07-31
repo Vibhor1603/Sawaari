@@ -1,8 +1,30 @@
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 
 export default function Testimonials({ testimonials }) {
+  const [isVisible, setIsVisible] = useState(false);
+  const sectionRef = useRef(null);
+
+  // Intersection Observer for fade-in animation
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsVisible(entry.isIntersecting);
+      },
+      { threshold: 0.2 }
+    );
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <section className="testimonials-section py-5">
+    <section
+      ref={sectionRef}
+      className={`testimonials-section ${isVisible ? "visible" : ""}`}
+    >
       <div className="container">
         <div className="text-center mb-5">
           <h2 className="headings mb-3">What Our Users Say</h2>
@@ -21,12 +43,20 @@ export default function Testimonials({ testimonials }) {
 
         <div className="test-box">
           {testimonials.map((testimonial, index) => (
-            <div className="testimonial" key={index}>
+            <div
+              className={`testimonial ${isVisible ? "visible" : ""}`}
+              key={index}
+              style={{ animationDelay: `${index * 0.2}s` }}
+            >
               <div className="testimonial-content">
                 <div className="quote-icon mb-3">
                   <i
                     className="fas fa-quote-left"
-                    style={{ color: "var(--accent-green)", fontSize: "2rem" }}
+                    style={{
+                      color: "var(--accent-yellow)",
+                      fontSize: "2rem",
+                      textShadow: "0 0 10px rgba(255, 235, 59, 0.3)",
+                    }}
                   ></i>
                 </div>
 
@@ -38,7 +68,7 @@ export default function Testimonials({ testimonials }) {
                     fontSize: "1.1rem",
                   }}
                 >
-                  "{testimonial.text}&quot;
+                  &quot;{testimonial.text}&quot;
                 </p>
 
                 <div className="testimonial-author d-flex align-items-center">

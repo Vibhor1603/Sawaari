@@ -4,6 +4,7 @@ import { NavLink } from "react-router-dom";
 import { AuthContext } from "./AuthContext";
 import About from "./about";
 import Testimonials from "./testimonials";
+import WhySawaari from "./WhySawaari";
 import Footer from "./footer";
 import { testimonials } from "./userTestimonials";
 import InteractiveHero from "./Carousel";
@@ -17,7 +18,7 @@ export default function Root() {
 
       {/* User Dashboard Section - Only show for authenticated users */}
       {isAuthenticated && user && (
-        <section className="user-dashboard-section py-5 bg-light">
+        <section className="user-dashboard-section">
           <div className="container">
             <div className="row">
               <div className="col-12">
@@ -94,8 +95,8 @@ export default function Root() {
         </section>
       )}
 
+      <WhySawaari />
       <About />
-      <Testimonials testimonials={testimonials} />
     </>
   );
 }

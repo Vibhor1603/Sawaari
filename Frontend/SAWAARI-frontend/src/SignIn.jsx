@@ -116,7 +116,7 @@ export default function SignIn() {
     return (
       <div
         className="container d-flex justify-content-center align-items-center"
-        style={{ minHeight: "50vh" }}
+        style={{ minHeight: "50vh", paddingTop: "80px" }}
       >
         <div className="text-center">
           <div className="spinner-border text-primary" role="status">
@@ -135,20 +135,9 @@ export default function SignIn() {
   return (
     <>
       {displayError && (
-        <div className="container mt-4">
-          <div
-            className="alert alert-danger"
-            style={{
-              background: "var(--tertiary-dark)",
-              border: "1px solid #dc3545",
-              color: "var(--text-primary)",
-              maxWidth: "500px",
-              margin: "0 auto",
-            }}
-          >
-            <i className="fas fa-exclamation-triangle me-2"></i>
-            {displayError}
-          </div>
+        <div className="alert alert-danger">
+          <i className="fas fa-exclamation-triangle me-2"></i>
+          {displayError}
         </div>
       )}
 

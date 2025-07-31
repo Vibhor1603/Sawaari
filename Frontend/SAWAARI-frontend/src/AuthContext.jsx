@@ -71,7 +71,9 @@ const Authstate = (props) => {
   useEffect(() => {
     const fetchHotspots = async () => {
       try {
-        const response = await fetch("http://localhost:5000/hotspots");
+        const response = await fetch(
+          `${import.meta.env.VITE_API_BASE_URL}/hotspots`
+        );
         const data = await response.json();
 
         // Ensure we always set an array

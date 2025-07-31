@@ -1,198 +1,253 @@
+import React, { useState, useEffect, useRef } from "react";
+import { NavLink } from "react-router-dom";
+
 export default function About() {
+  const [isVisible, setIsVisible] = useState(false);
+  const [activeFeature, setActiveFeature] = useState(0);
+  const sectionRef = useRef(null);
+
+  // Intersection Observer for fade-in animation
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsVisible(entry.isIntersecting);
+      },
+      { threshold: 0.2 }
+    );
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
+  // Auto-rotate features
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveFeature((prev) => (prev + 1) % features.length);
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const features = [
+    {
+      id: 0,
+      title: "Real-time Hotspots",
+      description:
+        "Live tracking of auto rickshaw availability with color-coded density maps",
+      icon: "fas fa-map-marker-alt",
+      link: "/hotspots",
+      color: "#00ff88",
+      stats: "500+ Active Spots",
+      image: "/download.jpeg",
+    },
+    {
+      id: 1,
+      title: "Smart Route Planning",
+      description:
+        "AI-powered route optimization with dynamic fare estimates and traffic updates",
+      icon: "fas fa-route",
+      link: "/routes",
+      color: "#ffeb3b",
+      stats: "30% Fare Savings",
+      image: "/auto-rik.jpeg",
+    },
+    {
+      id: 2,
+      title: "Ride Sharing Network",
+      description:
+        "Connect with fellow travelers for cost-effective and eco-friendly journeys",
+      icon: "fas fa-users",
+      link: "/ridebuddy",
+      color: "#ff6b35",
+      stats: "10K+ Connections",
+      image: "/download.jpeg",
+    },
+  ];
+
+  const currentFeature = features[activeFeature];
+
   return (
-    <section className="about">
-      <div className="container">
-        {/* About Us Section */}
-        <div className="row align-items-center mb-5">
-          <div className="col-lg-6 mb-4 mb-lg-0">
-            <div className="position-relative">
-              <img
-                src="/download.jpeg"
-                className="img-fluid auto-image"
-                alt="Auto Rickshaw Service"
-              />
-              <div className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center opacity-0 hover-overlay">
-                <div className="text-center text-white">
-                  <i className="fas fa-play-circle fa-3x mb-2"></i>
-                  <p>Watch Our Story</p>
+    <section
+      ref={sectionRef}
+      className={`about-section ${isVisible ? "visible" : ""}`}
+    >
+      {/* Hero Introduction */}
+      <div className="about-hero">
+        <div className="container">
+          <div className="text-center">
+            <div className="section-badge">
+              <i className="fas fa-info-circle"></i>
+              <span>About SAWAARI</span>
+            </div>
+            <h2 className="section-title">
+              Revolutionizing{" "}
+              <span className="highlight-yellow">Urban Transportation</span>
+            </h2>
+            <p className="section-description">
+              We're not just another app – we're the bridge between traditional
+              auto rickshaw services and modern digital convenience, making
+              every journey smarter and more efficient.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Interactive Features Showcase */}
+      <div className="features-showcase">
+        <div className="container">
+          <div className="row align-items-center">
+            <div className="col-lg-6">
+              <div className="feature-content">
+                <div className="feature-navigation">
+                  {features.map((feature, index) => (
+                    <button
+                      key={index}
+                      className={`feature-nav-btn ${
+                        index === activeFeature ? "active" : ""
+                      }`}
+                      onClick={() => setActiveFeature(index)}
+                      style={{
+                        borderColor:
+                          index === activeFeature
+                            ? feature.color
+                            : "rgba(255, 255, 255, 0.2)",
+                        backgroundColor:
+                          index === activeFeature
+                            ? `${feature.color}20`
+                            : "transparent",
+                      }}
+                    >
+                      <div
+                        className="nav-icon"
+                        style={{ color: feature.color }}
+                      >
+                        <i className={feature.icon}></i>
+                      </div>
+                      <div className="nav-content">
+                        <div className="nav-title">{feature.title}</div>
+                        <div className="nav-stats">{feature.stats}</div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+
+                <div className="active-feature-details">
+                  <div className="feature-header">
+                    <div
+                      className="feature-icon-large"
+                      style={{
+                        backgroundColor: `${currentFeature.color}20`,
+                        borderColor: currentFeature.color,
+                      }}
+                    >
+                      <i
+                        className={currentFeature.icon}
+                        style={{ color: currentFeature.color }}
+                      ></i>
+                    </div>
+                    <div className="feature-info">
+                      <h3 className="feature-title">{currentFeature.title}</h3>
+                      <p className="feature-description">
+                        {currentFeature.description}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="feature-actions">
+                    <NavLink
+                      to={currentFeature.link}
+                      className="feature-cta"
+                      style={{
+                        background: `linear-gradient(135deg, ${currentFeature.color}, ${currentFeature.color}dd)`,
+                        boxShadow: `0 10px 25px ${currentFeature.color}40`,
+                      }}
+                    >
+                      <span>Explore {currentFeature.title}</span>
+                      <i className="fas fa-arrow-right"></i>
+                    </NavLink>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="col-lg-6">
+              <div className="feature-visual">
+                <div className="image-container">
+                  <img
+                    src={currentFeature.image}
+                    alt={currentFeature.title}
+                    className="feature-image"
+                  />
+                  <div className="image-overlay">
+                    <div className="overlay-content">
+                      <div className="stat-bubble">
+                        <i className={currentFeature.icon}></i>
+                        <span>{currentFeature.stats}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Interactive Elements */}
+                <div className="floating-elements">
+                  <div
+                    className="floating-element element-1"
+                    style={{ color: currentFeature.color }}
+                  >
+                    <i className="fas fa-bolt"></i>
+                  </div>
+                  <div
+                    className="floating-element element-2"
+                    style={{ color: currentFeature.color }}
+                  >
+                    <i className="fas fa-star"></i>
+                  </div>
+                  <div
+                    className="floating-element element-3"
+                    style={{ color: currentFeature.color }}
+                  >
+                    <i className="fas fa-heart"></i>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-          <div className="col-lg-6">
-            <div className="ps-lg-4">
-              <h1 className="headings mb-4">About SAWAARI</h1>
-              <p
-                className="lead mb-4"
-                style={{ color: "var(--text-secondary)", lineHeight: "1.8" }}
-              >
-                Welcome to SAWAARI, your smart transportation companion! We are
-                revolutionizing urban commuting by providing real-time
-                information on auto rickshaw availability and intelligent route
-                planning.
-              </p>
-              <p style={{ color: "var(--text-secondary)", lineHeight: "1.7" }}>
-                Understanding the challenges of finding reliable transportation
-                in busy metropolitan cities, our platform bridges the gap
-                between commuters and drivers with innovative, technology-driven
-                solutions that make every journey seamless and efficient.
-              </p>
-            </div>
-          </div>
         </div>
+      </div>
 
-        {/* What We Offer Section */}
-        <div className="row align-items-center">
-          <div className="col-lg-6 order-lg-2 mb-4 mb-lg-0">
-            <div className="position-relative">
-              <img
-                src="/auto-rik.jpeg"
-                className="img-fluid auto-image"
-                alt="Our Services"
-              />
-            </div>
-          </div>
-          <div className="col-lg-6 order-lg-1">
-            <div className="pe-lg-4">
-              <h1 className="headings mb-4">What We Offer</h1>
-              <div className="row">
-                <div className="col-12 mb-3">
-                  <div className="d-flex align-items-start">
-                    <div className="flex-shrink-0 me-3">
-                      <div
-                        className="rounded-circle d-flex align-items-center justify-content-center"
-                        style={{
-                          width: "50px",
-                          height: "50px",
-                          background: "var(--gradient-primary)",
-                        }}
-                      >
-                        <i
-                          className="fas fa-map-marker-alt"
-                          style={{ color: "var(--primary-dark)" }}
-                        ></i>
-                      </div>
-                    </div>
-                    <div>
-                      <h5
-                        className="mb-2"
-                        style={{ color: "var(--accent-green)" }}
-                      >
-                        Real-time Hotspots
-                      </h5>
-                      <p
-                        className="mb-0"
-                        style={{ color: "var(--text-secondary)" }}
-                      >
-                        Check auto rickshaw availability in real-time with
-                        color-coded hotspots based on driver density.
-                      </p>
-                    </div>
-                  </div>
+      {/* Mission Statement */}
+      <div className="mission-section">
+        <div className="container">
+          <div className="row justify-content-center">
+            <div className="col-lg-8 text-center">
+              <div className="mission-content">
+                <div className="mission-icon">
+                  <i className="fas fa-rocket"></i>
                 </div>
-
-                <div className="col-12 mb-3">
-                  <div className="d-flex align-items-start">
-                    <div className="flex-shrink-0 me-3">
-                      <div
-                        className="rounded-circle d-flex align-items-center justify-content-center"
-                        style={{
-                          width: "50px",
-                          height: "50px",
-                          background: "var(--gradient-primary)",
-                        }}
-                      >
-                        <i
-                          className="fas fa-route"
-                          style={{ color: "var(--primary-dark)" }}
-                        ></i>
-                      </div>
-                    </div>
-                    <div>
-                      <h5
-                        className="mb-2"
-                        style={{ color: "var(--accent-green)" }}
-                      >
-                        Smart Route Planning
-                      </h5>
-                      <p
-                        className="mb-0"
-                        style={{ color: "var(--text-secondary)" }}
-                      >
-                        Get detailed route information and transparent fare
-                        estimates for your desired destinations.
-                      </p>
-                    </div>
+                <h3 className="mission-title">
+                  Our <span className="highlight-green">Mission</span>
+                </h3>
+                <p className="mission-description">
+                  To digitize and optimize India's auto rickshaw ecosystem,
+                  creating a seamless bridge between traditional transportation
+                  and modern technology. We believe every journey should be
+                  efficient, transparent, and accessible to all.
+                </p>
+                <div className="mission-stats">
+                  <div className="stat-item">
+                    <div className="stat-number">2.5M+</div>
+                    <div className="stat-label">Auto Rickshaws</div>
                   </div>
-                </div>
-
-                <div className="col-12 mb-3">
-                  <div className="d-flex align-items-start">
-                    <div className="flex-shrink-0 me-3">
-                      <div
-                        className="rounded-circle d-flex align-items-center justify-content-center"
-                        style={{
-                          width: "50px",
-                          height: "50px",
-                          background: "var(--gradient-primary)",
-                        }}
-                      >
-                        <i
-                          className="fas fa-users"
-                          style={{ color: "var(--primary-dark)" }}
-                        ></i>
-                      </div>
-                    </div>
-                    <div>
-                      <h5
-                        className="mb-2"
-                        style={{ color: "var(--accent-green)" }}
-                      >
-                        Ride Sharing
-                      </h5>
-                      <p
-                        className="mb-0"
-                        style={{ color: "var(--text-secondary)" }}
-                      >
-                        Find travel companions for cost-effective and
-                        eco-friendly shared rides.
-                      </p>
-                    </div>
+                  <div className="stat-item">
+                    <div className="stat-number">50M+</div>
+                    <div className="stat-label">Daily Passengers</div>
                   </div>
-                </div>
-
-                <div className="col-12">
-                  <div className="d-flex align-items-start">
-                    <div className="flex-shrink-0 me-3">
-                      <div
-                        className="rounded-circle d-flex align-items-center justify-content-center"
-                        style={{
-                          width: "50px",
-                          height: "50px",
-                          background: "var(--gradient-primary)",
-                        }}
-                      >
-                        <i
-                          className="fas fa-mobile-alt"
-                          style={{ color: "var(--primary-dark)" }}
-                        ></i>
-                      </div>
-                    </div>
-                    <div>
-                      <h5
-                        className="mb-2"
-                        style={{ color: "var(--accent-green)" }}
-                      >
-                        Seamless Experience
-                      </h5>
-                      <p
-                        className="mb-0"
-                        style={{ color: "var(--text-secondary)" }}
-                      >
-                        User-friendly interface designed for hassle-free daily
-                        commuting with continuous improvements.
-                      </p>
-                    </div>
+                  <div className="stat-item">
+                    <div className="stat-number">100%</div>
+                    <div className="stat-label">Digital Future</div>
                   </div>
                 </div>
               </div>

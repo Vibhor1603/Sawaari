@@ -293,6 +293,9 @@ const {
   validateMessage,
 } = require("../Backend/securityController");
 
+// Import geolocation hotspot service
+const geoHotspotService = require("../Backend/geoHotspotService");
+
 // User blocking endpoints (protected with security action rate limiting)
 router
   .route("/api/security/block-user")
@@ -341,6 +344,103 @@ router
 router
   .route("/api/security/cleanup")
   .post(authenticateToken, triggerDataCleanup);
+
+// ===== GEOLOCATION-BASED HOTSPOT API ENDPOINTS =====
+
+// Get hotspots within map bounds (for viewport-based loading)
+router.route("/api/hotspots/bounds").post(async (req, res) => {
+  try {
+    const { bounds, zoom } = req.body;
+
+    if (
+      !bounds ||
+      !bounds.north ||
+      !bounds.south ||
+      !bounds.east ||
+      !bounds.west
+    ) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid bounds provided. Required: north, south, east, west",
+      });
+    }
+
+    const result = await geoHotspotService.getHotspotsInBounds(bounds, zoom);
+    res.json(result);
+  } catch (error) {
+    console.error("Hotspots bounds API error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch hotspots for bounds",
+    });
+  }
+});
+
+// Get hotspots near a specific location
+router.route("/api/hotspots/nearby").post(async (req, res) => {
+  try {
+    const { latitude, longitude, radius } = req.body;
+
+    if (!latitude || !longitude) {
+      return res.status(400).json({
+        success: false,
+        error: "Latitude and longitude are required",
+      });
+    }
+
+    const result = await geoHotspotService.getHotspotsNearLocation(
+      parseFloat(latitude),
+      parseFloat(longitude),
+      radius ? parseFloat(radius) : undefined
+    );
+
+    res.json(result);
+  } catch (error) {
+    console.error("Nearby hotspots API error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch nearby hotspots",
+    });
+  }
+});
+
+// Initialize geospatial indexes (admin only)
+router
+  .route("/api/hotspots/init-geo")
+  .post(authenticateToken, async (req, res) => {
+    try {
+      const initResult = await geoHotspotService.initializeGeoIndexes();
+      const migrateResult =
+        await geoHotspotService.migrateHotspotsToGeoFormat();
+
+      res.json({
+        success: true,
+        message: "Geospatial initialization completed",
+        indexesInitialized: initResult,
+        dataMigrated: migrateResult,
+      });
+    } catch (error) {
+      console.error("Geo initialization error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to initialize geospatial features",
+      });
+    }
+  });
+
+// Get hotspot statistics (admin only)
+router.route("/api/hotspots/stats").get(authenticateToken, async (req, res) => {
+  try {
+    const result = await geoHotspotService.getHotspotStats();
+    res.json(result);
+  } catch (error) {
+    console.error("Hotspot stats API error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch hotspot statistics",
+    });
+  }
+});
 
 // ===== CHAT API ENDPOINTS =====
 

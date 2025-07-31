@@ -1,8 +1,27 @@
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 
 export default function Footer() {
+  const [isVisible, setIsVisible] = useState(false);
+  const footerRef = useRef(null);
+
+  // Intersection Observer for fade-in animation
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsVisible(entry.isIntersecting);
+      },
+      { threshold: 0.2 }
+    );
+
+    if (footerRef.current) {
+      observer.observe(footerRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <footer className="footer">
+    <footer ref={footerRef} className={`footer ${isVisible ? "visible" : ""}`}>
       <div className="container">
         <div className="row align-items-center">
           <div className="col-md-6">

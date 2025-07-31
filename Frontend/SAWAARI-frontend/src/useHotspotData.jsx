@@ -7,7 +7,9 @@ export function useHotspotData() {
     const fetchHotspots = async () => {
       try {
         console.log("Fetching hotspot data...");
-        const response = await fetch("http://localhost:5000/hotspots");
+        const response = await fetch(
+          ` ${import.meta.env.VITE_API_BASE_URL} /hotspots`
+        );
         const result = await response.json();
         console.log("Hotspot data received:", result);
 

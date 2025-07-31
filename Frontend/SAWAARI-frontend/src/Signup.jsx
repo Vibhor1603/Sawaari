@@ -187,7 +187,7 @@ export default function SignUp() {
     return (
       <div
         className="container d-flex justify-content-center align-items-center"
-        style={{ minHeight: "50vh" }}
+        style={{ minHeight: "50vh", paddingTop: "80px" }}
       >
         <div className="text-center">
           <div className="spinner-border text-primary" role="status">
@@ -205,39 +205,17 @@ export default function SignUp() {
     <>
       {/* Success Message */}
       {successMessage && (
-        <div className="container mt-4">
-          <div
-            className="alert alert-success"
-            style={{
-              background: "var(--tertiary-dark)",
-              border: "1px solid var(--accent-green)",
-              color: "var(--text-primary)",
-              maxWidth: "500px",
-              margin: "0 auto",
-            }}
-          >
-            <i className="fas fa-check-circle me-2"></i>
-            {successMessage}
-          </div>
+        <div className="alert alert-success">
+          <i className="fas fa-check-circle me-2"></i>
+          {successMessage}
         </div>
       )}
 
       {/* Error Message */}
       {localError && (
-        <div className="container mt-4">
-          <div
-            className="alert alert-danger"
-            style={{
-              background: "var(--tertiary-dark)",
-              border: "1px solid #dc3545",
-              color: "var(--text-primary)",
-              maxWidth: "500px",
-              margin: "0 auto",
-            }}
-          >
-            <i className="fas fa-exclamation-triangle me-2"></i>
-            {localError}
-          </div>
+        <div className="alert alert-danger">
+          <i className="fas fa-exclamation-triangle me-2"></i>
+          {localError}
         </div>
       )}
 

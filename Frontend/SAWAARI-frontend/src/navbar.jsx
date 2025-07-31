@@ -1,12 +1,39 @@
-import { useContext } from "react";
+import { useContext, useState, useEffect, useRef } from "react";
 import { NavLink } from "react-router-dom";
 import { AuthContext } from "./AuthContext";
 
 export default function Navbar() {
-  const { isAuthenticated, user, isLoading } = useContext(AuthContext);
+  const { isAuthenticated, user } = useContext(AuthContext);
+  const [isNavOpen, setIsNavOpen] = useState(false);
+  const navRef = useRef(null);
+
+  const toggleNav = () => {
+    setIsNavOpen(!isNavOpen);
+  };
+
+  const closeNav = () => {
+    setIsNavOpen(false);
+  };
+
+  // Close navbar when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (navRef.current && !navRef.current.contains(event.target)) {
+        setIsNavOpen(false);
+      }
+    };
+
+    if (isNavOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isNavOpen]);
 
   return (
-    <nav className="navbar fixed-top navbar-expand-lg">
+    <nav className="navbar fixed-top navbar-expand-lg" ref={navRef}>
       <div className="container-fluid">
         <NavLink to="/" className="navbar-brand">
           <img src="/logo.jpg" alt="SAWAARI" className="logo-img" />
@@ -16,30 +43,52 @@ export default function Navbar() {
         <button
           className="navbar-toggler"
           type="button"
-          data-bs-toggle="collapse"
-          data-bs-target="#navbarNav"
+          onClick={toggleNav}
           aria-controls="navbarNav"
-          aria-expanded="false"
+          aria-expanded={isNavOpen}
           aria-label="Toggle navigation"
         >
           <span className="navbar-toggler-icon"></span>
         </button>
 
-        <div className="collapse navbar-collapse" id="navbarNav">
+        <div
+          className={`collapse navbar-collapse ${isNavOpen ? "show" : ""}`}
+          id="navbarNav"
+        >
           <div className="navbar-nav nav-bar">
-            <NavLink to="/home" className="nav-link nav-items">
+            <NavLink
+              to="/home"
+              className="nav-link nav-items"
+              onClick={closeNav}
+            >
               Home
             </NavLink>
-            <NavLink to="/hotspots" className="nav-link nav-items">
+            <NavLink
+              to="/hotspots"
+              className="nav-link nav-items"
+              onClick={closeNav}
+            >
               Hotspots
             </NavLink>
-            <NavLink to="/routes" className="nav-link nav-items">
+            <NavLink
+              to="/routes"
+              className="nav-link nav-items"
+              onClick={closeNav}
+            >
               Routes
             </NavLink>
-            <NavLink to="/ridebuddy" className="nav-link nav-items">
+            <NavLink
+              to="/ridebuddy"
+              className="nav-link nav-items"
+              onClick={closeNav}
+            >
               Ride Buddy
             </NavLink>
-            <NavLink to="/feedbacks" className="nav-link nav-items">
+            <NavLink
+              to="/feedbacks"
+              className="nav-link nav-items"
+              onClick={closeNav}
+            >
               Contact
             </NavLink>
           </div>
@@ -47,10 +96,18 @@ export default function Navbar() {
           <div className="navbar-nav ms-auto">
             {!isAuthenticated ? (
               <>
-                <NavLink className="nav-link signin-btn" to="/signin">
+                <NavLink
+                  className="nav-link signin-btn"
+                  to="/signin"
+                  onClick={closeNav}
+                >
                   Sign In
                 </NavLink>
-                <NavLink className="nav-link login-btn" to="/signup">
+                <NavLink
+                  className="nav-link login-btn"
+                  to="/signup"
+                  onClick={closeNav}
+                >
                   Sign Up
                 </NavLink>
               </>
@@ -61,7 +118,11 @@ export default function Navbar() {
                     Welcome, {user.email}
                   </span>
                 )}
-                <NavLink className="nav-link login-btn" to="/logout">
+                <NavLink
+                  className="nav-link login-btn"
+                  to="/logout"
+                  onClick={closeNav}
+                >
                   Logout
                 </NavLink>
               </>

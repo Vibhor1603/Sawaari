@@ -9,7 +9,6 @@ import LocationTracker from "./LocationTracker";
 import MapInteractionHandler from "./MapInteractionHandler";
 import HotspotMarkers from "./HotspotMarkers";
 import RouteForm from "./RouteForm";
-import FareEstimator from "./FareEstimator";
 
 export default function RouteInfo({ hotspot }) {
   const [source, setSource] = useState("");
@@ -51,7 +50,7 @@ export default function RouteInfo({ hotspot }) {
     return () => {
       isMounted = false;
     };
-  }, []); // FIXED: Empty dependency array to run only once on mount
+  }, [hotspot]); // FIXED: Empty dependency array to run only once on mount
 
   const handleRouteSearch = async (e) => {
     e.preventDefault();
@@ -178,14 +177,6 @@ export default function RouteInfo({ hotspot }) {
                 </div>
               </div>
             )}
-
-            {/* Fare Estimator Component */}
-            <FareEstimator
-              source={source}
-              destination={destination}
-              distance={distance}
-              onFareUpdate={(fare) => setTotalFare(fare)}
-            />
           </div>
         </div>
         <div className="col-md-8">
