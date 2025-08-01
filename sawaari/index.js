@@ -21,8 +21,11 @@ const io = socketIo(server, {
       "http://localhost:5173", // Vite default port
       "http://127.0.0.1:3000",
       "http://127.0.0.1:5173",
+      "https://sawaari.vercel.app",
+      "https://sawaari-vibhor-sharmas-projects.vercel.app",
+      "https://sawaari-nums1xo72-vibhor-sharmas-projects.vercel.app",
     ],
-    methods: ["GET", "POST"],
+    methods: ["GET", "POST", "PUT"],
     credentials: true,
   },
 });
@@ -37,9 +40,9 @@ app.use(
       "http://localhost:5173", // Vite default port
       "http://127.0.0.1:3000",
       "http://127.0.0.1:5173",
-      "https://sawaari.vercel.app/",
-      "https://sawaari-vibhor-sharmas-projects.vercel.app/",
-      "https://sawaari-nums1xo72-vibhor-sharmas-projects.vercel.app/",
+      "https://sawaari.vercel.app",
+      "https://sawaari-vibhor-sharmas-projects.vercel.app",
+      "https://sawaari-nums1xo72-vibhor-sharmas-projects.vercel.app",
     ],
     credentials: true,
   })
