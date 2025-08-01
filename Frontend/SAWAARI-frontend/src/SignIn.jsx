@@ -2,6 +2,8 @@ import SigninForm from "./SigninForm";
 import { useContext, useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { AuthContext } from "./AuthContext";
+import toast from "./utils/toast";
+import FloatingRickshaws from "./components/FloatingRickshaws";
 
 export default function SignIn() {
   const [userinfo, setUserinfo] = useState({
@@ -43,22 +45,30 @@ export default function SignIn() {
     const { email, password } = userinfo;
 
     if (!email.trim()) {
-      setLocalError("Email is required");
+      const errorMsg = "🛺 Email is required to hop on!";
+      setLocalError(errorMsg);
+      toast.error(errorMsg);
       return false;
     }
 
     if (!email.includes("@")) {
-      setLocalError("Please enter a valid email address");
+      const errorMsg = "🛺 Please enter a valid email address";
+      setLocalError(errorMsg);
+      toast.error(errorMsg);
       return false;
     }
 
     if (!password) {
-      setLocalError("Password is required");
+      const errorMsg = "🛺 Password is required for your ride";
+      setLocalError(errorMsg);
+      toast.error(errorMsg);
       return false;
     }
 
     if (password.length < 6) {
-      setLocalError("Password must be at least 6 characters long");
+      const errorMsg = "🛺 Password must be at least 6 characters long";
+      setLocalError(errorMsg);
+      toast.error(errorMsg);
       return false;
     }
 
@@ -92,14 +102,16 @@ export default function SignIn() {
 
       if (result.success) {
         console.log("✅ SignIn: Login successful, navigating...");
-        // Navigation will be handled by the useEffect above
+        toast.success("🛺 Welcome aboard! Login successful");
         const from = location.state?.from?.pathname || "/";
         navigate(from, { replace: true });
       } else {
         console.log("❌ SignIn: Login failed:", result.error);
-        setLocalError(
+        const errorMsg = `🛺 ${
           result.error || "Login failed. Please check your credentials."
-        );
+        }`;
+        setLocalError(errorMsg);
+        toast.error(errorMsg);
       }
     } catch (error) {
       console.error("🚨 SignIn: Catch block error:", error);
@@ -114,17 +126,10 @@ export default function SignIn() {
   // Show loading state
   if (isLoading) {
     return (
-      <div
-        className="container d-flex justify-content-center align-items-center"
-        style={{ minHeight: "50vh" }}
-      >
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-dark via-secondary-dark to-tertiary-dark pt-20">
         <div className="text-center">
-          <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Loading...</span>
-          </div>
-          <p className="mt-3" style={{ color: "var(--text-secondary)" }}>
-            Checking authentication...
-          </p>
+          <div className="w-12 h-12 border-4 border-accent-yellow border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-text-secondary">Checking authentication...</p>
         </div>
       </div>
     );
@@ -133,32 +138,50 @@ export default function SignIn() {
   const displayError = localError || error;
 
   return (
-    <>
-      {displayError && (
-        <div className="container mt-4">
-          <div
-            className="alert alert-danger"
-            style={{
-              background: "var(--tertiary-dark)",
-              border: "1px solid #dc3545",
-              color: "var(--text-primary)",
-              maxWidth: "500px",
-              margin: "0 auto",
-            }}
-          >
-            <i className="fas fa-exclamation-triangle me-2"></i>
-            {displayError}
-          </div>
+    <div className="min-h-screen bg-black pt-16 flex items-center justify-center p-4 relative">
+      <FloatingRickshaws />
+      {/* Background Elements */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[20%] left-[10%] text-2xl opacity-10 animate-float">
+          🔐
         </div>
-      )}
+        <div
+          className="absolute top-[30%] right-[15%] text-2xl opacity-10 animate-float"
+          style={{ animationDelay: "1s" }}
+        >
+          🛺
+        </div>
+        <div
+          className="absolute bottom-[25%] left-[20%] text-2xl opacity-10 animate-float"
+          style={{ animationDelay: "2s" }}
+        >
+          👤
+        </div>
+        <div
+          className="absolute bottom-[35%] right-[25%] text-2xl opacity-10 animate-float"
+          style={{ animationDelay: "3s" }}
+        >
+          🚀
+        </div>
+      </div>
 
-      <SigninForm
-        userinfo={userinfo}
-        handleInput={handleInput}
-        handleSubmit={handleSubmit}
-        isSubmitting={isSubmitting}
-        error={displayError}
-      />
-    </>
+      <div className="relative z-10 w-full max-w-md">
+        {/* Error Alert */}
+        {displayError && (
+          <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200 flex items-center gap-2 text-sm">
+            <span>⚠️</span>
+            <span>{displayError}</span>
+          </div>
+        )}
+
+        <SigninForm
+          userinfo={userinfo}
+          handleInput={handleInput}
+          handleSubmit={handleSubmit}
+          isSubmitting={isSubmitting}
+          error={displayError}
+        />
+      </div>
+    </div>
   );
 }

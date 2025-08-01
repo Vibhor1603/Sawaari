@@ -14,6 +14,12 @@ const LiveChat = ({ chatId, partnerName, onClose }) => {
   const [timeRemaining, setTimeRemaining] = useState(600); // 10 minutes in seconds
   const [chatExpired, setChatExpired] = useState(false);
   const [connected, setConnected] = useState(false);
+
+  // Phase tracking
+  const [connectionPhase, setConnectionPhase] = useState("chat"); // "chat" or "contact"
+  const [chatTimeRemaining, setChatTimeRemaining] = useState(600); // 10 minutes
+  const [contactTimeRemaining, setContactTimeRemaining] = useState(0); // 5 minutes
+  const [totalTimeRemaining, setTotalTimeRemaining] = useState(900); // 15 minutes total
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
   const timerRef = useRef(null);
@@ -25,15 +31,40 @@ const LiveChat = ({ chatId, partnerName, onClose }) => {
   }, []);
 
   const handleChatJoined = useCallback(
-    ({ messages: chatMessages, timeRemaining: remaining }) => {
+    ({
+      messages: chatMessages,
+      phase,
+      isChatPhase,
+      isContactPhase,
+      chatTimeRemaining: chatTime,
+      contactTimeRemaining: contactTime,
+      totalTimeRemaining: totalTime,
+    }) => {
       console.log("LiveChat: Chat joined successfully!", {
         chatMessages,
-        remaining,
+        phase,
+        isChatPhase,
+        isContactPhase,
+        chatTime,
+        contactTime,
+        totalTime,
       });
+
       setMessages(chatMessages || []);
-      setTimeRemaining(Math.floor(remaining / 1000));
+      setConnectionPhase(phase || "chat");
+      setChatTimeRemaining(Math.floor((chatTime || 0) / 1000));
+      setContactTimeRemaining(Math.floor((contactTime || 0) / 1000));
+      setTotalTimeRemaining(Math.floor((totalTime || 0) / 1000));
+      setTimeRemaining(Math.floor((totalTime || 0) / 1000));
       setConnected(true);
-      toast.success("Connected to chat!");
+
+      if (phase === "contact") {
+        toast.info(
+          "Chat time expired. Contact details available for 5 more minutes."
+        );
+      } else {
+        toast.success("Connected to chat!");
+      }
     },
     []
   );
@@ -42,6 +73,26 @@ const LiveChat = ({ chatId, partnerName, onClose }) => {
     console.log("LiveChat: Chat expired");
     setChatExpired(true);
     toast.info("Chat session has expired (10 minutes)");
+  }, []);
+
+  const handleChatPhaseExpired = useCallback(
+    ({ phase, contactTimeRemaining: contactTime }) => {
+      console.log("LiveChat: Chat phase expired, entering contact phase");
+      setConnectionPhase("contact");
+      setContactTimeRemaining(Math.floor((contactTime || 0) / 1000));
+      setChatTimeRemaining(0);
+      toast.info(
+        "Chat time expired! Contact details available for 5 more minutes."
+      );
+    },
+    []
+  );
+
+  const handleConnectionExpired = useCallback(() => {
+    console.log("LiveChat: Connection completely expired");
+    setChatExpired(true);
+    setConnectionPhase("expired");
+    toast.info("Connection expired. Contact details no longer available.");
   }, []);
 
   const handleUserJoined = useCallback(
@@ -163,6 +214,8 @@ const LiveChat = ({ chatId, partnerName, onClose }) => {
     socketService.on("chat-joined", wrappedHandleChatJoined);
     socketService.on("chat-error", handleChatError);
     socketService.on("message-sent", handleMessageSent);
+    socketService.on("chat-phase-expired", handleChatPhaseExpired);
+    socketService.on("connection-expired", handleConnectionExpired);
 
     // Join chat room
     if (socketService.getConnectionStatus().connected) {
@@ -187,9 +240,11 @@ const LiveChat = ({ chatId, partnerName, onClose }) => {
       socketService.off("user-left", handleUserLeft);
       socketService.off("user-typing", handleTyping);
       socketService.off("chat-joined", wrappedHandleChatJoined);
-      clearTimeout(joinTimeout);
       socketService.off("chat-error", handleChatError);
       socketService.off("message-sent", handleMessageSent);
+      socketService.off("chat-phase-expired", handleChatPhaseExpired);
+      socketService.off("connection-expired", handleConnectionExpired);
+      clearTimeout(joinTimeout);
 
       if (timerRef.current) {
         clearInterval(timerRef.current);
@@ -214,16 +269,34 @@ const LiveChat = ({ chatId, partnerName, onClose }) => {
   }, [messages]);
 
   useEffect(() => {
-    // Start countdown timer
-    if (connected && timeRemaining > 0) {
+    // Start countdown timer for total connection time
+    if (connected && totalTimeRemaining > 0) {
       timerRef.current = setInterval(() => {
-        setTimeRemaining((prev) => {
+        setTotalTimeRemaining((prev) => {
           if (prev <= 1) {
             setChatExpired(true);
+            setConnectionPhase("expired");
             return 0;
           }
           return prev - 1;
         });
+
+        // Update phase-specific timers
+        if (connectionPhase === "chat") {
+          setChatTimeRemaining((prev) => {
+            if (prev <= 1) {
+              setConnectionPhase("contact");
+              setContactTimeRemaining(5 * 60); // 5 minutes
+              toast.info(
+                "Chat time expired! Contact details available for 5 more minutes."
+              );
+              return 0;
+            }
+            return prev - 1;
+          });
+        } else if (connectionPhase === "contact") {
+          setContactTimeRemaining((prev) => Math.max(0, prev - 1));
+        }
       }, 1000);
     }
 
@@ -232,7 +305,7 @@ const LiveChat = ({ chatId, partnerName, onClose }) => {
         clearInterval(timerRef.current);
       }
     };
-  }, [connected, timeRemaining]);
+  }, [connected, totalTimeRemaining, connectionPhase]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -329,163 +402,236 @@ const LiveChat = ({ chatId, partnerName, onClose }) => {
   };
 
   return (
-    <div className="live-chat-overlay">
-      <div className="live-chat-container">
-        {/* Chat Header */}
-        <div className="chat-header">
-          <div className="chat-header-info">
-            <div className="partner-avatar">
-              <i className="fas fa-user"></i>
-            </div>
-            <div className="partner-details">
-              <h4>{partnerName}</h4>
-              <span className="chat-status">
-                {chatExpired ? (
-                  <span className="status-expired">
-                    <i className="fas fa-clock"></i> Chat Expired
-                  </span>
-                ) : connected ? (
-                  <span
-                    className={`status-active ${
-                      timeRemaining <= 60
-                        ? "time-warning"
-                        : timeRemaining <= 180
-                        ? "time-caution"
-                        : ""
-                    }`}
-                  >
-                    <i className="fas fa-circle"></i> Active •
-                    <span className="countdown-timer">
-                      <i className="fas fa-clock"></i>{" "}
-                      {formatTime(timeRemaining)} left
-                    </span>
-                  </span>
-                ) : (
-                  <span className="status-connecting">
-                    <i className="fas fa-spinner fa-spin"></i> Connecting...
-                  </span>
-                )}
+    <div className="h-full flex flex-col bg-gradient-to-b from-neutral-900 to-neutral-800 rounded-b-xl overflow-hidden">
+      {/* Enhanced Status Bar */}
+      <div className="px-4 py-2 bg-gradient-to-r from-neutral-800 to-neutral-700 border-b border-neutral-600">
+        <div className="flex items-center gap-2">
+          <div
+            className={`w-3 h-3 rounded-full ${
+              chatExpired
+                ? "bg-red-500 animate-pulse"
+                : connected
+                ? "bg-green-500 animate-pulse shadow-lg shadow-green-500/50"
+                : "bg-yellow-500 animate-pulse"
+            }`}
+          ></div>
+          <span className="text-xs font-medium text-white">
+            {chatExpired || connectionPhase === "expired" ? (
+              <span className="text-red-400 font-bold">
+                ⏰ Connection Expired
               </span>
-            </div>
-          </div>
-          <button className="close-chat-btn" onClick={onClose}>
-            <i className="fas fa-times"></i>
-          </button>
-        </div>
-
-        {/* Chat Messages */}
-        <div className="chat-messages">
-          {!connected ? (
-            <div className="chat-welcome">
-              <div className="welcome-icon">
-                <i className="fas fa-spinner fa-spin"></i>
-              </div>
-              <h3>Connecting to chat...</h3>
-              <p>Please wait while we connect you to {partnerName}</p>
-            </div>
-          ) : messages.length === 0 ? (
-            <div className="chat-welcome">
-              <div className="welcome-icon">
-                <i className="fas fa-comments"></i>
-              </div>
-              <h3>Chat started!</h3>
-              <p>
-                You have 10 minutes to coordinate your ride with {partnerName}
-              </p>
-            </div>
-          ) : (
-            messages.map((message) => {
-              const isOwnMessage =
-                message.senderId === user?.id || message.senderId === userId;
-              return (
-                <div
-                  key={message.id}
-                  className={`message ${
-                    isOwnMessage ? "own-message" : "partner-message"
+            ) : connected ? (
+              connectionPhase === "chat" ? (
+                <span
+                  className={`font-bold ${
+                    chatTimeRemaining <= 60
+                      ? "text-red-400"
+                      : chatTimeRemaining <= 180
+                      ? "text-yellow-400"
+                      : "text-green-400"
                   }`}
                 >
-                  <div className="message-content">
-                    <div className="message-header">
-                      <span className="message-sender">
-                        {isOwnMessage ? "You" : partnerName}
-                      </span>
-                      <span className="message-indicator">
-                        {isOwnMessage ? (
-                          <i className="fas fa-arrow-right sent-indicator"></i>
-                        ) : (
-                          <i className="fas fa-arrow-left received-indicator"></i>
-                        )}
-                      </span>
-                    </div>
-                    <p className="message-text">{message.message}</p>
-                    <div className="message-footer">
-                      <span className="message-time">
-                        {formatMessageTime(message.timestamp)}
-                      </span>
-                      {isOwnMessage && (
-                        <span className="message-status">
-                          <i className="fas fa-check delivered"></i>
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })
-          )}
-
-          {partnerTyping && connected && (
-            <div className="typing-indicator">
-              <div className="typing-dots">
-                <span></span>
-                <span></span>
-                <span></span>
-              </div>
-              <span className="typing-text">{partnerName} is typing...</span>
-            </div>
-          )}
-
-          <div ref={messagesEndRef} />
+                  💬 Chat Active • ⏱️ {formatTime(chatTimeRemaining)}
+                </span>
+              ) : connectionPhase === "contact" ? (
+                <span
+                  className={`font-bold ${
+                    contactTimeRemaining <= 60
+                      ? "text-red-400"
+                      : "text-blue-400"
+                  }`}
+                >
+                  📞 Contact Details • ⏱️ {formatTime(contactTimeRemaining)}
+                </span>
+              ) : (
+                <span className="text-green-400 font-bold">
+                  🟢 Connected • ⏱️ {formatTime(totalTimeRemaining)}
+                </span>
+              )
+            ) : (
+              <span className="text-yellow-400 font-bold">
+                ⏳ Connecting...
+              </span>
+            )}
+          </span>
         </div>
+      </div>
 
-        {/* Chat Input */}
-        <div className="chat-input-container">
-          {chatExpired ? (
-            <div className="chat-expired-notice">
-              <i className="fas fa-clock"></i>
-              <span>
-                Chat session has expired. Use the contact details above to
-                continue communication.
+      {/* Compact Messages */}
+      <div className="flex-1 overflow-y-auto p-3 space-y-3">
+        {!connected ? (
+          <div className="flex flex-col items-center justify-center h-full text-center">
+            <div className="w-12 h-12 bg-neutral-800 rounded-lg flex items-center justify-center mb-3">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-sawaari-yellow"></div>
+            </div>
+            <h3 className="text-sm font-bold text-white mb-1">Connecting...</h3>
+            <p className="text-xs text-neutral-400">
+              Connecting to {partnerName}
+            </p>
+          </div>
+        ) : messages.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-center">
+            <div className="w-12 h-12 bg-gradient-to-br from-sawaari-yellow/20 to-sawaari-green/20 rounded-lg flex items-center justify-center mb-3">
+              <span className="text-2xl">💬</span>
+            </div>
+            <h3 className="text-sm font-bold text-white mb-1">Chat started!</h3>
+            <p className="text-xs text-neutral-400 max-w-xs">
+              10 minutes to coordinate with {partnerName}
+            </p>
+          </div>
+        ) : (
+          messages.map((message) => {
+            const isOwnMessage =
+              message.senderId === user?.id || message.senderId === userId;
+            return (
+              <div
+                key={message.id}
+                className={`flex ${
+                  isOwnMessage ? "justify-end" : "justify-start"
+                }`}
+              >
+                <div
+                  className={`max-w-xs px-3 py-2 rounded-xl transition-all duration-300 text-white ${
+                    isOwnMessage
+                      ? "chat-message-sent border border-green-500/30"
+                      : "chat-message-received border border-neutral-600"
+                  }`}
+                >
+                  <div className="flex items-center gap-1 mb-1">
+                    <span
+                      className={`text-xs font-semibold ${
+                        isOwnMessage
+                          ? "text-green-100 opacity-80"
+                          : "opacity-70"
+                      }`}
+                    >
+                      {isOwnMessage ? "You" : partnerName}
+                    </span>
+                    <span
+                      className={`text-xs ${
+                        isOwnMessage
+                          ? "text-green-200 opacity-70"
+                          : "opacity-50"
+                      }`}
+                    >
+                      {formatMessageTime(message.timestamp)}
+                    </span>
+                  </div>
+                  <p className="text-sm">{message.message}</p>
+                  {isOwnMessage && (
+                    <div className="flex justify-end mt-1">
+                      <span className="text-xs opacity-80 text-green-100">
+                        ✓
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })
+        )}
+
+        {partnerTyping && connected && (
+          <div className="flex justify-start">
+            <div className="bg-neutral-800 px-3 py-2 rounded-xl">
+              <div className="flex items-center gap-2">
+                <div className="flex gap-1">
+                  <div className="w-1.5 h-1.5 bg-neutral-400 rounded-full animate-bounce"></div>
+                  <div
+                    className="w-1.5 h-1.5 bg-neutral-400 rounded-full animate-bounce"
+                    style={{ animationDelay: "0.1s" }}
+                  ></div>
+                  <div
+                    className="w-1.5 h-1.5 bg-neutral-400 rounded-full animate-bounce"
+                    style={{ animationDelay: "0.2s" }}
+                  ></div>
+                </div>
+                <span className="text-xs text-neutral-400">
+                  {partnerName} typing...
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Input Section / Contact Details */}
+      <div className="p-3 border-t border-neutral-700 bg-neutral-800">
+        {chatExpired || connectionPhase === "expired" ? (
+          <div className="flex items-center justify-center gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+            <span className="text-red-400">⏰</span>
+            <span className="text-xs text-red-400 text-center">
+              Connection expired. Contact details no longer available.
+            </span>
+          </div>
+        ) : connectionPhase === "contact" ? (
+          <div className="space-y-3">
+            <div className="flex items-center justify-center gap-2 p-2 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+              <span className="text-blue-400">📞</span>
+              <span className="text-xs text-blue-400 text-center">
+                Chat time expired. Contact details available for{" "}
+                {formatTime(contactTimeRemaining)}
               </span>
             </div>
-          ) : !connected ? (
-            <div className="chat-connecting-notice">
-              <i className="fas fa-spinner fa-spin"></i>
-              <span>Connecting to chat...</span>
-            </div>
-          ) : (
-            <form onSubmit={handleSendMessage} className="chat-input-form">
-              <div className="input-group">
-                <input
-                  type="text"
-                  value={newMessage}
-                  onChange={handleInputChange}
-                  placeholder="Type your message..."
-                  className="message-input"
-                  maxLength={500}
-                  disabled={chatExpired || !connected}
-                />
-                <button
-                  type="submit"
-                  className="send-btn"
-                  disabled={!newMessage.trim() || chatExpired || !connected}
-                >
-                  <i className="fas fa-paper-plane"></i>
-                </button>
+            <div className="bg-neutral-700 rounded-lg p-3 space-y-2">
+              <div className="text-center">
+                <h4 className="text-sm font-semibold text-white mb-2">
+                  Contact Details
+                </h4>
+                <div className="text-xs text-neutral-300">
+                  <p className="mb-1">👤 {partnerName}</p>
+                  <p className="text-sawaari-yellow">
+                    Use these details to coordinate your ride
+                  </p>
+                </div>
               </div>
-            </form>
-          )}
-        </div>
+            </div>
+          </div>
+        ) : !connected ? (
+          <div className="flex items-center justify-center gap-2 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-yellow-400"></div>
+            <span className="text-xs text-yellow-400">Connecting...</span>
+          </div>
+        ) : (
+          <form onSubmit={handleSendMessage} className="flex gap-2">
+            <input
+              type="text"
+              value={newMessage}
+              onChange={handleInputChange}
+              placeholder="Type message..."
+              className="flex-1 px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-sm placeholder-neutral-400 focus:border-sawaari-yellow focus:ring-1 focus:ring-sawaari-yellow/20 focus:outline-none transition-all duration-300"
+              maxLength={500}
+              disabled={chatExpired || !connected || connectionPhase !== "chat"}
+            />
+            <button
+              type="submit"
+              disabled={
+                !newMessage.trim() ||
+                chatExpired ||
+                !connected ||
+                connectionPhase !== "chat"
+              }
+              className="px-4 py-2 bg-gradient-to-r from-sawaari-yellow to-sawaari-green text-black rounded-lg font-semibold hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+            >
+              <span className="text-sm">Send</span>
+              <svg
+                className="w-3 h-3"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                />
+              </svg>
+            </button>
+          </form>
+        )}
       </div>
     </div>
   );

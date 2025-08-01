@@ -19,8 +19,13 @@ class ChatService {
     this.activeConnections = new Map(); // userId -> socket connection
     this.userRooms = new Map(); // userId -> Set of room names
     this.rideBuddyNotifications = new Map(); // userId -> pending notifications
+    this.chatMessages = new Map(); // chatId -> array of messages (temporary storage)
+    this.chatCreationTimes = new Map(); // chatId -> creation timestamp
 
     console.log("🚀 Enhanced Chat Service initialized for Ride Buddy System");
+
+    // Start cleanup interval for expired chats
+    this.startChatCleanup();
   }
 
   // Initialize Socket.IO for real-time communication with ride buddy features
@@ -824,14 +829,16 @@ class ChatService {
       const userSocket = this.activeConnections.get(receiverId);
       if (userSocket) {
         console.log(`✅ Sending real-time notification to user ${receiverId}`);
-        // Send real-time notification
+        // Send real-time notification with complete data
         userSocket.emit("ride_buddy_new_request", {
           requestId: requestData._id || requestData.requestId,
+          senderId: requestData.senderId,
           senderName: requestData.senderName,
           senderEmail: requestData.senderEmail,
+          senderPhone: requestData.senderPhone,
           routeDetails: requestData.routeDetails,
           message: requestData.message,
-          timestamp: new Date(),
+          timestamp: requestData.timestamp || new Date().toISOString(),
         });
 
         // Also emit a generic notification event that the frontend can catch
@@ -988,14 +995,20 @@ class ChatService {
 
       const chat = chats[0];
 
-      // Check if chat has expired (10 minutes)
+      // Check connection phases (10 min chat + 5 min contact details = 15 min total)
       const chatAge = Date.now() - new Date(chat.createdAt).getTime();
-      const CHAT_DURATION = 10 * 60 * 1000; // 10 minutes
+      const CHAT_DURATION = 10 * 60 * 1000; // 10 minutes for active chat
+      const CONTACT_DURATION = 5 * 60 * 1000; // 5 minutes for contact details
+      const TOTAL_CONNECTION_DURATION = CHAT_DURATION + CONTACT_DURATION; // 15 minutes total
 
-      if (chatAge > CHAT_DURATION) {
-        socket.emit("chat-expired", { chatId });
+      if (chatAge > TOTAL_CONNECTION_DURATION) {
+        socket.emit("connection-expired", { chatId });
         return;
       }
+
+      const isChatPhase = chatAge <= CHAT_DURATION;
+      const isContactPhase =
+        chatAge > CHAT_DURATION && chatAge <= TOTAL_CONNECTION_DURATION;
 
       // Join the chat room
       socket.join(chatId);
@@ -1004,24 +1017,50 @@ class ChatService {
       // Notify other users in the chat
       socket.to(chatId).emit("user-joined", { userId, chatId });
 
-      // Send chat history and time remaining
-      const timeRemaining = Math.max(0, CHAT_DURATION - chatAge);
-      const expiresAt = new Date(
+      // Calculate time remaining and phase information
+      const chatTimeRemaining = Math.max(0, CHAT_DURATION - chatAge);
+      const totalTimeRemaining = Math.max(
+        0,
+        TOTAL_CONNECTION_DURATION - chatAge
+      );
+      const contactTimeRemaining = isContactPhase
+        ? Math.max(0, TOTAL_CONNECTION_DURATION - chatAge)
+        : 0;
+
+      const chatExpiresAt = new Date(
         new Date(chat.createdAt).getTime() + CHAT_DURATION
       );
+      const connectionExpiresAt = new Date(
+        new Date(chat.createdAt).getTime() + TOTAL_CONNECTION_DURATION
+      );
+
+      // Track chat creation time for cleanup
+      this.trackChatCreation(chatId);
+
+      // Load messages from memory instead of database
+      const chatMessages = this.chatMessages?.get(chatId) || [];
 
       socket.emit("chat-joined", {
         chatId,
-        messages: (chat.messages || []).map((msg) => ({
-          id: msg._id || msg.id || Date.now().toString(),
+        messages: chatMessages.map((msg) => ({
+          id: msg.id || Date.now().toString(),
           chatId,
           message: msg.message,
           senderId: msg.senderId.toString(),
           timestamp: msg.timestamp,
           senderName: msg.senderName || msg.senderId.toString(),
         })),
-        timeRemaining,
-        expiresAt: expiresAt.toISOString(),
+        // Phase information
+        phase: isChatPhase ? "chat" : "contact",
+        isChatPhase,
+        isContactPhase,
+        // Time information
+        chatTimeRemaining,
+        contactTimeRemaining,
+        totalTimeRemaining,
+        // Expiration times
+        chatExpiresAt: chatExpiresAt.toISOString(),
+        connectionExpiresAt: connectionExpiresAt.toISOString(),
       });
 
       console.log(
@@ -1121,15 +1160,35 @@ class ChatService {
 
       const chat = chats[0];
 
-      // Check if chat has expired using centralized function
-      const { isChatExpired } = require("./database");
+      // Check connection phase and expiration
+      const chatAge = Date.now() - new Date(chat.createdAt).getTime();
+      const CHAT_DURATION = 10 * 60 * 1000; // 10 minutes for active chat
+      const TOTAL_CONNECTION_DURATION = 15 * 60 * 1000; // 15 minutes total
 
-      if (isChatExpired(chat)) {
-        const chatAge = Date.now() - new Date(chat.createdAt).getTime();
+      if (chatAge > TOTAL_CONNECTION_DURATION) {
         console.error(
-          `❌ Chat ${chatId} has expired (age: ${Math.floor(chatAge / 1000)}s)`
+          `❌ Connection ${chatId} has completely expired (age: ${Math.floor(
+            chatAge / 1000
+          )}s)`
         );
-        socket.emit("chat-expired", { chatId });
+        socket.emit("connection-expired", { chatId });
+        return;
+      }
+
+      if (chatAge > CHAT_DURATION) {
+        console.error(
+          `❌ Chat phase expired for ${chatId}, now in contact phase (age: ${Math.floor(
+            chatAge / 1000
+          )}s)`
+        );
+        socket.emit("chat-phase-expired", {
+          chatId,
+          phase: "contact",
+          contactTimeRemaining: Math.max(
+            0,
+            TOTAL_CONNECTION_DURATION - chatAge
+          ),
+        });
         return;
       }
 
@@ -1156,24 +1215,29 @@ class ChatService {
         senderName: socket.userName || senderId,
       };
 
-      console.log(`💾 Saving message to database:`, messageData);
+      console.log(`💾 Storing message in memory (temporary):`, messageData);
 
-      // Update chat in database
-      const updateResult = await updateRideBuddyChat(new ObjectId(chatId), {
-        $push: { messages: messageData },
+      // Store message in memory only (temporary for 10 minutes)
+      if (!this.chatMessages) {
+        this.chatMessages = new Map();
+      }
+
+      if (!this.chatMessages.has(chatId)) {
+        this.chatMessages.set(chatId, []);
+      }
+
+      this.chatMessages.get(chatId).push(messageData);
+
+      // Clean up old messages (keep only last 100 messages per chat)
+      const messages = this.chatMessages.get(chatId);
+      if (messages.length > 100) {
+        this.chatMessages.set(chatId, messages.slice(-100));
+      }
+
+      // Update chat last message time in database (but not the messages)
+      await updateRideBuddyChat(new ObjectId(chatId), {
         $set: { lastMessageAt: new Date() },
       });
-
-      if (updateResult.modifiedCount === 0) {
-        console.error(
-          `❌ Failed to save message to database for chat ${chatId}`
-        );
-        socket.emit("chat-error", {
-          error: "Failed to save message",
-          code: "DATABASE_ERROR",
-        });
-        return;
-      }
 
       console.log(`📡 Broadcasting message to chat room: ${chatId}`);
 
@@ -1216,6 +1280,35 @@ class ChatService {
       socket.to(chatId).emit("user-typing", { userId, isTyping, chatId });
     } catch (error) {
       console.error("Error handling typing:", error);
+    }
+  }
+  // Start cleanup interval for expired chat messages
+  startChatCleanup() {
+    setInterval(() => {
+      this.cleanupExpiredChats();
+    }, 60000); // Run every minute
+  }
+
+  // Clean up expired connections from memory
+  cleanupExpiredChats() {
+    const now = Date.now();
+    const TOTAL_CONNECTION_DURATION = 15 * 60 * 1000; // 15 minutes total
+
+    for (const [chatId, messages] of this.chatMessages.entries()) {
+      // Check if we have creation time for this chat
+      const creationTime = this.chatCreationTimes.get(chatId);
+      if (creationTime && now - creationTime > TOTAL_CONNECTION_DURATION) {
+        console.log(`🧹 Cleaning up expired connection for chat: ${chatId}`);
+        this.chatMessages.delete(chatId);
+        this.chatCreationTimes.delete(chatId);
+      }
+    }
+  }
+
+  // Track chat creation time when chat is first accessed
+  trackChatCreation(chatId) {
+    if (!this.chatCreationTimes.has(chatId)) {
+      this.chatCreationTimes.set(chatId, Date.now());
     }
   }
 }

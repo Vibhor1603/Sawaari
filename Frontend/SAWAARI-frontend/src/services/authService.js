@@ -337,6 +337,33 @@ class AuthService {
     }
   }
 
+  // Set current user info (for profile updates)
+  setCurrentUser(userData) {
+    // Note: This is a temporary storage solution
+    // In a real app, you'd want to update the JWT token or use a separate user storage
+    const userKey = `${this.tokenKey}_user`;
+    sessionStorage.setItem(userKey, JSON.stringify(userData));
+  }
+
+  // Enhanced getCurrentUser that checks both token and stored user data
+  getCurrentUserEnhanced() {
+    const tokenUser = this.getCurrentUser();
+    const userKey = `${this.tokenKey}_user`;
+    const storedUser = sessionStorage.getItem(userKey);
+
+    if (storedUser) {
+      try {
+        const parsedStoredUser = JSON.parse(storedUser);
+        // Merge token data with stored updates
+        return { ...tokenUser, ...parsedStoredUser };
+      } catch (error) {
+        console.error("Error parsing stored user data:", error);
+      }
+    }
+
+    return tokenUser;
+  }
+
   // API methods for different endpoints with caching
   async getHotspots() {
     const cacheKey = "hotspots";

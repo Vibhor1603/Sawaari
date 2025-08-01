@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "./AuthContext";
 import rideBuddyService from "./services/rideBuddyService";
@@ -7,7 +7,7 @@ import socketService from "./services/socketService";
 import authService from "./services/authService";
 import LiveChat from "./components/LiveChat";
 import toast from "./utils/toast";
-// Direct phone number display - no masking needed after connection
+import React from "react"; // Added missing import for React
 
 const RideBuddy = () => {
   const { user, isAuthenticated } = useContext(AuthContext);
@@ -24,6 +24,21 @@ const RideBuddy = () => {
   // Get hotspot data for dropdowns
   const [hotspotData] = useHotspotData();
 
+  // Extract location names from hotspot data with debugging
+  const locationNames = React.useMemo(() => {
+    console.log("Hotspot data in RideBuddy:", hotspotData);
+    if (hotspotData && Array.isArray(hotspotData)) {
+      const names = hotspotData
+        .map((spot) => spot.name)
+        .filter(Boolean)
+        .sort();
+      console.log("Extracted location names:", names);
+      return names;
+    }
+    console.log("No hotspot data available");
+    return [];
+  }, [hotspotData]);
+
   // Main state
   const [activeTab, setActiveTab] = useState("search");
 
@@ -35,16 +50,51 @@ const RideBuddy = () => {
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [sentRequestIds, setSentRequestIds] = useState(new Set());
+  const [sentRequestTimes, setSentRequestTimes] = useState(new Map()); // Track when requests were sent
 
   // Requests and connections
   const [incomingRequests, setIncomingRequests] = useState([]);
   const [outgoingRequests, setOutgoingRequests] = useState([]);
   const [activeConnections, setActiveConnections] = useState([]);
   const [requestsLoading, setRequestsLoading] = useState(false);
+  const [processingRequests, setProcessingRequests] = useState(new Set()); // Track requests being processed
 
   // Live chat state
   const [activeChatId, setActiveChatId] = useState(null);
   const [chatPartner, setChatPartner] = useState(null);
+
+  // How it works popup state
+  const [showHowItWorks, setShowHowItWorks] = useState(false);
+
+  // Clean up expired sent requests
+  useEffect(() => {
+    const cleanupInterval = setInterval(() => {
+      const now = Date.now();
+      const expiredIds = [];
+
+      sentRequestTimes.forEach((sentTime, userId) => {
+        if (now - sentTime > 10 * 60 * 1000) {
+          // 10 minutes
+          expiredIds.push(userId);
+        }
+      });
+
+      if (expiredIds.length > 0) {
+        setSentRequestIds((prev) => {
+          const newSet = new Set(prev);
+          expiredIds.forEach((id) => newSet.delete(id));
+          return newSet;
+        });
+        setSentRequestTimes((prev) => {
+          const newMap = new Map(prev);
+          expiredIds.forEach((id) => newMap.delete(id));
+          return newMap;
+        });
+      }
+    }, 60000); // Check every minute
+
+    return () => clearInterval(cleanupInterval);
+  }, [sentRequestTimes]);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -139,27 +189,71 @@ const RideBuddy = () => {
       socketService.on("ride_buddy_new_request", (data) => {
         console.log("🔔 New ride request received:", data);
         toast.success(`New ride request from ${data.senderName}!`);
-        // Immediately refresh requests to show the new one
-        loadRequests();
+
+        // Immediately add to incoming requests for instant UI update
+        const newRequest = {
+          _id: data.requestId,
+          senderId: data.senderId,
+          senderName: data.senderName,
+          senderEmail: data.senderEmail,
+          routeDetails: data.routeDetails,
+          message: data.message,
+          status: "pending",
+          type: "incoming",
+          createdAt: new Date().toISOString(),
+        };
+
+        setIncomingRequests((prev) => [newRequest, ...prev]);
+
+        // Clear cache to ensure fresh data on next load
+        rideBuddyService.clearCache();
+
         // Switch to connections tab to show the new request
         if (activeTab === "search") {
           setActiveTab("connections");
         }
+
+        // Also refresh from server to ensure consistency
+        setTimeout(() => loadRequests(), 500);
       });
 
       socketService.on("ride_buddy_request_response", (data) => {
         console.log("🔔 Request response received:", data);
+
+        // Clear cache to ensure fresh data
+        rideBuddyService.clearCache();
+
         if (data.action === "accepted") {
           toast.success(`${data.responderName} accepted your request!`);
-          // Immediately reload connections to show the new match
-          loadConnections(true); // Force refresh
           // Switch to connections tab to show the match
           setActiveTab("connections");
+          // Reload connections with delay to ensure backend processing is complete
+          setTimeout(() => loadConnections(true), 200);
         } else {
           toast.info(`${data.responderName} declined your request`);
         }
-        // Reload requests to update status
-        loadRequests();
+
+        // Remove from outgoing requests immediately
+        setOutgoingRequests((prev) =>
+          prev.filter((req) => req._id !== data.requestId)
+        );
+
+        // Also clean up sent request tracking
+        if (data.receiverId) {
+          setSentRequestIds((prev) => {
+            const newSet = new Set(prev);
+            newSet.delete(data.receiverId);
+            return newSet;
+          });
+          setSentRequestTimes((prev) => {
+            const newMap = new Map(prev);
+            newMap.delete(data.receiverId);
+            return newMap;
+          });
+        }
+
+        // Reload requests to update status with delay
+        setTimeout(() => loadRequests(), 300);
       });
 
       socketService.on("new_notification", (data) => {
@@ -169,38 +263,53 @@ const RideBuddy = () => {
           setActiveTab("connections");
         }
       });
-    }
 
-    return () => {
-      // Clean up socket connection and event listeners
-      if (activeChatId) {
-        socketService.leaveChatRoom(activeChatId);
-      }
-      socketService.off("auth_error");
-      socketService.off("ride_buddy_new_request");
-      socketService.off("ride_buddy_request_response");
-      socketService.off("new_notification");
-    };
+      socketService.on("ride_buddy_connection_ended", () => {
+        toast.info("A ride connection has ended");
+        loadConnections();
+      });
+
+      return () => {
+        // Clean up socket connection and event listeners
+        if (activeChatId) {
+          socketService.leaveChatRoom(activeChatId);
+        }
+        socketService.off("auth_error");
+        socketService.off("ride_buddy_new_request");
+        socketService.off("ride_buddy_request_response");
+        socketService.off("new_notification");
+        socketService.off("ride_buddy_connection_ended");
+      };
+    }
   }, [activeChatId, isAuthenticated, user, navigate, activeTab]);
 
   const loadRequests = async () => {
     try {
       setRequestsLoading(true);
+      // Use the correct method name from the old version
       const result = await rideBuddyService.getRequests();
       if (result.success) {
         setIncomingRequests(result.data.requests || []);
         setOutgoingRequests(result.data.sentRequests || []);
 
         // Update sent request IDs to prevent duplicate sends
-        const sentIds = new Set(
-          (result.data.sentRequests || [])
-            .filter((req) => req.status === "pending")
-            .map((req) => req.receiverId.toString())
-        );
+        const sentIds = new Set();
+        const sentTimes = new Map();
+
+        (result.data.sentRequests || [])
+          .filter((req) => req.status === "pending")
+          .forEach((req) => {
+            const receiverId = req.receiverId.toString();
+            sentIds.add(receiverId);
+            sentTimes.set(receiverId, new Date(req.createdAt).getTime());
+          });
+
         setSentRequestIds(sentIds);
+        setSentRequestTimes(sentTimes);
       }
     } catch (error) {
       console.error("Error loading requests:", error);
+      toast.error("Failed to load ride requests");
     } finally {
       setRequestsLoading(false);
     }
@@ -210,9 +319,10 @@ const RideBuddy = () => {
     try {
       // Clear cache if force refresh is requested
       if (forceRefresh) {
-        rideBuddyService.clearCache();
+        rideBuddyService.clearCache && rideBuddyService.clearCache();
       }
 
+      // Use the correct method name from the old version
       const result = await rideBuddyService.getMatches();
       if (result.success) {
         console.log("Loaded connections:", result.data);
@@ -241,13 +351,12 @@ const RideBuddy = () => {
       }
     } catch (error) {
       console.error("Error loading connections:", error);
-      toast.error("Failed to load connections");
+      toast.error("Failed to load active connections");
     }
   };
 
   const handleSearch = async (e) => {
     e.preventDefault();
-
     if (!searchForm.source.name || !searchForm.destination.name) {
       toast.error("Please select both source and destination");
       return;
@@ -258,8 +367,9 @@ const RideBuddy = () => {
       return;
     }
 
+    setSearchLoading(true);
     try {
-      setSearchLoading(true);
+      // Use the correct method signature from the old version
       const result = await rideBuddyService.searchRideBuddies({
         source: searchForm.source,
         destination: searchForm.destination,
@@ -289,7 +399,7 @@ const RideBuddy = () => {
         setSearchResults([]);
       }
     } catch (error) {
-      console.error("Error searching:", error);
+      console.error("Search failed:", error);
       toast.error("Failed to search for ride buddies");
       setSearchResults([]);
     } finally {
@@ -297,15 +407,29 @@ const RideBuddy = () => {
     }
   };
 
-  const handleSendRequest = async (match) => {
+  const sendRideRequest = async (match) => {
+    // Check if request was already sent
     if (sentRequestIds.has(match.userId)) {
-      toast.error("Request already sent to this user");
+      const sentTime = sentRequestTimes.get(match.userId);
+      const timeSince = sentTime ? Date.now() - sentTime : 0;
+      const minutesAgo = Math.floor(timeSince / 60000);
+
+      if (minutesAgo < 10) {
+        toast.error(
+          `Request already sent ${minutesAgo} minutes ago. Please wait.`
+        );
+      } else {
+        toast.error("Request already sent to this user");
+      }
       return;
     }
 
     try {
+      const now = Date.now();
       setSentRequestIds((prev) => new Set([...prev, match.userId]));
+      setSentRequestTimes((prev) => new Map([...prev, [match.userId, now]]));
 
+      // Use the correct method signature from the old version
       const result = await rideBuddyService.sendConnectionRequest({
         receiverId: match.userId,
         routeDetails: {
@@ -314,20 +438,10 @@ const RideBuddy = () => {
             destination: searchForm.destination.name,
           },
           receiverRoute: {
-            source:
-              match.route?.source ||
-              match.source?.name ||
-              (typeof match.source === "string"
-                ? match.source
-                : match.source?.name) ||
-              "Unknown",
-            destination:
-              match.route?.destination ||
-              match.destination?.name ||
-              (typeof match.destination === "string"
-                ? match.destination
-                : match.destination?.name) ||
-              "Unknown",
+            source: getLocationName(match.route?.source || match.source),
+            destination: getLocationName(
+              match.route?.destination || match.destination
+            ),
           },
           overlapPercentage: match.overlapPercentage || 100,
           sharedDistance: match.sharedDistance || 0,
@@ -350,6 +464,11 @@ const RideBuddy = () => {
           newSet.delete(match.userId);
           return newSet;
         });
+        setSentRequestTimes((prev) => {
+          const newMap = new Map(prev);
+          newMap.delete(match.userId);
+          return newMap;
+        });
 
         // Handle specific error cases
         if (
@@ -367,7 +486,6 @@ const RideBuddy = () => {
           toast.error("Invalid request data. Please try again.");
         } else if (result.error === "Receiver not found") {
           toast.error("User is no longer available for connections");
-          // Remove from search results
           setSearchResults((prev) =>
             prev.filter((m) => m.userId !== match.userId)
           );
@@ -382,65 +500,83 @@ const RideBuddy = () => {
         newSet.delete(match.userId);
         return newSet;
       });
-      console.error("Error sending request:", error);
-      toast.error("Failed to send request");
+      setSentRequestTimes((prev) => {
+        const newMap = new Map(prev);
+        newMap.delete(match.userId);
+        return newMap;
+      });
+      console.error("Failed to send request:", error);
+      toast.error("Failed to send ride request");
     }
   };
 
-  const handleAcceptRequest = async (request) => {
+  const respondToRequest = async (requestId, action) => {
+    // Prevent multiple clicks on the same request
+    if (processingRequests.has(requestId)) {
+      console.log(`Request ${requestId} is already being processed`);
+      return;
+    }
+
     try {
-      const result = await rideBuddyService.acceptRequest(request._id);
+      // Mark request as being processed
+      setProcessingRequests((prev) => new Set([...prev, requestId]));
 
-      if (result.success) {
-        setIncomingRequests((prev) =>
-          prev.filter((r) => r._id !== request._id)
-        );
+      // Immediately remove from UI to prevent double-clicking
+      setIncomingRequests((prev) => prev.filter((r) => r._id !== requestId));
 
-        // Add to active connections
-        const connection = {
-          matchId: result.data.matchId,
-          chatId: result.data.chatId,
-          partner: result.data.partner,
-          routeDetails: result.data.routeDetails,
-          estimatedSharedFare: result.data.estimatedSharedFare,
-          createdAt: new Date().toISOString(),
-        };
+      if (action === "accepted") {
+        const result = await rideBuddyService.acceptRequest(requestId);
+        if (result.success) {
+          // Add to active connections
+          const connection = {
+            matchId: result.data.matchId,
+            chatId: result.data.chatId,
+            partner: result.data.partner,
+            routeDetails: result.data.routeDetails,
+            estimatedSharedFare: result.data.estimatedSharedFare,
+            createdAt: new Date().toISOString(),
+            chatTimeRemaining: 10 * 60 * 1000, // 10 minutes
+          };
 
-        setActiveConnections((prev) => [connection, ...prev]);
-        toast.success(
-          `🎉 Connected with ${
-            request.senderName || request.senderPhone
-          }! You can now chat for 10 minutes.`
-        );
-        setActiveTab("connections");
+          setActiveConnections((prev) => [connection, ...prev]);
+          toast.success(
+            "Request accepted! You can now chat with your ride buddy."
+          );
+
+          // Clear cache and reload connections to get fresh data
+          rideBuddyService.clearCache();
+          setTimeout(() => loadConnections(true), 500);
+        } else {
+          toast.error(result.error || "Failed to accept request");
+          // Reload requests if failed to restore UI state
+          loadRequests();
+        }
       } else {
-        toast.error(result.error || "Failed to accept request");
+        const result = await rideBuddyService.declineRequest(requestId);
+        if (result.success) {
+          toast.success("Request declined");
+        } else {
+          toast.error(result.error || "Failed to decline request");
+          // Reload requests if failed to restore UI state
+          loadRequests();
+        }
       }
     } catch (error) {
-      console.error("Error accepting request:", error);
-      toast.error("Failed to accept request");
+      console.error("Failed to respond to request:", error);
+      toast.error("Failed to respond to request");
+      // Reload requests to restore UI state
+      loadRequests();
+    } finally {
+      // Remove from processing set
+      setProcessingRequests((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(requestId);
+        return newSet;
+      });
     }
   };
 
-  const handleDeclineRequest = async (request) => {
-    try {
-      const result = await rideBuddyService.declineRequest(request._id);
-
-      if (result.success) {
-        setIncomingRequests((prev) =>
-          prev.filter((r) => r._id !== request._id)
-        );
-        toast.info("Request declined");
-      } else {
-        toast.error(result.error || "Failed to decline request");
-      }
-    } catch (error) {
-      console.error("Error declining request:", error);
-      toast.error("Failed to decline request");
-    }
-  };
-
-  const handleStartChat = async (connection) => {
+  const startChat = (connection) => {
     // Validate connection data
     if (!connection.chatId) {
       toast.error("Invalid chat - no chat ID found");
@@ -476,13 +612,31 @@ const RideBuddy = () => {
     });
   };
 
-  const handleCloseChat = () => {
+  const closeChat = useCallback(() => {
     if (activeChatId) {
       socketService.leaveChatRoom(activeChatId);
     }
     setActiveChatId(null);
     setChatPartner(null);
-  };
+  });
+
+  // Handle keyboard shortcuts for chat and popups
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        if (showHowItWorks) {
+          setShowHowItWorks(false);
+        } else if (activeChatId) {
+          closeChat();
+        }
+      }
+    };
+
+    if (activeChatId || showHowItWorks) {
+      document.addEventListener("keydown", handleKeyDown);
+      return () => document.removeEventListener("keydown", handleKeyDown);
+    }
+  }, [activeChatId, closeChat, showHowItWorks]);
 
   // Don't render if not authenticated
   if (!isAuthenticated) {
@@ -490,67 +644,95 @@ const RideBuddy = () => {
   }
 
   return (
-    <div className="ride-buddy-container">
-      <div className="container">
+    <div className="min-h-screen bg-black pt-20">
+      <div className="container-sawaari">
         {/* Header */}
-        <div className="ride-buddy-header">
-          <h1 className="ride-buddy-title kalam-bold">🚗 Ride Buddy</h1>
-          <p className="ride-buddy-subtitle kalam-regular">
-            Connect with fellow travelers and share your journey safely
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-sawaari-yellow/20 to-sawaari-green/20 border border-sawaari-yellow/30 rounded-lg px-4 py-2 mb-6">
+            <span className="text-xl">👥</span>
+            <span className="text-sm font-semibold text-sawaari-yellow">
+              Ride Buddy
+            </span>
+          </div>
+          <h1 className="text-4xl lg:text-5xl font-bold text-white mb-4 text-readable">
+            Find Your Travel Companion
+          </h1>
+          <p className="text-xl text-gray-200 max-w-3xl mx-auto text-readable-secondary">
+            Connect with fellow travelers, share rides, and make your journey
+            more affordable and enjoyable.
           </p>
+
+          {/* How It Works Button */}
+          <div className="mt-6">
+            <button
+              onClick={() => setShowHowItWorks(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-black/40 backdrop-blur-sm border border-white/20 rounded-lg text-white hover:bg-white/10 transition-all duration-300"
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <span className="text-sm">How It Works</span>
+            </button>
+          </div>
         </div>
 
-        {/* Navigation */}
-        <div className="tab-navigation">
-          <button
-            className={`tab-btn ${activeTab === "search" ? "active" : ""}`}
-            onClick={() => setActiveTab("search")}
-          >
-            <i className="fas fa-search"></i>
-            <span>Search</span>
-          </button>
-          <button
-            className={`tab-btn ${activeTab === "connections" ? "active" : ""}`}
-            onClick={() => setActiveTab("connections")}
-          >
-            <i className="fas fa-users"></i>
-            <span>Connections</span>
-            {(incomingRequests.length > 0 || activeConnections.length > 0) && (
-              <span className="notification-badge">
-                {incomingRequests.length + activeConnections.length}
-              </span>
-            )}
-          </button>
-          <button
-            className="tab-btn"
-            onClick={() => {
-              console.log("🔄 Manual refresh triggered");
-              loadRequests();
-              loadConnections(true);
-              toast.info("Data refreshed!");
-            }}
-            title="Refresh data"
-          >
-            <i className="fas fa-sync-alt"></i>
-            <span>Refresh</span>
-          </button>
+        {/* Tab Navigation */}
+        <div className="flex justify-center mb-8">
+          <div className="flex bg-black/40 backdrop-blur-sm border border-white/10 rounded-xl p-1">
+            {[
+              { id: "search", label: "Search", icon: "🔍" },
+              { id: "connections", label: "Connections", icon: "👥" },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-6 py-3 rounded-lg transition-all duration-300 ${
+                  activeTab === tab.id
+                    ? "bg-sawaari-yellow text-black font-semibold"
+                    : "text-gray-300 hover:text-white hover:bg-white/10"
+                }`}
+              >
+                <span className="text-lg">{tab.icon}</span>
+                <span className="text-readable">{tab.label}</span>
+                {tab.id === "connections" &&
+                  (incomingRequests.length > 0 ||
+                    activeConnections.length > 0) && (
+                    <span className="bg-red-500 text-white text-xs rounded-full px-2 py-1 ml-1">
+                      {incomingRequests.length + activeConnections.length}
+                    </span>
+                  )}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Content */}
-        <div className="tab-content">
+        <div className="max-w-6xl mx-auto">
           {activeTab === "search" && (
-            <div className="search-tab">
+            <div className="space-y-8">
               {/* Search Form */}
-              <div className="search-section">
-                <form onSubmit={handleSearch} className="search-form">
-                  <h3 className="search-form-title">Find Your Ride Buddy</h3>
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label className="form-label">
-                        <i className="fas fa-map-marker-alt"></i>
-                        From
+              <div className="card">
+                <h2 className="text-2xl font-bold text-white mb-6 text-readable">
+                  Search for Ride Buddies
+                </h2>
+                <form onSubmit={handleSearch} className="space-y-6">
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-semibold text-sawaari-yellow mb-2 text-readable">
+                        📍 Source Location
                       </label>
                       <select
+                        className="w-full p-3 bg-black/30 border border-white/20 rounded-lg text-white focus:border-sawaari-yellow focus:ring-2 focus:ring-sawaari-yellow/20 focus:outline-none transition-all duration-300 text-sm"
                         value={searchForm.source.name}
                         onChange={(e) => {
                           const selectedHotspot = hotspotData.find(
@@ -570,23 +752,25 @@ const RideBuddy = () => {
                           }));
                         }}
                         required
-                        className="form-control"
                       >
-                        <option value="">Select source location</option>
-                        {hotspotData.map((hotspot) => (
-                          <option key={hotspot._id} value={hotspot.name}>
-                            {hotspot.name}
+                        <option value="">Select Source</option>
+                        {locationNames.map((name, index) => (
+                          <option
+                            key={index}
+                            value={name}
+                            className="text-white bg-black"
+                          >
+                            {name}
                           </option>
                         ))}
                       </select>
                     </div>
-
-                    <div className="form-group">
-                      <label className="form-label">
-                        <i className="fas fa-flag-checkered"></i>
-                        To
+                    <div>
+                      <label className="block text-sm font-semibold text-sawaari-yellow mb-2 text-readable">
+                        🎯 Destination Location
                       </label>
                       <select
+                        className="w-full p-3 bg-black/30 border border-white/20 rounded-lg text-white focus:border-sawaari-yellow focus:ring-2 focus:ring-sawaari-yellow/20 focus:outline-none transition-all duration-300 text-sm"
                         value={searchForm.destination.name}
                         onChange={(e) => {
                           const selectedHotspot = hotspotData.find(
@@ -606,127 +790,106 @@ const RideBuddy = () => {
                           }));
                         }}
                         required
-                        className="form-control"
                       >
-                        <option value="">Select destination location</option>
-                        {hotspotData.map((hotspot) => (
-                          <option key={hotspot._id} value={hotspot.name}>
-                            {hotspot.name}
+                        <option value="">Select Destination</option>
+                        {locationNames.map((name, index) => (
+                          <option
+                            key={index}
+                            value={name}
+                            className="text-white bg-black"
+                          >
+                            {name}
                           </option>
                         ))}
                       </select>
                     </div>
                   </div>
-
                   <button
                     type="submit"
                     disabled={searchLoading}
-                    className="btn btn-yellow w-full"
+                    className="btn-primary w-full md:w-auto"
                   >
-                    {searchLoading ? (
-                      <>
-                        <i className="fas fa-spinner fa-spin"></i>
-                        Searching...
-                      </>
-                    ) : (
-                      <>
-                        <i className="fas fa-search"></i>
-                        Find Ride Buddies
-                      </>
-                    )}
+                    {searchLoading ? "Searching..." : "Search Ride Buddies"}
                   </button>
                 </form>
               </div>
 
               {/* Search Results */}
               {searchResults.length > 0 && (
-                <div className="results-section">
-                  <h3 className="section-title">
+                <div className="card">
+                  <h3 className="text-xl font-bold text-white mb-6 text-readable">
                     Available Ride Buddies ({searchResults.length})
                   </h3>
-                  <div className="matches-grid">
+                  <div className="grid gap-4">
                     {searchResults.map((match) => (
-                      <div key={match.userId} className="match-card">
-                        <div className="match-header">
-                          <div className="user-avatar">
-                            <i className="fas fa-user"></i>
+                      <div
+                        key={match.userId}
+                        className="flex items-center justify-between p-4 bg-black/30 border border-white/10 rounded-lg"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 bg-sawaari-yellow-muted border border-sawaari-yellow-border rounded-full flex items-center justify-center">
+                            <span className="text-sawaari-yellow font-semibold">
+                              {(
+                                match.userName ||
+                                `User ${match.userId?.slice(-4)}`
+                              )
+                                ?.charAt(0)
+                                ?.toUpperCase() || "U"}
+                            </span>
                           </div>
-                          <div className="user-info">
-                            <h4 className="user-name kalam-regular">
+                          <div>
+                            <h4 className="font-semibold text-white text-readable">
                               {match.userName ||
                                 `User ${match.userId?.slice(-4)}`}
                             </h4>
-                            <p className="user-phone">
-                              📱 Contact available after connection
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="route-display">
-                          <div className="route-item">
-                            <i className="fas fa-circle route-start"></i>
-                            <span>
+                            <p className="text-sm text-gray-300 text-readable-secondary">
                               {getLocationName(
                                 match.route?.source || match.source
-                              )}
-                            </span>
-                          </div>
-                          <div className="route-line"></div>
-                          <div className="route-item">
-                            <i className="fas fa-map-marker-alt route-end"></i>
-                            <span>
+                              )}{" "}
+                              →{" "}
                               {getLocationName(
                                 match.route?.destination || match.destination
                               )}
-                            </span>
+                            </p>
+                            {match.overlapPercentage && (
+                              <p className="text-xs text-sawaari-yellow">
+                                {Math.round(match.overlapPercentage)}% route
+                                match
+                              </p>
+                            )}
+                            {match.estimatedSharedFare && (
+                              <p className="text-xs text-green-400">
+                                ₹{Math.round(match.estimatedSharedFare)} shared
+                                fare
+                              </p>
+                            )}
                           </div>
                         </div>
-
-                        <div className="match-stats">
-                          {match.overlapPercentage && (
-                            <div className="stat-item">
-                              <i className="fas fa-route"></i>
-                              <span>
-                                {Math.round(match.overlapPercentage)}% match
-                              </span>
-                            </div>
-                          )}
-                          {match.estimatedSharedFare && (
-                            <div className="stat-item">
-                              <i className="fas fa-rupee-sign"></i>
-                              <span>
-                                ₹{Math.round(match.estimatedSharedFare)} shared
-                              </span>
-                            </div>
-                          )}
-                          {match.savings && (
-                            <div className="stat-item">
-                              <i className="fas fa-piggy-bank"></i>
-                              <span>₹{Math.round(match.savings)} saved</span>
-                            </div>
-                          )}
-                        </div>
-
                         <button
-                          className={`btn ${
-                            sentRequestIds.has(match.userId)
-                              ? "btn-outline-green"
-                              : "btn-green"
-                          } w-full`}
-                          onClick={() => handleSendRequest(match)}
+                          onClick={() => sendRideRequest(match)}
                           disabled={sentRequestIds.has(match.userId)}
+                          className={`px-4 py-2 rounded-lg transition-all duration-300 ${
+                            sentRequestIds.has(match.userId)
+                              ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                              : "bg-sawaari-yellow text-black hover:bg-sawaari-yellow/80"
+                          }`}
                         >
-                          {sentRequestIds.has(match.userId) ? (
-                            <>
-                              <i className="fas fa-check"></i>
-                              Request Sent
-                            </>
-                          ) : (
-                            <>
-                              <i className="fas fa-paper-plane"></i>
-                              Send Request
-                            </>
-                          )}
+                          {sentRequestIds.has(match.userId)
+                            ? (() => {
+                                const sentTime = sentRequestTimes.get(
+                                  match.userId
+                                );
+                                const timeSince = sentTime
+                                  ? Date.now() - sentTime
+                                  : 0;
+                                const minutesAgo = Math.floor(
+                                  timeSince / 60000
+                                );
+                                return minutesAgo < 1
+                                  ? "Request Sent"
+                                  : `Sent ${minutesAgo}m ago`;
+                              })()
+                            : "Send Request"}
                         </button>
                       </div>
                     ))}
@@ -739,96 +902,106 @@ const RideBuddy = () => {
                 !searchLoading &&
                 searchForm.source.name &&
                 searchForm.destination.name && (
-                  <div className="no-results">
-                    <div className="no-results-content">
-                      <div className="no-results-icon">
-                        <i className="fas fa-search"></i>
-                      </div>
-                      <h3>No matches found</h3>
-                      <p>
-                        We couldn&apos;t find any ride buddies for your route
-                        right now.
-                      </p>
-                      <p>
-                        Your search is active - you&apos;ll be notified when
-                        someone matches!
-                      </p>
-                    </div>
+                  <div className="card text-center">
+                    <div className="text-6xl mb-4">🔍</div>
+                    <h3 className="text-xl font-bold text-white mb-2 text-readable">
+                      No matches found
+                    </h3>
+                    <p className="text-gray-300 text-readable-secondary">
+                      We couldn't find any ride buddies for your route right
+                      now.
+                    </p>
+                    <p className="text-gray-300 text-readable-secondary">
+                      Your search is active - you'll be notified when someone
+                      matches!
+                    </p>
                   </div>
                 )}
             </div>
           )}
 
           {activeTab === "connections" && (
-            <div className="connections-tab">
+            <div className="space-y-8">
               {/* Incoming Requests */}
               {incomingRequests.length > 0 && (
-                <div className="requests-section">
-                  <h3 className="section-title">
+                <div className="card">
+                  <h3 className="text-xl font-bold text-white mb-6 text-readable">
                     Connection Requests ({incomingRequests.length})
                   </h3>
-                  <div className="requests-grid">
+                  <div className="grid gap-4">
                     {incomingRequests.map((request) => (
-                      <div key={request._id} className="request-card">
-                        <div className="request-header">
-                          <div className="user-avatar">
-                            <i className="fas fa-user"></i>
+                      <div
+                        key={request._id}
+                        className="flex items-center justify-between p-4 bg-black/30 border border-white/10 rounded-lg"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 bg-sawaari-yellow-muted border border-sawaari-yellow-border rounded-full flex items-center justify-center">
+                            <span className="text-sawaari-yellow font-semibold">
+                              {(
+                                request.senderName ||
+                                `User ${request.senderId?.slice(-4)}`
+                              )
+                                ?.charAt(0)
+                                ?.toUpperCase() || "U"}
+                            </span>
                           </div>
-                          <div className="user-info">
-                            <h4 className="user-name kalam-regular">
+                          <div>
+                            <h4 className="font-semibold text-white text-readable">
                               {request.senderName ||
                                 `User ${request.senderId?.slice(-4)}`}
                             </h4>
-                            <p className="user-contact">
-                              📱 Contact available after connection
-                            </p>
-                            <p className="request-route">
-                              {request.routeDetails?.senderRoute?.source
-                                ?.name ||
-                                (typeof request.routeDetails?.senderRoute
-                                  ?.source === "string"
-                                  ? request.routeDetails?.senderRoute?.source
-                                  : request.routeDetails?.senderRoute?.source
-                                      ?.name) ||
+                            <p className="text-sm text-gray-300 text-readable-secondary">
+                              {request.routeDetails?.senderRoute?.source ||
                                 "Unknown"}{" "}
                               →{" "}
-                              {request.routeDetails?.senderRoute?.destination
-                                ?.name ||
-                                (typeof request.routeDetails?.senderRoute
-                                  ?.destination === "string"
-                                  ? request.routeDetails?.senderRoute
-                                      ?.destination
-                                  : request.routeDetails?.senderRoute
-                                      ?.destination?.name) ||
+                              {request.routeDetails?.senderRoute?.destination ||
                                 "Unknown"}
                             </p>
-                            <p className="connection-fare">
-                              Shared Fare: ₹
-                              {Math.round(
-                                request.routeDetails?.estimatedSharedFare || 0
-                              )}
-                            </p>
+                            {request.routeDetails?.estimatedSharedFare && (
+                              <p className="text-xs text-green-400">
+                                Shared Fare: ₹
+                                {Math.round(
+                                  request.routeDetails.estimatedSharedFare
+                                )}
+                              </p>
+                            )}
+                            {request.message && (
+                              <p className="text-xs text-gray-400 italic mt-1">
+                                "{request.message}&quot;
+                              </p>
+                            )}
                           </div>
                         </div>
-
-                        <div className="request-message">
-                          <p>&quot;{request.message}&quot;</p>
-                        </div>
-
-                        <div className="request-actions">
+                        <div className="flex gap-2">
                           <button
-                            className="btn btn-outline flex-1"
-                            onClick={() => handleDeclineRequest(request)}
+                            onClick={() =>
+                              respondToRequest(request._id, "accepted")
+                            }
+                            disabled={processingRequests.has(request._id)}
+                            className={`px-4 py-2 rounded-lg transition-colors ${
+                              processingRequests.has(request._id)
+                                ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                                : "bg-green-600 text-white hover:bg-green-700"
+                            }`}
                           >
-                            <i className="fas fa-times"></i>
-                            Decline
+                            {processingRequests.has(request._id)
+                              ? "Processing..."
+                              : "Accept"}
                           </button>
                           <button
-                            className="btn btn-green flex-1"
-                            onClick={() => handleAcceptRequest(request)}
+                            onClick={() =>
+                              respondToRequest(request._id, "declined")
+                            }
+                            disabled={processingRequests.has(request._id)}
+                            className={`px-4 py-2 rounded-lg transition-colors ${
+                              processingRequests.has(request._id)
+                                ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                                : "bg-red-600 text-white hover:bg-red-700"
+                            }`}
                           >
-                            <i className="fas fa-check"></i>
-                            Accept
+                            {processingRequests.has(request._id)
+                              ? "Processing..."
+                              : "Decline"}
                           </button>
                         </div>
                       </div>
@@ -838,124 +1011,113 @@ const RideBuddy = () => {
               )}
 
               {/* Active Connections */}
-              <div className="connections-section">
-                <h3 className="section-title">
-                  Your Connections ({activeConnections.length})
-                </h3>
-
-                {activeConnections.length === 0 &&
-                incomingRequests.length === 0 ? (
-                  <div className="no-connections">
-                    <div className="no-connections-content">
-                      <div className="no-connections-icon">
-                        <i className="fas fa-users"></i>
-                      </div>
-                      <h3>No connections yet</h3>
-                      <p>
-                        Search for ride buddies and accept connection requests
-                        to start connecting!
-                      </p>
-                    </div>
-                  </div>
-                ) : activeConnections.length === 0 ? (
-                  <div className="no-connections">
-                    <div className="no-connections-content">
-                      <p>
-                        Accept a connection request above to start connecting!
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="connections-grid">
+              {activeConnections.length > 0 && (
+                <div className="card">
+                  <h3 className="text-xl font-bold text-white mb-6 text-readable">
+                    Your Connections ({activeConnections.length})
+                  </h3>
+                  <div className="grid gap-4">
                     {activeConnections.map((connection) => (
                       <div
                         key={connection.matchId}
-                        className="connection-card modern-card"
+                        className="p-4 bg-black/30 border border-white/10 rounded-lg"
                       >
-                        <div className="connection-header">
-                          <div className="user-avatar connected">
-                            <i className="fas fa-user-check"></i>
-                          </div>
-                          <div className="user-info">
-                            <h4 className="user-name kalam-regular">
-                              {connection.partner?.name || "Anonymous"}
-                            </h4>
-                            <p className="user-contact">
-                              📱{" "}
-                              {connection.partner?.phone ||
-                                "Phone number available"}
-                            </p>
-                            <p className="connection-route">
-                              {connection.routeDetails?.senderRoute?.source
-                                ?.name ||
-                                (typeof connection.routeDetails?.senderRoute
-                                  ?.source === "string"
-                                  ? connection.routeDetails?.senderRoute?.source
-                                  : connection.routeDetails?.senderRoute?.source
-                                      ?.name) ||
-                                "Unknown"}{" "}
-                              →{" "}
-                              {connection.routeDetails?.senderRoute?.destination
-                                ?.name ||
-                                (typeof connection.routeDetails?.senderRoute
-                                  ?.destination === "string"
-                                  ? connection.routeDetails?.senderRoute
-                                      ?.destination
-                                  : connection.routeDetails?.senderRoute
-                                      ?.destination?.name) ||
-                                "Unknown"}
-                            </p>
-                            <p className="connection-fare">
-                              Shared Fare: ₹
-                              {Math.round(
-                                connection.routeDetails?.estimatedSharedFare ||
-                                  0
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-green-600 border border-green-500 rounded-full flex items-center justify-center">
+                              <span className="text-white font-semibold">
+                                {(
+                                  connection.partner?.name ||
+                                  connection.partner?.phone
+                                )
+                                  ?.charAt(0)
+                                  ?.toUpperCase() || "U"}
+                              </span>
+                            </div>
+                            <div>
+                              <h4 className="font-semibold text-white text-readable">
+                                {connection.partner?.name || "Anonymous"}
+                              </h4>
+                              <p className="text-sm text-gray-300 text-readable-secondary">
+                                📱{" "}
+                                {connection.partner?.phone ||
+                                  "Phone number available"}
+                              </p>
+                              <p className="text-sm text-gray-300 text-readable-secondary">
+                                {connection.routeDetails?.senderRoute?.source ||
+                                  "Unknown"}{" "}
+                                →{" "}
+                                {connection.routeDetails?.senderRoute
+                                  ?.destination || "Unknown"}
+                              </p>
+                              {connection.routeDetails?.estimatedSharedFare && (
+                                <p className="text-xs text-green-400">
+                                  Shared Fare: ₹
+                                  {Math.round(
+                                    connection.routeDetails.estimatedSharedFare
+                                  )}
+                                </p>
                               )}
-                            </p>
+                            </div>
                           </div>
-                        </div>
 
-                        <div className="connection-actions">
+                          {/* Chat Button */}
                           {connection.chatTimeRemaining > 0 ? (
                             <button
-                              className="chat-btn"
-                              onClick={() => handleStartChat(connection)}
+                              onClick={() => startChat(connection)}
+                              className="px-4 py-2 bg-sawaari-yellow text-black rounded-lg hover:bg-sawaari-yellow/80 transition-colors flex items-center gap-2"
                             >
-                              <i className="fas fa-comments"></i>
-                              Start Chat (
-                              {Math.ceil(
-                                connection.chatTimeRemaining / 60000
-                              )}{" "}
+                              <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-3.582 8-8 8a8.959 8.959 0 01-4.906-1.524A11.956 11.956 0 012.69 18.186c.423-.95.893-1.902 1.405-2.852A8.002 8.002 0 0121 12z"
+                                />
+                              </svg>
+                              Open Chat (
+                              {Math.ceil(connection.chatTimeRemaining / 60000)}{" "}
                               min left)
                             </button>
                           ) : (
                             <button
-                              className="chat-btn expired"
                               disabled
+                              className="px-4 py-2 bg-gray-600 text-gray-400 rounded-lg cursor-not-allowed"
                               title="Chat session has expired"
                             >
-                              <i className="fas fa-clock"></i>
                               Chat Expired
                             </button>
                           )}
                         </div>
 
-                        <div className="contact-info">
-                          <div className="contact-item direct-contact">
-                            <i className="fas fa-phone"></i>
-                            <div className="contact-details">
-                              <span className="contact-label kalam-regular">
-                                Direct Contact:
-                              </span>
-                              <span className="phone-number-display">
-                                {connection.partner?.phone || "Loading..."}
-                              </span>
-                              <span className="contact-hint">
-                                You can now contact your ride buddy directly
-                              </span>
-                            </div>
+                        {/* Contact Actions */}
+                        {connection.partner?.phone && (
+                          <div className="flex gap-2 mt-4 pt-4 border-t border-white/10">
+                            <a
+                              href={`tel:${connection.partner.phone}`}
+                              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                            >
+                              <span>📞</span>
+                              Call Direct
+                            </a>
+                            <a
+                              href={`https://wa.me/${connection.partner.phone.replace(
+                                /[^0-9]/g,
+                                ""
+                              )}?text=Hi! I'm your ride buddy from SAWAARI. Let's coordinate our trip!`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                            >
+                              <span>💬</span>
+                              WhatsApp
+                            </a>
                             <button
-                              className="copy-btn"
                               onClick={() => {
                                 const phoneNum = connection.partner?.phone;
                                 if (phoneNum) {
@@ -963,64 +1125,300 @@ const RideBuddy = () => {
                                   toast.success("Phone number copied!");
                                 }
                               }}
+                              className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
                             >
-                              <i className="fas fa-copy"></i>
+                              <span>📋</span>
+                              Copy Number
                             </button>
                           </div>
-                        </div>
+                        )}
 
-                        <div className="contact-actions">
-                          {connection.partner?.phone && (
-                            <>
-                              <a
-                                href={`tel:${connection.partner.phone}`}
-                                className="contact-btn call-btn"
-                              >
-                                <i className="fas fa-phone"></i>
-                                Call Direct
-                              </a>
-
-                              <a
-                                href={`https://wa.me/${connection.partner.phone.replace(
-                                  /[^0-9]/g,
-                                  ""
-                                )}?text=Hi! I'm your ride buddy from SAWAARI. Let's coordinate our trip!`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="contact-btn whatsapp-btn"
-                              >
-                                <i className="fab fa-whatsapp"></i>
-                                WhatsApp
-                              </a>
-                            </>
-                          )}
-                        </div>
-
-                        <div className="connection-footer">
-                          <small>
-                            Connected:{" "}
-                            {new Date(
-                              connection.createdAt
-                            ).toLocaleDateString()}
-                          </small>
+                        <div className="mt-2 text-xs text-gray-400">
+                          Connected:{" "}
+                          {new Date(connection.createdAt).toLocaleDateString()}
                         </div>
                       </div>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {/* Empty State */}
+              {incomingRequests.length === 0 &&
+                activeConnections.length === 0 && (
+                  <div className="card text-center">
+                    <div className="text-6xl mb-4">👥</div>
+                    <h3 className="text-xl font-bold text-white mb-2 text-readable">
+                      No Connections Yet
+                    </h3>
+                    <p className="text-gray-300 text-readable-secondary">
+                      Start by searching for ride buddies or wait for incoming
+                      requests.
+                    </p>
+                    <button
+                      onClick={() => {
+                        console.log("🔄 Manual refresh triggered");
+                        loadRequests();
+                        loadConnections(true);
+                        toast.info("Data refreshed!");
+                      }}
+                      className="mt-4 px-6 py-2 bg-sawaari-yellow text-black rounded-lg hover:bg-sawaari-yellow/80 transition-colors"
+                    >
+                      Refresh Data
+                    </button>
+                  </div>
                 )}
-              </div>
             </div>
           )}
         </div>
       </div>
 
-      {/* Live Chat Modal */}
+      {/* How It Works Popup */}
+      {showHowItWorks && (
+        <div
+          className="fixed inset-0 bg-black/50 chat-popup-overlay flex items-center justify-center p-4 z-50"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowHowItWorks(false);
+            }
+          }}
+        >
+          <div
+            className="bg-neutral-900 rounded-xl chat-popup-container w-full max-w-2xl max-h-[80vh] overflow-y-auto relative border border-neutral-700"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Button */}
+            <button
+              onClick={() => setShowHowItWorks(false)}
+              className="absolute top-4 right-4 z-10 w-8 h-8 bg-neutral-800 hover:bg-neutral-700 rounded-full flex items-center justify-center text-white transition-colors duration-200 border border-neutral-600"
+              aria-label="Close"
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-neutral-700 bg-gradient-to-r from-neutral-800 to-neutral-700 rounded-t-xl">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-sawaari-yellow-muted border border-sawaari-yellow-border rounded-full flex items-center justify-center">
+                  <span className="text-sawaari-yellow text-lg">👥</span>
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-white">
+                    How Ride Buddy Works
+                  </h2>
+                  <p className="text-sm text-neutral-400">
+                    Connect with nearby travelers in 3 simple steps
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-6">
+              {/* What is Ride Buddy */}
+              <div className="bg-gradient-to-r from-sawaari-yellow/10 to-sawaari-green/10 border border-sawaari-yellow/20 rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-sawaari-yellow mb-2">
+                  🚗 What is Ride Buddy?
+                </h3>
+                <p className="text-gray-300 text-sm">
+                  Ride Buddy helps you find fellow travelers going on similar
+                  routes within a 2km radius. Share rides, split costs, and make
+                  your journey more enjoyable and affordable.
+                </p>
+              </div>
+
+              {/* How to Use */}
+              <div>
+                <h3 className="text-lg font-semibold text-white mb-4">
+                  📋 How to Use:
+                </h3>
+                <div className="space-y-4">
+                  <div className="flex gap-4">
+                    <div className="w-8 h-8 bg-sawaari-yellow rounded-full flex items-center justify-center text-black font-bold text-sm flex-shrink-0">
+                      1
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-white">
+                        Search for Ride Buddies
+                      </h4>
+                      <p className="text-gray-300 text-sm">
+                        Select your source and destination locations, then click
+                        &quot;Search Ride Buddies&quot; to find nearby
+                        travelers.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-4">
+                    <div className="w-8 h-8 bg-sawaari-yellow rounded-full flex items-center justify-center text-black font-bold text-sm flex-shrink-0">
+                      2
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-white">
+                        Send Connection Requests
+                      </h4>
+                      <p className="text-gray-300 text-sm">
+                        Browse available ride buddies and send connection
+                        requests to those with matching routes.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-4">
+                    <div className="w-8 h-8 bg-sawaari-yellow rounded-full flex items-center justify-center text-black font-bold text-sm flex-shrink-0">
+                      3
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-white">
+                        Connect & Chat
+                      </h4>
+                      <p className="text-gray-300 text-sm">
+                        Once accepted, you get 10 minutes to chat + 5 minutes of
+                        contact details access (15 minutes total) to coordinate
+                        your ride.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Key Features */}
+              <div>
+                <h3 className="text-lg font-semibold text-white mb-4">
+                  ✨ Key Features:
+                </h3>
+                <div className="grid md:grid-cols-2 gap-3">
+                  <div className="flex items-center gap-2 text-sm text-gray-300">
+                    <span className="text-green-400">📍</span>
+                    <span>2km radius matching</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-gray-300">
+                    <span className="text-green-400">💬</span>
+                    <span>10-min chat + 5-min contact</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-gray-300">
+                    <span className="text-green-400">💰</span>
+                    <span>Cost sharing estimates</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-gray-300">
+                    <span className="text-green-400">🔒</span>
+                    <span>Secure connections</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Important Notes */}
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-blue-400 mb-2">
+                  💡 Important Notes:
+                </h3>
+                <ul className="space-y-1 text-sm text-gray-300">
+                  <li>
+                    • Total connection time: 15 minutes (10-min chat + 5-min
+                    contact details)
+                  </li>
+                  <li>• Only users within 2km radius will appear in search</li>
+                  <li>• You can only send one request per user at a time</li>
+                  <li>
+                    • Chat messages are temporary and not stored permanently
+                  </li>
+                  <li>
+                    • Contact details remain available for 5 minutes after chat
+                    expires
+                  </li>
+                </ul>
+              </div>
+
+              {/* Get Started Button */}
+              <div className="text-center pt-4">
+                <button
+                  onClick={() => setShowHowItWorks(false)}
+                  className="px-6 py-3 bg-gradient-to-r from-sawaari-yellow to-sawaari-green text-black rounded-lg font-semibold hover:shadow-lg transition-all duration-300"
+                >
+                  Got It! Let&apos;s Start
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Live Chat Popup */}
       {activeChatId && chatPartner && (
-        <LiveChat
-          chatId={activeChatId}
-          partnerName={chatPartner.name}
-          onClose={handleCloseChat}
-        />
+        <div
+          className="fixed inset-0 bg-black/50 chat-popup-overlay flex items-center justify-center p-4"
+          onClick={(e) => {
+            // Close chat when clicking outside the chat container
+            if (e.target === e.currentTarget) {
+              closeChat();
+            }
+          }}
+        >
+          <div
+            className="bg-neutral-900 rounded-xl chat-popup-container w-full max-w-md h-[600px] max-h-[80vh] relative border border-neutral-700"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Button */}
+            <button
+              onClick={closeChat}
+              className="absolute top-4 right-4 z-10 w-8 h-8 bg-neutral-800 hover:bg-neutral-700 rounded-full flex items-center justify-center text-white transition-colors duration-200 border border-neutral-600"
+              aria-label="Close chat"
+              title="Close chat (Esc)"
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+
+            {/* Chat Header */}
+            <div className="px-4 py-3 border-b border-neutral-700 bg-gradient-to-r from-neutral-800 to-neutral-700 rounded-t-xl">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-sawaari-yellow-muted border border-sawaari-yellow-border rounded-full flex items-center justify-center">
+                  <span className="text-sawaari-yellow font-semibold text-sm">
+                    {chatPartner.name?.charAt(0)?.toUpperCase() || "U"}
+                  </span>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-white text-sm">
+                    {chatPartner.name || chatPartner.phone}
+                  </h3>
+                  <p className="text-xs text-neutral-400">Ride Buddy Chat</p>
+                </div>
+              </div>
+            </div>
+
+            {/* LiveChat Component */}
+            <div className="h-[calc(100%-80px)]">
+              <LiveChat
+                chatId={activeChatId}
+                partnerName={chatPartner.name || chatPartner.phone}
+                onClose={closeChat}
+              />
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

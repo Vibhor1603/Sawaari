@@ -9,7 +9,7 @@ const config = {
   timeout: parseInt(import.meta.env.VITE_API_TIMEOUT) || 10000,
   retryAttempts: 3,
   retryDelay: 1000, // 1 second
-  minApiInterval: 100, // Minimum 100ms between API calls
+  minApiInterval: 500, // Minimum 500ms between API calls to prevent rate limiting
 };
 
 // Internal state
@@ -104,7 +104,7 @@ const setCachedData = (key, data) => {
 // Search for ride buddies
 const searchRideBuddies = async (searchData) => {
   try {
-    const { source, destination, searchRadius = 5 } = searchData;
+    const { source, destination, searchRadius = 2 } = searchData;
 
     if (!source || !destination) {
       throw new Error("Source and destination are required");

@@ -14,6 +14,8 @@ import { AuthContext } from "./AuthContext";
 import Logout from "./Logout";
 import ForgotPassword from "./ForgotPassword";
 import Contact from "./Contact";
+import UserProfile from "./UserProfile";
+import FloatingRickshaws from "./components/FloatingRickshaws";
 
 export default function App() {
   const { hotspot } = useContext(AuthContext);
@@ -21,6 +23,7 @@ export default function App() {
 
   return (
     <Router>
+      <FloatingRickshaws />
       <Navbar />
       <Routes>
         <Route index element={<Root />} />
@@ -28,6 +31,7 @@ export default function App() {
         <Route path="/hotspots" element={<Hotspots hotspot={hotspot} />} />
         <Route path="/routes" element={<Routeinfo hotspot={hotspot} />} />
         <Route path="/ridebuddy" element={token ? <RideBuddy /> : <SignIn />} />
+        <Route path="/profile" element={token ? <UserProfile /> : <SignIn />} />
         <Route path="/signin" element={<SignIn />} />
         <Route path="/signup" element={<SignUp />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />

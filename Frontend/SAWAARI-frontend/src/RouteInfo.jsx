@@ -9,7 +9,6 @@ import LocationTracker from "./LocationTracker";
 import MapInteractionHandler from "./MapInteractionHandler";
 import HotspotMarkers from "./HotspotMarkers";
 import RouteForm from "./RouteForm";
-import FareEstimator from "./FareEstimator";
 
 export default function RouteInfo({ hotspot }) {
   const [source, setSource] = useState("");
@@ -25,6 +24,7 @@ export default function RouteInfo({ hotspot }) {
   const [routeData, setRouteData] = useState(null);
   const [fareBreakdown, setFareBreakdown] = useState(null);
   const [distance, setDistance] = useState(0);
+  const [showResults, setShowResults] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -51,7 +51,7 @@ export default function RouteInfo({ hotspot }) {
     return () => {
       isMounted = false;
     };
-  }, []); // FIXED: Empty dependency array to run only once on mount
+  }, [hotspot]); // FIXED: Empty dependency array to run only once on mount
 
   const handleRouteSearch = async (e) => {
     e.preventDefault();
@@ -60,6 +60,7 @@ export default function RouteInfo({ hotspot }) {
     setPathCoordinates([]);
     setTotalFare(0);
     setIsLoading(true);
+    setShowResults(false);
 
     if (!source || !destination) {
       setError("Please enter both source and destination.");
@@ -87,6 +88,7 @@ export default function RouteInfo({ hotspot }) {
         setFareBreakdown(fareBreakdown);
         setDistance(distance);
         setRouteData(result.data);
+        setShowResults(true);
 
         if (result.cached) {
           console.log("✅ Used cached route data");
@@ -106,114 +108,210 @@ export default function RouteInfo({ hotspot }) {
     setSelectedDestination([latitude, longitude]);
   };
 
+  const handleNewSearch = () => {
+    setShowResults(false);
+    setShortestPath([]);
+    setPathCoordinates([]);
+    setTotalFare(0);
+    setRouteData(null);
+    setFareBreakdown(null);
+    setDistance(0);
+    setError("");
+  };
+
   return (
-    <div className="container route-container">
-      {/* Development Note */}
-      <div
-        className="alert alert-info mb-4"
-        style={{
-          background: "var(--tertiary-dark)",
-          border: "1px solid var(--accent-yellow)",
-          color: "var(--text-primary)",
-        }}
-      >
-        <i
-          className="fas fa-info-circle me-2"
-          style={{ color: "var(--accent-yellow)" }}
-        ></i>
-        <strong>Note:</strong> Route calculation now uses smart caching to
-        prevent unnecessary API calls while maintaining real functionality.
+    <div className="min-h-screen bg-black pt-20 relative overflow-hidden">
+      {/* Creative Background Elements */}
+      <div className="absolute inset-0 pointer-events-none">
+        {/* Animated Route Lines */}
+        {[...Array(6)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute opacity-5 animate-move-bg"
+            style={{
+              top: `${15 + i * 15}%`,
+              left: "-100px",
+              width: "200%",
+              height: "2px",
+              background: `linear-gradient(90deg, transparent, ${
+                i % 2 === 0 ? "#f4b942" : "#2d5016"
+              }, transparent)`,
+              animationDelay: `${i * 2}s`,
+            }}
+          />
+        ))}
+
+        {/* Floating Navigation Icons */}
+        {["🧭", "📍", "🗺️", "🛣️", "⚡", "🎯"].map((icon, i) => (
+          <div
+            key={i}
+            className="absolute text-3xl opacity-10 animate-drift"
+            style={{
+              top: `${Math.random() * 80 + 10}%`,
+              left: `${Math.random() * 90 + 5}%`,
+              animationDelay: `${i * 2.5}s`,
+            }}
+          >
+            {icon}
+          </div>
+        ))}
       </div>
 
-      <div className="row align-items-start">
-        <div className="col-md-4">
-          <div className="route-form-section">
-            <h3>Plan Your Route</h3>
-            <RouteForm
-              source={source}
-              setSource={setSource}
-              destination={destination}
-              setDestination={setDestination}
-              handleRouteSearch={handleRouteSearch}
-              hotspot={hotspot}
-              isLoading={isLoading}
-            />
-            {error && <div className="alert alert-danger mt-3">{error}</div>}
-            {shortestPath.length > 0 && (
-              <div className="mt-4">
-                <h3>Shortest Path</h3>
-                <ul className="list-group">
-                  {shortestPath.map((node, index) => (
-                    <li key={index} className="list-group-item">
-                      <span className="route-step-number">{index + 1}.</span>
-                      {node}
-                    </li>
-                  ))}
-                </ul>
+      {/* Main Content Area */}
+      <div className="container-sawaari pt-24 pb-8">
+        <div className="grid lg:grid-cols-5 gap-8">
+          {/* Left Column - Route Form or Results */}
+          <div className="lg:col-span-2 space-y-6">
+            {!showResults ? (
+              /* Route Form */
+              <div className="glass-strong rounded-2xl p-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-12 h-12 bg-sawaari-yellow-muted border border-sawaari-yellow-border rounded-full flex items-center justify-center">
+                    <span className="text-xl">🗺️</span>
+                  </div>
+                  <div>
+                    <h1 className="text-xl font-bold text-white text-readable">
+                      Route Planner
+                    </h1>
+                    <p className="text-sm text-gray-200 text-readable-secondary">
+                      Smart navigation
+                    </p>
+                  </div>
+                </div>
 
-                {/* Enhanced Fare Information */}
-                <div className="route-summary mt-3">
-                  <div className="summary-item">
-                    <i className="fas fa-route me-2"></i>
-                    <strong>Distance:</strong> {distance.toFixed(1)} km
+                <RouteForm
+                  source={source}
+                  setSource={setSource}
+                  destination={destination}
+                  setDestination={setDestination}
+                  handleRouteSearch={handleRouteSearch}
+                  hotspot={hotspot}
+                  isLoading={isLoading}
+                />
+
+                {error && (
+                  <div className="mt-4 p-3 bg-red-500/20 border border-red-500/40 rounded-lg">
+                    <p className="text-sm text-red-200">{error}</p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* Route Results */
+              <div className="glass-strong rounded-2xl p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-sawaari-yellow-muted border border-sawaari-yellow-border rounded-full flex items-center justify-center">
+                      <span className="text-xl">✅</span>
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-white text-readable">
+                        Route Found
+                      </h3>
+                      <p className="text-sm text-gray-200 text-readable-secondary">
+                        {source} → {destination}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleNewSearch}
+                    className="px-4 py-2 bg-sawaari-yellow text-black rounded-lg hover:bg-sawaari-yellow/80 transition-colors text-sm font-semibold"
+                  >
+                    New Search
+                  </button>
+                </div>
+
+                {/* Route Steps */}
+                <div className="max-h-48 overflow-y-auto mb-4 space-y-2">
+                  {shortestPath.map((node, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center gap-3 p-2 bg-black/40 rounded-lg"
+                    >
+                      <span className="w-8 h-8 bg-sawaari-yellow-muted border border-sawaari-yellow-border rounded-full flex items-center justify-center text-sm font-bold text-sawaari-yellow">
+                        {index + 1}
+                      </span>
+                      <span className="text-sm text-gray-200 flex-1 text-readable-secondary">
+                        {node}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Fare Summary */}
+                <div className="bg-black/60 rounded-lg p-4 space-y-3">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-200 text-readable-secondary">
+                      Distance:
+                    </span>
+                    <span className="text-white font-semibold text-readable">
+                      {distance.toFixed(1)} km
+                    </span>
                   </div>
                   {routeData?.estimatedTime && (
-                    <div className="summary-item">
-                      <i className="fas fa-clock me-2"></i>
-                      <strong>Estimated Time:</strong>{" "}
-                      {routeData.estimatedTime.formatted}
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-200 text-readable-secondary">
+                        Time:
+                      </span>
+                      <span className="text-white font-semibold text-readable">
+                        {routeData.estimatedTime.formatted}
+                      </span>
                     </div>
                   )}
-                  <div className="summary-item fare-highlight">
-                    <i className="fas fa-rupee-sign me-2"></i>
-                    <strong>Current Fare:</strong> ₹{totalFare}
-                    {fareBreakdown && fareBreakdown.timeType !== "regular" && (
-                      <span className="fare-type-badge">
-                        {fareBreakdown.timeType === "night"
-                          ? "🌙 Night"
-                          : "⚡ Peak"}
-                      </span>
-                    )}
+                  <div className="flex justify-between text-xl border-t border-white/10 pt-3">
+                    <span className="text-gray-200 text-readable-secondary">
+                      Total Fare:
+                    </span>
+                    <span className="text-sawaari-yellow font-bold text-readable">
+                      ₹{totalFare}
+                    </span>
                   </div>
+                  {fareBreakdown && fareBreakdown.timeType !== "regular" && (
+                    <div className="text-center">
+                      <span className="inline-flex items-center gap-1 px-3 py-1 bg-sawaari-yellow-muted border border-sawaari-yellow-border rounded-full text-xs text-sawaari-yellow">
+                        {fareBreakdown.timeType === "night"
+                          ? "🌙 Night Rate"
+                          : "⚡ Peak Rate"}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
-
-            {/* Fare Estimator Component */}
-            <FareEstimator
-              source={source}
-              destination={destination}
-              distance={distance}
-              onFareUpdate={(fare) => setTotalFare(fare)}
-            />
           </div>
-        </div>
-        <div className="col-md-8">
-          <div className="map-section">
-            <h3>Route Map</h3>
-            <div className="routes-map">
-              <MapContainer
-                center={[28.633043462708848, 77.44792897992077]}
-                zoom={10}
-                style={{ height: "100%", width: "100%" }}
-              >
-                <TileLayer
-                  url="https://tile.openstreetmap.de/{z}/{x}/{y}.png"
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                />
-                <LocationTracker />
-                <MapInteractionHandler
-                  selectedDestination={selectedDestination}
-                />
-                <HotspotMarkers hotspot={hotspot} clickHandler={clickHandler} />
-                {pathCoordinates.length > 0 && (
-                  <Polyline
-                    positions={pathCoordinates}
-                    color="#00ff88"
-                    weight={4}
+
+          {/* Right Column - Map */}
+          <div className="lg:col-span-3">
+            <div className="glass-strong rounded-2xl p-4">
+              <h2 className="text-xl font-bold text-white mb-4 text-readable">
+                Interactive Route Map
+              </h2>
+              <div className="h-[600px] rounded-xl overflow-hidden border border-white/10">
+                <MapContainer
+                  center={[28.633043462708848, 77.44792897992077]}
+                  zoom={10}
+                  style={{ height: "100%", width: "100%" }}
+                >
+                  <TileLayer
+                    url="https://tile.openstreetmap.de/{z}/{x}/{y}.png"
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                   />
-                )}
-              </MapContainer>
+                  <LocationTracker />
+                  <MapInteractionHandler
+                    selectedDestination={selectedDestination}
+                  />
+                  <HotspotMarkers
+                    hotspot={hotspot}
+                    clickHandler={clickHandler}
+                  />
+                  {pathCoordinates.length > 0 && (
+                    <Polyline
+                      positions={pathCoordinates}
+                      color="#f4b942"
+                      weight={4}
+                    />
+                  )}
+                </MapContainer>
+              </div>
             </div>
           </div>
         </div>

@@ -21,7 +21,7 @@ const Authstate = (props) => {
 
         // Check if user is authenticated
         if (authService.isAuthenticated()) {
-          const currentUser = authService.getCurrentUser();
+          const currentUser = authService.getCurrentUserEnhanced();
           const currentToken = authService.getAccessToken();
 
           setUser(currentUser);
@@ -31,7 +31,7 @@ const Authstate = (props) => {
           // Try to refresh token if available
           const refreshed = await authService.refreshAccessToken();
           if (refreshed) {
-            const currentUser = authService.getCurrentUser();
+            const currentUser = authService.getCurrentUserEnhanced();
             const currentToken = authService.getAccessToken();
 
             setUser(currentUser);
@@ -71,7 +71,9 @@ const Authstate = (props) => {
   useEffect(() => {
     const fetchHotspots = async () => {
       try {
-        const response = await fetch("http://localhost:5000/hotspots");
+        const response = await fetch(
+          `${import.meta.env.VITE_API_BASE_URL}/hotspots`
+        );
         const data = await response.json();
 
         // Ensure we always set an array
@@ -107,7 +109,7 @@ const Authstate = (props) => {
 
       if (result.success) {
         console.log("✅ AuthContext: Login successful, updating state");
-        const currentUser = authService.getCurrentUser();
+        const currentUser = authService.getCurrentUserEnhanced();
         const currentToken = authService.getAccessToken();
 
         console.log("👤 Current user:", currentUser);
@@ -181,7 +183,7 @@ const Authstate = (props) => {
     authService.setTokens(newToken);
 
     // Update user info from token
-    const currentUser = authService.getCurrentUser();
+    const currentUser = authService.getCurrentUserEnhanced();
     setUser(currentUser);
     setIsAuthenticated(true);
   }, []);
@@ -196,7 +198,7 @@ const Authstate = (props) => {
     try {
       const refreshed = await authService.refreshAccessToken();
       if (refreshed) {
-        const currentUser = authService.getCurrentUser();
+        const currentUser = authService.getCurrentUserEnhanced();
         const currentToken = authService.getAccessToken();
 
         setUser(currentUser);
@@ -217,6 +219,20 @@ const Authstate = (props) => {
   // Clear error function
   const clearError = useCallback(() => {
     setError(null);
+  }, []);
+
+  // Update user information
+  const updateUser = useCallback((updatedUserData) => {
+    const currentUser = authService.getCurrentUserEnhanced();
+    const newUserData = {
+      ...currentUser,
+      ...updatedUserData,
+    };
+
+    setUser(newUserData);
+
+    // Also update in authService storage
+    authService.setCurrentUser(newUserData);
   }, []);
 
   // Enhanced API request wrapper
@@ -251,6 +267,7 @@ const Authstate = (props) => {
     logout,
     refreshToken,
     clearError,
+    updateUser,
 
     // Legacy functions (for backward compatibility)
     saveToken,
