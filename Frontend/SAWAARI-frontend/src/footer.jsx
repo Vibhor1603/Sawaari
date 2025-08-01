@@ -145,7 +145,7 @@ export default function Footer() {
               <div className="flex items-center gap-3">
                 <span className="text-sawaari-yellow">📧</span>
                 <span className="text-gray-300 text-readable-secondary">
-                  support@sawaari.com
+                  sawaaribyvibhor@gmail.com
                 </span>
               </div>
               <div className="flex items-center gap-3">
