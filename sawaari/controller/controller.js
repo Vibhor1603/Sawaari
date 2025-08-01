@@ -404,6 +404,109 @@ const logout = async (req, res) => {
   }
 };
 
+// ===== PASSWORD RESET ENDPOINTS =====
+
+// Forgot password - send OTP
+const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        error: "Validation failed",
+        message: "Email is required",
+      });
+    }
+
+    // Import the function from auth.js
+    const { sendPasswordResetOTP } = require("../auth");
+    const result = await sendPasswordResetOTP(email);
+
+    res.status(200).json({
+      success: true,
+      message: "Password reset OTP sent successfully",
+      data: {
+        token: result.token,
+        expiresIn: result.expiresIn,
+      },
+    });
+  } catch (error) {
+    console.error("Forgot password error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Password reset failed",
+      message: error.message || "Unable to send password reset OTP",
+    });
+  }
+};
+
+// Verify reset OTP
+const verifyResetOTP = async (req, res) => {
+  try {
+    const { email, otp, token } = req.body;
+
+    if (!email || !otp || !token) {
+      return res.status(400).json({
+        success: false,
+        error: "Validation failed",
+        message: "Email, OTP, and token are required",
+      });
+    }
+
+    // Import the function from auth.js
+    const { verifyPasswordResetOTP } = require("../auth");
+    const result = await verifyPasswordResetOTP(email, otp, token);
+
+    res.status(200).json({
+      success: true,
+      message: "OTP verified successfully",
+      data: {
+        resetToken: result.resetToken,
+        expiresIn: result.expiresIn,
+      },
+    });
+  } catch (error) {
+    console.error("Verify OTP error:", error);
+    res.status(500).json({
+      success: false,
+      error: "OTP verification failed",
+      message: error.message || "Unable to verify OTP",
+    });
+  }
+};
+
+// Reset password
+const resetPassword = async (req, res) => {
+  try {
+    const { resetToken, newPassword } = req.body;
+
+    if (!resetToken || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        error: "Validation failed",
+        message: "Reset token and new password are required",
+      });
+    }
+
+    // Import the function from auth.js
+    const { resetPassword: resetPasswordFunction } = require("../auth");
+    const result = await resetPasswordFunction(resetToken, newPassword);
+
+    res.status(200).json({
+      success: true,
+      message: "Password reset successfully",
+    });
+  } catch (error) {
+    console.error("Reset password error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Password reset failed",
+      message: error.message || "Unable to reset password",
+    });
+  }
+};
+
 // ===== NEW ROUTE CALCULATION API ENDPOINTS =====
 
 // Initialize route graph
@@ -951,8 +1054,8 @@ const changeUserPassword = async (req, res) => {
 
 module.exports = {
   home,
-  signin,
-  signup,
+  signIn,
+  signUp,
   refreshToken,
   logout,
   hotspots,
@@ -966,4 +1069,13 @@ module.exports = {
   getUserProfile,
   updateUserProfile,
   changeUserPassword,
+  // Route calculation endpoints
+  initializeRouteGraph,
+  getRouteGraphStatus,
+  calculateRoute,
+  calculateFareEstimates,
+  storeRouteForRideBuddy,
+  findMatchingRoutesForRideBuddy,
+  getAvailableLocations,
+  getRouteSuggestions,
 };
