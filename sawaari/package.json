@@ -1,0 +1,62 @@
+{
+  "name": "sawaari",
+  "version": "2.0.0",
+  "description": "SAWAARI - Smart Auto Rickshaw Transportation API with Enhanced Security",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "test": "jest",
+    "security-audit": "npm audit",
+    "security-fix": "npm audit fix"
+  },
+  "keywords": [
+    "transportation",
+    "auto-rickshaw",
+    "api",
+    "jwt",
+    "security"
+  ],
+  "author": "SAWAARI Team",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.11.0",
+    "bcryptjs": "^3.0.2",
+    "compression": "^1.8.1",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.5.1",
+    "graphology": "^0.25.4",
+    "graphology-shortest-path": "^2.1.0",
+    "helmet": "^7.2.0",
+    "joi": "^17.13.3",
+    "jsonwebtoken": "^9.0.2",
+    "mongodb": "^6.8.0",
+    "node-cron": "^4.2.1",
+    "nodemailer": "^7.0.5",
+    "socket.io": "^4.7.5",
+    "twilio": "^5.8.0",
+    "uuid": "^9.0.1",
+    "validator": "^13.15.15"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "jest": "^29.7.0",
+    "nodemon": "^3.0.2",
+    "supertest": "^6.3.3"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/sawaari.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/sawaari/issues"
+  },
+  "homepage": "https://github.com/your-username/sawaari#readme"
+}
