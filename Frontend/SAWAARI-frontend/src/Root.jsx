@@ -1,7 +1,7 @@
 import About from "./about";
 import WhySawaari from "./WhySawaari";
 import InteractiveHero from "./Carousel";
-import Testimonials from "./Testimonials";
+import Testimonials from "./testimonials";
 
 export default function Root() {
   return (
