@@ -124,13 +124,15 @@ class ToastManager {
 
   getIcon(type) {
     const icons = {
-      success: '<i class="fas fa-check-circle"></i>',
-      error: '<i class="fas fa-exclamation-circle"></i>',
-      warning: '<i class="fas fa-exclamation-triangle"></i>',
-      info: '<i class="fas fa-info-circle"></i>',
-      loading: '<i class="fas fa-circle-notch fa-spin"></i>',
+      success: "🛺✅", // Auto-rickshaw with success
+      error: "🛺❌", // Auto-rickshaw with error
+      warning: "🛺⚠️", // Auto-rickshaw with warning
+      info: "🛺ℹ️", // Auto-rickshaw with info
+      loading: "🛺💨", // Auto-rickshaw moving
     };
-    return icons[type] || icons.info;
+    return `<span class="toast-rickshaw-icon">${
+      icons[type] || icons.info
+    }</span>`;
   }
 
   // Promise wrapper for async operations

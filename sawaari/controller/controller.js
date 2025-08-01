@@ -691,3 +691,279 @@ module.exports = {
   getAvailableLocations,
   getRouteSuggestions,
 };
+// User Profile Management Endpoints
+
+/**
+ * GET /api/user/profile
+ * Get user profile information
+ */
+const getUserProfile = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const userEmail = req.user.email;
+
+    // Find user by email to get complete profile
+    const user = await findUserByEmail(userEmail);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: "User not found",
+        message: "User profile not found",
+      });
+    }
+
+    // Return user profile (excluding sensitive data)
+    const userProfile = {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+      isVerified: user.isVerified || false,
+    };
+
+    res.status(200).json({
+      success: true,
+      message: "Profile retrieved successfully",
+      data: userProfile,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("Get user profile error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Server error",
+      message: "Unable to retrieve user profile",
+    });
+  }
+};
+
+/**
+ * PUT /api/user/profile
+ * Update user profile information
+ */
+const updateUserProfile = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const userEmail = req.user.email;
+    const { name, phone } = req.body;
+
+    // Validate name
+    if (!name || typeof name !== "string" || name.trim().length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: "Validation failed",
+        message: "Name is required and cannot be empty",
+      });
+    }
+
+    if (name.trim().length < 2) {
+      return res.status(400).json({
+        success: false,
+        error: "Validation failed",
+        message: "Name must be at least 2 characters long",
+      });
+    }
+
+    if (name.trim().length > 50) {
+      return res.status(400).json({
+        success: false,
+        error: "Validation failed",
+        message: "Name cannot exceed 50 characters",
+      });
+    }
+
+    // Validate phone number if provided
+    if (phone && phone.trim()) {
+      const phoneRegex = /^[+]?[\d\s\-\(\)]{10,15}$/;
+      if (!phoneRegex.test(phone.trim())) {
+        return res.status(400).json({
+          success: false,
+          error: "Validation failed",
+          message: "Please enter a valid phone number",
+        });
+      }
+
+      // Check if phone number is already taken by another user
+      const { dbService } = require("../Backend/database");
+      const usersCollection = await dbService.getCollection("users");
+      const existingUser = await usersCollection.findOne({
+        phone: phone.trim(),
+        email: { $ne: userEmail }, // Exclude current user
+      });
+
+      if (existingUser) {
+        return res.status(400).json({
+          success: false,
+          error: "Validation failed",
+          message:
+            "This phone number is already registered with another account",
+        });
+      }
+    }
+
+    // Find user
+    const user = await findUserByEmail(userEmail);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: "User not found",
+        message: "User profile not found",
+      });
+    }
+
+    // Update user profile
+    const { dbService } = require("../Backend/database");
+    const usersCollection = await dbService.getCollection("users");
+
+    // Prepare update data
+    const updateData = {
+      name: name.trim(),
+      updatedAt: new Date(),
+    };
+
+    // Add phone number to update if provided
+    if (phone !== undefined) {
+      updateData.phone = phone.trim();
+    }
+
+    const updateResult = await usersCollection.updateOne(
+      { email: userEmail },
+      { $set: updateData }
+    );
+
+    if (updateResult.modifiedCount === 0) {
+      return res.status(400).json({
+        success: false,
+        error: "Update failed",
+        message: "No changes were made to the profile",
+      });
+    }
+
+    // Get updated user data
+    const updatedUser = await findUserByEmail(userEmail);
+
+    res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      data: {
+        id: updatedUser._id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        phone: updatedUser.phone,
+        updatedAt: updatedUser.updatedAt,
+      },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("Update user profile error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Server error",
+      message: "Unable to update user profile",
+    });
+  }
+};
+
+/**
+ * POST /api/user/change-password
+ * Change user password (requires current password)
+ */
+const changeUserPassword = async (req, res) => {
+  try {
+    const userEmail = req.user.email;
+    const { currentPassword, newPassword } = req.body;
+
+    // Validate input
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        error: "Validation failed",
+        message: "Current password and new password are required",
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        error: "Validation failed",
+        message: "New password must be at least 6 characters long",
+      });
+    }
+
+    // Find user
+    const user = await findUserByEmail(userEmail);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: "User not found",
+        message: "User not found",
+      });
+    }
+
+    // Verify current password
+    const isCurrentPasswordValid = await bcrypt.compare(
+      currentPassword,
+      user.password
+    );
+    if (!isCurrentPasswordValid) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid password",
+        message: "Current password is incorrect",
+      });
+    }
+
+    // Hash new password
+    const saltRounds = 12;
+    const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
+
+    // Update password
+    const { dbService } = require("../Backend/database");
+    const usersCollection = await dbService.getCollection("users");
+
+    await usersCollection.updateOne(
+      { email: userEmail },
+      {
+        $set: {
+          password: hashedNewPassword,
+          updatedAt: new Date(),
+        },
+      }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Password changed successfully",
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("Change password error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Server error",
+      message: "Unable to change password",
+    });
+  }
+};
+
+module.exports = {
+  home,
+  signin,
+  signup,
+  refreshToken,
+  logout,
+  hotspots,
+  feedbacks,
+  ridebuddy,
+  findmatch,
+  forgotPassword,
+  verifyResetOTP,
+  resetPassword,
+  // User Profile endpoints
+  getUserProfile,
+  updateUserProfile,
+  changeUserPassword,
+};

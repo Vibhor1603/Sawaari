@@ -120,6 +120,12 @@ export default function Navbar() {
                     </span>
                   </div>
                   <NavLink
+                    to="/profile"
+                    className="px-4 py-2 text-sm font-medium text-gray-300 hover:text-sawaari-yellow hover:bg-sawaari-yellow-muted/50 rounded-lg transition-all duration-300 text-readable-secondary"
+                  >
+                    Profile
+                  </NavLink>
+                  <NavLink
                     to="/logout"
                     className="px-4 py-2 text-sm font-medium text-gray-300 hover:text-sawaari-yellow hover:bg-sawaari-yellow-muted/50 rounded-lg transition-all duration-300 text-readable-secondary"
                   >
@@ -247,6 +253,13 @@ export default function Navbar() {
                         {user.email?.split("@")[0] || "User"}
                       </span>
                     </div>
+                    <NavLink
+                      to="/profile"
+                      onClick={closeNav}
+                      className="px-4 py-3 text-sm font-medium text-gray-300 hover:text-sawaari-yellow hover:bg-sawaari-yellow-muted/50 rounded-lg transition-all duration-300 text-readable-secondary"
+                    >
+                      Profile
+                    </NavLink>
                     <NavLink
                       to="/logout"
                       onClick={closeNav}

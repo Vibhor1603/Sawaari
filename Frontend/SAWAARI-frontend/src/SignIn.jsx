@@ -2,6 +2,8 @@ import SigninForm from "./SigninForm";
 import { useContext, useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { AuthContext } from "./AuthContext";
+import toast from "./utils/toast";
+import FloatingRickshaws from "./components/FloatingRickshaws";
 
 export default function SignIn() {
   const [userinfo, setUserinfo] = useState({
@@ -43,22 +45,30 @@ export default function SignIn() {
     const { email, password } = userinfo;
 
     if (!email.trim()) {
-      setLocalError("Email is required");
+      const errorMsg = "🛺 Email is required to hop on!";
+      setLocalError(errorMsg);
+      toast.error(errorMsg);
       return false;
     }
 
     if (!email.includes("@")) {
-      setLocalError("Please enter a valid email address");
+      const errorMsg = "🛺 Please enter a valid email address";
+      setLocalError(errorMsg);
+      toast.error(errorMsg);
       return false;
     }
 
     if (!password) {
-      setLocalError("Password is required");
+      const errorMsg = "🛺 Password is required for your ride";
+      setLocalError(errorMsg);
+      toast.error(errorMsg);
       return false;
     }
 
     if (password.length < 6) {
-      setLocalError("Password must be at least 6 characters long");
+      const errorMsg = "🛺 Password must be at least 6 characters long";
+      setLocalError(errorMsg);
+      toast.error(errorMsg);
       return false;
     }
 
@@ -92,13 +102,16 @@ export default function SignIn() {
 
       if (result.success) {
         console.log("✅ SignIn: Login successful, navigating...");
+        toast.success("🛺 Welcome aboard! Login successful");
         const from = location.state?.from?.pathname || "/";
         navigate(from, { replace: true });
       } else {
         console.log("❌ SignIn: Login failed:", result.error);
-        setLocalError(
+        const errorMsg = `🛺 ${
           result.error || "Login failed. Please check your credentials."
-        );
+        }`;
+        setLocalError(errorMsg);
+        toast.error(errorMsg);
       }
     } catch (error) {
       console.error("🚨 SignIn: Catch block error:", error);
@@ -125,7 +138,8 @@ export default function SignIn() {
   const displayError = localError || error;
 
   return (
-    <div className="min-h-screen bg-black pt-16 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-black pt-16 flex items-center justify-center p-4 relative">
+      <FloatingRickshaws />
       {/* Background Elements */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-[20%] left-[10%] text-2xl opacity-10 animate-float">

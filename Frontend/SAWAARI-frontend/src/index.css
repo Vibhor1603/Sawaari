@@ -1084,3 +1084,402 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   transform: scale(1.02);
 }
+/* Auto-Rickshaw Themed Toast Notifications */
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 400px;
+  pointer-events: none;
+}
+
+.toast {
+  background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+  border: 2px solid #f4b942;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 8px 32px rgba(244, 185, 66, 0.3);
+  backdrop-filter: blur(10px);
+  transform: translateX(400px);
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: auto;
+  position: relative;
+  overflow: hidden;
+}
+
+.toast::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #f4b942, #2d5016);
+}
+
+.toast-show {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.toast-exit {
+  transform: translateX(400px);
+  opacity: 0;
+}
+
+.toast-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.toast-rickshaw-icon {
+  font-size: 24px;
+  animation: rickshawBounce 2s infinite;
+}
+
+@keyframes rickshawBounce {
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-3px) rotate(1deg);
+  }
+  50% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  75% {
+    transform: translateY(-2px) rotate(-1deg);
+  }
+}
+
+.toast-message {
+  flex: 1;
+  color: #ffffff;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.toast-close {
+  background: none;
+  border: none;
+  color: #f4b942;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  font-size: 16px;
+}
+
+.toast-close:hover {
+  background: rgba(244, 185, 66, 0.1);
+  transform: scale(1.1);
+}
+
+.toast-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #f4b942, #2d5016);
+  width: 0%;
+}
+
+.toast-progress-animate {
+  animation: toastProgress linear forwards;
+}
+
+@keyframes toastProgress {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}
+
+/* Toast Type Variations */
+.toast-success {
+  border-color: #2d5016;
+  box-shadow: 0 8px 32px rgba(45, 80, 22, 0.3);
+}
+
+.toast-success::before {
+  background: linear-gradient(90deg, #2d5016, #f4b942);
+}
+
+.toast-error {
+  border-color: #dc2626;
+  box-shadow: 0 8px 32px rgba(220, 38, 38, 0.3);
+}
+
+.toast-error::before {
+  background: linear-gradient(90deg, #dc2626, #f4b942);
+}
+
+.toast-warning {
+  border-color: #f59e0b;
+  box-shadow: 0 8px 32px rgba(245, 158, 11, 0.3);
+}
+
+.toast-warning::before {
+  background: linear-gradient(90deg, #f59e0b, #f4b942);
+}
+
+.toast-info {
+  border-color: #3b82f6;
+  box-shadow: 0 8px 32px rgba(59, 130, 246, 0.3);
+}
+
+.toast-info::before {
+  background: linear-gradient(90deg, #3b82f6, #f4b942);
+}
+
+.toast-loading .toast-rickshaw-icon {
+  animation: rickshawLoading 1s infinite linear;
+}
+
+@keyframes rickshawLoading {
+  0% {
+    transform: translateX(-10px);
+  }
+  100% {
+    transform: translateX(10px);
+  }
+}
+
+/* Mobile Responsive */
+@media (max-width: 640px) {
+  .toast-container {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    max-width: none;
+  }
+
+  .toast {
+    transform: translateY(-100px);
+  }
+
+  .toast-show {
+    transform: translateY(0);
+  }
+
+  .toast-exit {
+    transform: translateY(-100px);
+  }
+}
+
+/* Enhanced Floating Auto-Rickshaw Animations with Depth Layers */
+.floating-rickshaw {
+  position: fixed;
+  font-size: 24px;
+  pointer-events: none;
+  animation: floatRickshaw linear infinite;
+}
+
+.floating-rickshaw:nth-child(odd) {
+  animation-direction: reverse;
+}
+
+/* Horizontal rickshaws - always behind components with subtle visibility */
+.floating-rickshaw-1 {
+  animation-duration: 35s;
+  top: 10%;
+  opacity: 0.12; /* Background layer */
+  z-index: -1;
+}
+.floating-rickshaw-2 {
+  animation-duration: 40s;
+  top: 20%;
+  opacity: 0.18; /* Mid-background layer */
+  z-index: -1;
+}
+.floating-rickshaw-3 {
+  animation-duration: 45s;
+  top: 30%;
+  opacity: 0.24; /* Mid-foreground layer */
+  z-index: -1;
+}
+.floating-rickshaw-4 {
+  animation-duration: 38s;
+  top: 40%;
+  opacity: 0.3; /* Foreground layer */
+  z-index: -1;
+}
+.floating-rickshaw-5 {
+  animation-duration: 42s;
+  top: 50%;
+  opacity: 0.12; /* Background layer */
+  z-index: -1;
+}
+.floating-rickshaw-6 {
+  animation-duration: 36s;
+  top: 60%;
+  opacity: 0.18; /* Mid-background layer */
+  z-index: -1;
+}
+.floating-rickshaw-7 {
+  animation-duration: 44s;
+  top: 70%;
+  opacity: 0.24; /* Mid-foreground layer */
+  z-index: -1;
+}
+.floating-rickshaw-8 {
+  animation-duration: 48s;
+  top: 80%;
+  opacity: 0.3; /* Foreground layer */
+  z-index: -1;
+}
+.floating-rickshaw-9 {
+  animation-duration: 33s;
+  top: 15%;
+  opacity: 0.12; /* Background layer */
+  z-index: -1;
+}
+.floating-rickshaw-10 {
+  animation-duration: 50s;
+  top: 35%;
+  opacity: 0.18; /* Mid-background layer */
+  z-index: -1;
+}
+.floating-rickshaw-11 {
+  animation-duration: 37s;
+  top: 55%;
+  opacity: 0.24; /* Mid-foreground layer */
+  z-index: -1;
+}
+.floating-rickshaw-12 {
+  animation-duration: 46s;
+  top: 75%;
+  opacity: 0.3; /* Foreground layer */
+  z-index: -1;
+}
+
+@keyframes floatRickshaw {
+  0% {
+    transform: translateX(-100px) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: inherit; /* Use the opacity defined in the class */
+  }
+  90% {
+    opacity: inherit; /* Use the opacity defined in the class */
+  }
+  100% {
+    transform: translateX(calc(100vw + 100px)) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+@keyframes floatRickshawVertical {
+  0% {
+    transform: translateY(-100px) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: inherit; /* Use the opacity defined in the class */
+  }
+  90% {
+    opacity: inherit; /* Use the opacity defined in the class */
+  }
+  100% {
+    transform: translateY(calc(100vh + 100px)) rotate(180deg);
+    opacity: 0;
+  }
+}
+
+/* Vertical floating rickshaws with layered depth */
+.floating-rickshaw-vertical {
+  position: fixed;
+  font-size: 20px;
+  pointer-events: none;
+  animation: floatRickshawVertical linear infinite;
+}
+
+/* Vertical rickshaws - always behind components with subtle visibility */
+.floating-rickshaw-vertical-1 {
+  animation-duration: 40s;
+  left: 5%;
+  opacity: 0.1; /* Background layer */
+  z-index: -1;
+}
+.floating-rickshaw-vertical-2 {
+  animation-duration: 45s;
+  left: 15%;
+  opacity: 0.15; /* Mid-background layer */
+  z-index: -1;
+}
+.floating-rickshaw-vertical-3 {
+  animation-duration: 50s;
+  left: 25%;
+  opacity: 0.2; /* Mid-foreground layer */
+  z-index: -1;
+}
+.floating-rickshaw-vertical-4 {
+  animation-duration: 43s;
+  left: 35%;
+  opacity: 0.25; /* Foreground layer */
+  z-index: -1;
+}
+.floating-rickshaw-vertical-5 {
+  animation-duration: 47s;
+  left: 45%;
+  opacity: 0.1; /* Background layer */
+  z-index: -1;
+}
+.floating-rickshaw-vertical-6 {
+  animation-duration: 42s;
+  left: 55%;
+  opacity: 0.15; /* Mid-background layer */
+  z-index: -1;
+}
+.floating-rickshaw-vertical-7 {
+  animation-duration: 48s;
+  left: 65%;
+  opacity: 0.2; /* Mid-foreground layer */
+  z-index: -1;
+}
+.floating-rickshaw-vertical-8 {
+  animation-duration: 44s;
+  left: 75%;
+  opacity: 0.25; /* Foreground layer */
+  z-index: -1;
+}
+.floating-rickshaw-vertical-9 {
+  animation-duration: 41s;
+  left: 85%;
+  opacity: 0.1; /* Background layer */
+  z-index: -1;
+}
+.floating-rickshaw-vertical-10 {
+  animation-duration: 46s;
+  left: 95%;
+  opacity: 0.15; /* Mid-background layer */
+  z-index: -1;
+}
+
+@keyframes floatRickshawVertical {
+  0% {
+    transform: translateY(-100px) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: inherit; /* Use the opacity defined in the class */
+  }
+  90% {
+    opacity: inherit; /* Use the opacity defined in the class */
+  }
+  100% {
+    transform: translateY(calc(100vh + 100px)) rotate(180deg);
+    opacity: 0;
+  }
+}

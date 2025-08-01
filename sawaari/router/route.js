@@ -553,4 +553,22 @@ router.route("/docs").get((req, res) => {
   });
 });
 
+// User Profile Routes (Protected)
+const {
+  getUserProfile,
+  updateUserProfile,
+  changeUserPassword,
+} = require("../controller/controller");
+
+// Get user profile
+router.route("/user/profile").get(authenticateToken, getUserProfile);
+
+// Update user profile
+router.route("/user/profile").put(authenticateToken, updateUserProfile);
+
+// Change password
+router
+  .route("/user/change-password")
+  .post(authenticateToken, changeUserPassword);
+
 module.exports = router;
