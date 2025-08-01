@@ -1020,3 +1020,67 @@
     @apply bg-gray-900 text-white border border-gray-700;
   }
 }
+/* Chat Popup Styles */
+.chat-popup-overlay {
+  backdrop-filter: blur(8px);
+  animation: fadeIn 0.2s ease-out;
+}
+
+.chat-popup-container {
+  animation: slideUp 0.3s ease-out;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Ensure popup is above everything */
+.chat-popup-overlay {
+  z-index: 9999 !important;
+}
+
+/* Mobile responsive adjustments for chat popup */
+@media (max-width: 640px) {
+  .chat-popup-container {
+    width: 95vw !important;
+    height: 85vh !important;
+    max-height: 85vh !important;
+  }
+}
+/* Chat Message Improvements */
+.chat-message-sent {
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.2);
+}
+
+.chat-message-sent:hover {
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+  transform: scale(1.02);
+}
+
+.chat-message-received {
+  background: linear-gradient(135deg, #404040 0%, #262626 100%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.chat-message-received:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  transform: scale(1.02);
+}

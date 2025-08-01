@@ -329,7 +329,7 @@ const LiveChat = ({ chatId, partnerName, onClose }) => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-gradient-to-b from-neutral-900 to-neutral-800">
+    <div className="h-full flex flex-col bg-gradient-to-b from-neutral-900 to-neutral-800 rounded-b-xl overflow-hidden">
       {/* Enhanced Status Bar */}
       <div className="px-4 py-2 bg-gradient-to-r from-neutral-800 to-neutral-700 border-b border-neutral-600">
         <div className="flex items-center gap-2">
@@ -400,24 +400,38 @@ const LiveChat = ({ chatId, partnerName, onClose }) => {
                 }`}
               >
                 <div
-                  className={`max-w-xs px-3 py-2 rounded-xl shadow-lg transition-all duration-300 hover:scale-105 ${
+                  className={`max-w-xs px-3 py-2 rounded-xl transition-all duration-300 text-white ${
                     isOwnMessage
-                      ? "bg-gradient-to-r from-sawaari-yellow via-orange-500 to-sawaari-green text-black border border-sawaari-yellow/30"
-                      : "bg-gradient-to-r from-neutral-800 to-neutral-700 text-white border border-neutral-600"
+                      ? "chat-message-sent border border-green-500/30"
+                      : "chat-message-received border border-neutral-600"
                   }`}
                 >
                   <div className="flex items-center gap-1 mb-1">
-                    <span className="text-xs font-semibold opacity-70">
+                    <span
+                      className={`text-xs font-semibold ${
+                        isOwnMessage
+                          ? "text-green-100 opacity-80"
+                          : "opacity-70"
+                      }`}
+                    >
                       {isOwnMessage ? "You" : partnerName}
                     </span>
-                    <span className="text-xs opacity-50">
+                    <span
+                      className={`text-xs ${
+                        isOwnMessage
+                          ? "text-green-200 opacity-70"
+                          : "opacity-50"
+                      }`}
+                    >
                       {formatMessageTime(message.timestamp)}
                     </span>
                   </div>
                   <p className="text-sm">{message.message}</p>
                   {isOwnMessage && (
                     <div className="flex justify-end mt-1">
-                      <span className="text-xs opacity-70">✓</span>
+                      <span className="text-xs opacity-80 text-green-100">
+                        ✓
+                      </span>
                     </div>
                   )}
                 </div>
