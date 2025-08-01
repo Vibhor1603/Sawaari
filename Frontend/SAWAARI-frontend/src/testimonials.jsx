@@ -144,34 +144,6 @@ export default function Testimonials() {
             />
           ))}
         </div>
-
-        {/* Quick Stats */}
-        <div className="grid md:grid-cols-3 gap-8 max-w-2xl mx-auto">
-          <div className="text-center">
-            <div className="text-4xl font-bold text-sawaari-yellow mb-2">
-              50K+
-            </div>
-            <div className="text-gray-300 text-readable-secondary">
-              Happy Users
-            </div>
-          </div>
-          <div className="text-center">
-            <div className="text-4xl font-bold text-sawaari-yellow mb-2">
-              4.9★
-            </div>
-            <div className="text-gray-300 text-readable-secondary">
-              Average Rating
-            </div>
-          </div>
-          <div className="text-center">
-            <div className="text-4xl font-bold text-sawaari-yellow mb-2">
-              25+
-            </div>
-            <div className="text-gray-300 text-readable-secondary">
-              Cities Covered
-            </div>
-          </div>
-        </div>
       </div>
     </section>
   );
