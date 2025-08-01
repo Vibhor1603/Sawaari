@@ -22,7 +22,7 @@ const {
 
 // Initialize route matching service
 const routeMatchingService = new RouteMatchingService({
-  defaultRadius: 10, // 10km default search radius
+  defaultRadius: 2, // 2km default search radius for nearby connections
   minOverlapPercentage: 25, // 25% minimum route overlap
   maxResults: 20, // Maximum 20 matches per search
 });
@@ -46,6 +46,87 @@ const cleanupUserSearches = async (userId) => {
     // Don't throw error, just log it
   }
 };
+
+/**
+ * Clean up expired requests
+ */
+const cleanupExpiredRequests = async () => {
+  try {
+    const now = new Date();
+
+    // Find expired pending requests
+    const expiredRequests = await findRideBuddyRequests({
+      status: "pending",
+      expiresAt: { $lt: now },
+    });
+
+    console.log(
+      `🧹 Found ${expiredRequests.length} expired requests to clean up`
+    );
+
+    // Update expired requests to "expired" status
+    for (const request of expiredRequests) {
+      await updateRideBuddyRequest(request._id, {
+        status: "expired",
+        expiredAt: now,
+      });
+      console.log(
+        `🧹 Expired request ${request._id} from ${request.senderName} to ${request.receiverName}`
+      );
+    }
+
+    return expiredRequests.length;
+  } catch (error) {
+    console.error("Error cleaning up expired requests:", error);
+    return 0;
+  }
+};
+
+// Enhanced cleanup for expired requests
+const cleanupExpiredPendingRequests = async () => {
+  try {
+    const now = new Date();
+    const PENDING_EXPIRY = 10 * 60 * 1000; // 10 minutes for pending requests
+
+    // Find expired pending requests
+    const expiredPendingRequests = await findRideBuddyRequests({
+      status: "pending",
+      createdAt: { $lt: new Date(now.getTime() - PENDING_EXPIRY) },
+    });
+
+    console.log(
+      `🧹 Found ${expiredPendingRequests.length} expired pending requests to clean up`
+    );
+
+    // Update expired pending requests to "expired" status
+    for (const request of expiredPendingRequests) {
+      await updateRideBuddyRequest(request._id, {
+        status: "expired",
+        expiredAt: now,
+      });
+      console.log(
+        `🧹 Expired pending request ${request._id} from ${request.senderName} to ${request.receiverName}`
+      );
+    }
+
+    return expiredPendingRequests.length;
+  } catch (error) {
+    console.error("Error cleaning up expired pending requests:", error);
+    return 0;
+  }
+};
+
+// Start periodic cleanup
+setInterval(async () => {
+  const cleanedUpExpired = await cleanupExpiredRequests();
+  const cleanedUpPending = await cleanupExpiredPendingRequests();
+
+  if (cleanedUpExpired > 0 || cleanedUpPending > 0) {
+    console.log(
+      `🧹 Cleaned up ${cleanedUpExpired} expired requests and ${cleanedUpPending} expired pending requests`
+    );
+  }
+}, 60000); // Run every minute
 
 /**
  * Filter matches based on user preferences
@@ -299,40 +380,67 @@ const sendRequest = async (req, res) => {
       ],
     });
 
-    // Check for pending requests and if they're still valid (within reasonable time)
-    const pendingRequest = existingRequests.find(
+    console.log(
+      `🔍 Found ${existingRequests.length} existing requests between users ${senderId} and ${receiverId}`
+    );
+    existingRequests.forEach((req) => {
+      console.log(
+        `  - Request ${req._id}: ${req.status} (created: ${req.createdAt}, updated: ${req.updatedAt})`
+      );
+    });
+
+    // Check for pending requests (in either direction) and if they're still valid
+    const pendingRequests = existingRequests.filter(
       (req) => req.status === "pending"
     );
-    if (pendingRequest) {
-      // Check if the pending request has expired (24 hours)
-      const requestAge =
-        Date.now() - new Date(pendingRequest.createdAt).getTime();
-      const PENDING_REQUEST_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
-      if (requestAge <= PENDING_REQUEST_DURATION) {
-        return res.status(409).json({
-          success: false,
-          error: "Duplicate request",
-          message:
-            "There is already a pending request between you and this user",
-        });
+    if (pendingRequests.length > 0) {
+      for (const pendingRequest of pendingRequests) {
+        const requestAge =
+          Date.now() - new Date(pendingRequest.createdAt).getTime();
+        const PENDING_REQUEST_DURATION = 10 * 60 * 1000; // 10 minutes for pending requests
+
+        if (requestAge <= PENDING_REQUEST_DURATION) {
+          const direction =
+            pendingRequest.senderId.toString() === senderId
+              ? "outgoing"
+              : "incoming";
+          console.log(
+            `🚫 Blocking duplicate request - found ${direction} pending request ${pendingRequest._id}`
+          );
+
+          return res.status(409).json({
+            success: false,
+            error: "Duplicate request",
+            message:
+              direction === "outgoing"
+                ? "You have already sent a request to this user"
+                : "This user has already sent you a request. Please check your connections tab.",
+          });
+        }
       }
 
-      // Pending request has expired, we can allow a new request
+      // All pending requests have expired, clean them up
       console.log(
-        `🕐 Previous pending request to user ${receiverId} has expired, allowing new request`
+        `🧹 Cleaning up ${pendingRequests.length} expired pending requests`
       );
+      for (const expiredRequest of pendingRequests) {
+        await updateRideBuddyRequest(expiredRequest._id, {
+          status: "expired",
+          expiredAt: new Date(),
+        });
+      }
     }
 
-    // Check for accepted connections and if they're still active (within 10 minutes)
+    // Check for accepted connections and if they're still active (within 15 minutes)
     const acceptedConnection = existingRequests.find(
       (req) => req.status === "accepted"
     );
     if (acceptedConnection) {
-      // Check if the connection has expired (10 minutes from acceptance)
+      // Check if the connection has expired (15 minutes from acceptance)
       const connectionAge =
         Date.now() - new Date(acceptedConnection.updatedAt).getTime();
-      const CONNECTION_DURATION = 10 * 60 * 1000; // 10 minutes
+      const CONNECTION_DURATION = 15 * 60 * 1000; // 15 minutes total (10 chat + 5 contact)
 
       if (connectionAge <= CONNECTION_DURATION) {
         return res.status(409).json({
@@ -390,7 +498,7 @@ const sendRequest = async (req, res) => {
     // Get receiver phone from search data (if available)
     const receiverPhone = receiverSearch.userPhone;
 
-    // Create request data
+    // Create request data with expiration
     const requestData = {
       senderId: new ObjectId(senderId),
       senderEmail,
@@ -408,22 +516,30 @@ const sendRequest = async (req, res) => {
         estimatedSharedFare: routeDetails.estimatedSharedFare,
       },
       message: message.trim(),
+      expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes from now
     };
 
     // Save request to database
     const result = await createRideBuddyRequest(requestData);
 
-    // Send real-time notification to receiver
+    // Send real-time notification to receiver immediately
     try {
+      console.log(`🔔 Sending immediate notification to user ${receiverId}`);
       await chatService.notifyRideBuddyRequest(receiverId, {
         requestId: result.insertedId,
         senderName,
         senderEmail,
+        senderPhone,
         routeDetails: requestData.routeDetails,
         message: requestData.message,
+        timestamp: new Date().toISOString(),
       });
+      console.log(`✅ Notification sent successfully to user ${receiverId}`);
     } catch (notificationError) {
-      console.error("Error sending real-time notification:", notificationError);
+      console.error(
+        "❌ Error sending real-time notification:",
+        notificationError
+      );
       // Don't fail the request if notification fails
     }
 
@@ -883,16 +999,25 @@ const getRequests = async (req, res) => {
       });
     }
 
-    // Find incoming requests (where user is receiver)
+    // Find incoming requests (where user is receiver) - exclude expired
     const incomingRequests = await findRideBuddyRequests({
       receiverId: new ObjectId(userId),
       status: "pending",
+      $or: [
+        { expiresAt: { $exists: false } }, // Old requests without expiration
+        { expiresAt: { $gt: new Date() } }, // Non-expired requests
+      ],
     });
 
-    // Find outgoing requests (where user is sender)
+    // Find outgoing requests (where user is sender) - exclude expired pending requests
     const outgoingRequests = await findRideBuddyRequests({
       senderId: new ObjectId(userId),
       status: { $in: ["pending", "accepted", "declined"] },
+      $or: [
+        { status: { $in: ["accepted", "declined"] } }, // Keep accepted/declined regardless of expiration
+        { expiresAt: { $exists: false } }, // Old requests without expiration
+        { expiresAt: { $gt: new Date() } }, // Non-expired requests
+      ],
     });
 
     // Format incoming requests

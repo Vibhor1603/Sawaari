@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "./AuthContext";
 import rideBuddyService from "./services/rideBuddyService";
@@ -50,16 +50,51 @@ const RideBuddy = () => {
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [sentRequestIds, setSentRequestIds] = useState(new Set());
+  const [sentRequestTimes, setSentRequestTimes] = useState(new Map()); // Track when requests were sent
 
   // Requests and connections
   const [incomingRequests, setIncomingRequests] = useState([]);
   const [outgoingRequests, setOutgoingRequests] = useState([]);
   const [activeConnections, setActiveConnections] = useState([]);
   const [requestsLoading, setRequestsLoading] = useState(false);
+  const [processingRequests, setProcessingRequests] = useState(new Set()); // Track requests being processed
 
   // Live chat state
   const [activeChatId, setActiveChatId] = useState(null);
   const [chatPartner, setChatPartner] = useState(null);
+
+  // How it works popup state
+  const [showHowItWorks, setShowHowItWorks] = useState(false);
+
+  // Clean up expired sent requests
+  useEffect(() => {
+    const cleanupInterval = setInterval(() => {
+      const now = Date.now();
+      const expiredIds = [];
+
+      sentRequestTimes.forEach((sentTime, userId) => {
+        if (now - sentTime > 10 * 60 * 1000) {
+          // 10 minutes
+          expiredIds.push(userId);
+        }
+      });
+
+      if (expiredIds.length > 0) {
+        setSentRequestIds((prev) => {
+          const newSet = new Set(prev);
+          expiredIds.forEach((id) => newSet.delete(id));
+          return newSet;
+        });
+        setSentRequestTimes((prev) => {
+          const newMap = new Map(prev);
+          expiredIds.forEach((id) => newMap.delete(id));
+          return newMap;
+        });
+      }
+    }, 60000); // Check every minute
+
+    return () => clearInterval(cleanupInterval);
+  }, [sentRequestTimes]);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -154,27 +189,71 @@ const RideBuddy = () => {
       socketService.on("ride_buddy_new_request", (data) => {
         console.log("🔔 New ride request received:", data);
         toast.success(`New ride request from ${data.senderName}!`);
-        // Immediately refresh requests to show the new one
-        loadRequests();
+
+        // Immediately add to incoming requests for instant UI update
+        const newRequest = {
+          _id: data.requestId,
+          senderId: data.senderId,
+          senderName: data.senderName,
+          senderEmail: data.senderEmail,
+          routeDetails: data.routeDetails,
+          message: data.message,
+          status: "pending",
+          type: "incoming",
+          createdAt: new Date().toISOString(),
+        };
+
+        setIncomingRequests((prev) => [newRequest, ...prev]);
+
+        // Clear cache to ensure fresh data on next load
+        rideBuddyService.clearCache();
+
         // Switch to connections tab to show the new request
         if (activeTab === "search") {
           setActiveTab("connections");
         }
+
+        // Also refresh from server to ensure consistency
+        setTimeout(() => loadRequests(), 500);
       });
 
       socketService.on("ride_buddy_request_response", (data) => {
         console.log("🔔 Request response received:", data);
+
+        // Clear cache to ensure fresh data
+        rideBuddyService.clearCache();
+
         if (data.action === "accepted") {
           toast.success(`${data.responderName} accepted your request!`);
-          // Immediately reload connections to show the new match
-          loadConnections(true); // Force refresh
           // Switch to connections tab to show the match
           setActiveTab("connections");
+          // Reload connections with delay to ensure backend processing is complete
+          setTimeout(() => loadConnections(true), 200);
         } else {
           toast.info(`${data.responderName} declined your request`);
         }
-        // Reload requests to update status
-        loadRequests();
+
+        // Remove from outgoing requests immediately
+        setOutgoingRequests((prev) =>
+          prev.filter((req) => req._id !== data.requestId)
+        );
+
+        // Also clean up sent request tracking
+        if (data.receiverId) {
+          setSentRequestIds((prev) => {
+            const newSet = new Set(prev);
+            newSet.delete(data.receiverId);
+            return newSet;
+          });
+          setSentRequestTimes((prev) => {
+            const newMap = new Map(prev);
+            newMap.delete(data.receiverId);
+            return newMap;
+          });
+        }
+
+        // Reload requests to update status with delay
+        setTimeout(() => loadRequests(), 300);
       });
 
       socketService.on("new_notification", (data) => {
@@ -214,12 +293,19 @@ const RideBuddy = () => {
         setOutgoingRequests(result.data.sentRequests || []);
 
         // Update sent request IDs to prevent duplicate sends
-        const sentIds = new Set(
-          (result.data.sentRequests || [])
-            .filter((req) => req.status === "pending")
-            .map((req) => req.receiverId.toString())
-        );
+        const sentIds = new Set();
+        const sentTimes = new Map();
+
+        (result.data.sentRequests || [])
+          .filter((req) => req.status === "pending")
+          .forEach((req) => {
+            const receiverId = req.receiverId.toString();
+            sentIds.add(receiverId);
+            sentTimes.set(receiverId, new Date(req.createdAt).getTime());
+          });
+
         setSentRequestIds(sentIds);
+        setSentRequestTimes(sentTimes);
       }
     } catch (error) {
       console.error("Error loading requests:", error);
@@ -322,13 +408,26 @@ const RideBuddy = () => {
   };
 
   const sendRideRequest = async (match) => {
+    // Check if request was already sent
     if (sentRequestIds.has(match.userId)) {
-      toast.error("Request already sent to this user");
+      const sentTime = sentRequestTimes.get(match.userId);
+      const timeSince = sentTime ? Date.now() - sentTime : 0;
+      const minutesAgo = Math.floor(timeSince / 60000);
+
+      if (minutesAgo < 10) {
+        toast.error(
+          `Request already sent ${minutesAgo} minutes ago. Please wait.`
+        );
+      } else {
+        toast.error("Request already sent to this user");
+      }
       return;
     }
 
     try {
+      const now = Date.now();
       setSentRequestIds((prev) => new Set([...prev, match.userId]));
+      setSentRequestTimes((prev) => new Map([...prev, [match.userId, now]]));
 
       // Use the correct method signature from the old version
       const result = await rideBuddyService.sendConnectionRequest({
@@ -365,6 +464,11 @@ const RideBuddy = () => {
           newSet.delete(match.userId);
           return newSet;
         });
+        setSentRequestTimes((prev) => {
+          const newMap = new Map(prev);
+          newMap.delete(match.userId);
+          return newMap;
+        });
 
         // Handle specific error cases
         if (
@@ -396,20 +500,33 @@ const RideBuddy = () => {
         newSet.delete(match.userId);
         return newSet;
       });
+      setSentRequestTimes((prev) => {
+        const newMap = new Map(prev);
+        newMap.delete(match.userId);
+        return newMap;
+      });
       console.error("Failed to send request:", error);
       toast.error("Failed to send ride request");
     }
   };
 
   const respondToRequest = async (requestId, action) => {
+    // Prevent multiple clicks on the same request
+    if (processingRequests.has(requestId)) {
+      console.log(`Request ${requestId} is already being processed`);
+      return;
+    }
+
     try {
+      // Mark request as being processed
+      setProcessingRequests((prev) => new Set([...prev, requestId]));
+
+      // Immediately remove from UI to prevent double-clicking
+      setIncomingRequests((prev) => prev.filter((r) => r._id !== requestId));
+
       if (action === "accepted") {
         const result = await rideBuddyService.acceptRequest(requestId);
         if (result.success) {
-          setIncomingRequests((prev) =>
-            prev.filter((r) => r._id !== requestId)
-          );
-
           // Add to active connections
           const connection = {
             matchId: result.data.matchId,
@@ -418,31 +535,44 @@ const RideBuddy = () => {
             routeDetails: result.data.routeDetails,
             estimatedSharedFare: result.data.estimatedSharedFare,
             createdAt: new Date().toISOString(),
+            chatTimeRemaining: 10 * 60 * 1000, // 10 minutes
           };
 
           setActiveConnections((prev) => [connection, ...prev]);
           toast.success(
             "Request accepted! You can now chat with your ride buddy."
           );
-          loadConnections();
+
+          // Clear cache and reload connections to get fresh data
+          rideBuddyService.clearCache();
+          setTimeout(() => loadConnections(true), 500);
         } else {
           toast.error(result.error || "Failed to accept request");
+          // Reload requests if failed to restore UI state
+          loadRequests();
         }
       } else {
         const result = await rideBuddyService.declineRequest(requestId);
         if (result.success) {
-          setIncomingRequests((prev) =>
-            prev.filter((r) => r._id !== requestId)
-          );
           toast.success("Request declined");
         } else {
           toast.error(result.error || "Failed to decline request");
+          // Reload requests if failed to restore UI state
+          loadRequests();
         }
       }
-      loadRequests();
     } catch (error) {
       console.error("Failed to respond to request:", error);
       toast.error("Failed to respond to request");
+      // Reload requests to restore UI state
+      loadRequests();
+    } finally {
+      // Remove from processing set
+      setProcessingRequests((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(requestId);
+        return newSet;
+      });
     }
   };
 
@@ -482,27 +612,31 @@ const RideBuddy = () => {
     });
   };
 
-  const closeChat = () => {
+  const closeChat = useCallback(() => {
     if (activeChatId) {
       socketService.leaveChatRoom(activeChatId);
     }
     setActiveChatId(null);
     setChatPartner(null);
-  };
+  });
 
-  // Handle keyboard shortcuts for chat
+  // Handle keyboard shortcuts for chat and popups
   useEffect(() => {
     const handleKeyDown = (event) => {
-      if (event.key === "Escape" && activeChatId) {
-        closeChat();
+      if (event.key === "Escape") {
+        if (showHowItWorks) {
+          setShowHowItWorks(false);
+        } else if (activeChatId) {
+          closeChat();
+        }
       }
     };
 
-    if (activeChatId) {
+    if (activeChatId || showHowItWorks) {
       document.addEventListener("keydown", handleKeyDown);
       return () => document.removeEventListener("keydown", handleKeyDown);
     }
-  }, [activeChatId, closeChat]);
+  }, [activeChatId, closeChat, showHowItWorks]);
 
   // Don't render if not authenticated
   if (!isAuthenticated) {
@@ -514,9 +648,9 @@ const RideBuddy = () => {
       <div className="container-sawaari">
         {/* Header */}
         <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-3 bg-sawaari-yellow-muted border border-sawaari-yellow-border rounded-full px-6 py-3 mb-6">
-            <span className="text-2xl">👥</span>
-            <span className="text-sm font-medium text-sawaari-yellow text-readable">
+          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-sawaari-yellow/20 to-sawaari-green/20 border border-sawaari-yellow/30 rounded-lg px-4 py-2 mb-6">
+            <span className="text-xl">👥</span>
+            <span className="text-sm font-semibold text-sawaari-yellow">
               Ride Buddy
             </span>
           </div>
@@ -527,6 +661,29 @@ const RideBuddy = () => {
             Connect with fellow travelers, share rides, and make your journey
             more affordable and enjoyable.
           </p>
+
+          {/* How It Works Button */}
+          <div className="mt-6">
+            <button
+              onClick={() => setShowHowItWorks(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-black/40 backdrop-blur-sm border border-white/20 rounded-lg text-white hover:bg-white/10 transition-all duration-300"
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <span className="text-sm">How It Works</span>
+            </button>
+          </div>
         </div>
 
         {/* Tab Navigation */}
@@ -718,7 +875,20 @@ const RideBuddy = () => {
                           }`}
                         >
                           {sentRequestIds.has(match.userId)
-                            ? "Request Sent"
+                            ? (() => {
+                                const sentTime = sentRequestTimes.get(
+                                  match.userId
+                                );
+                                const timeSince = sentTime
+                                  ? Date.now() - sentTime
+                                  : 0;
+                                const minutesAgo = Math.floor(
+                                  timeSince / 60000
+                                );
+                                return minutesAgo < 1
+                                  ? "Request Sent"
+                                  : `Sent ${minutesAgo}m ago`;
+                              })()
                             : "Send Request"}
                         </button>
                       </div>
@@ -797,7 +967,7 @@ const RideBuddy = () => {
                             )}
                             {request.message && (
                               <p className="text-xs text-gray-400 italic mt-1">
-                                "{request.message}"
+                                "{request.message}&quot;
                               </p>
                             )}
                           </div>
@@ -807,17 +977,31 @@ const RideBuddy = () => {
                             onClick={() =>
                               respondToRequest(request._id, "accepted")
                             }
-                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                            disabled={processingRequests.has(request._id)}
+                            className={`px-4 py-2 rounded-lg transition-colors ${
+                              processingRequests.has(request._id)
+                                ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                                : "bg-green-600 text-white hover:bg-green-700"
+                            }`}
                           >
-                            Accept
+                            {processingRequests.has(request._id)
+                              ? "Processing..."
+                              : "Accept"}
                           </button>
                           <button
                             onClick={() =>
                               respondToRequest(request._id, "declined")
                             }
-                            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                            disabled={processingRequests.has(request._id)}
+                            className={`px-4 py-2 rounded-lg transition-colors ${
+                              processingRequests.has(request._id)
+                                ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                                : "bg-red-600 text-white hover:bg-red-700"
+                            }`}
                           >
-                            Decline
+                            {processingRequests.has(request._id)
+                              ? "Processing..."
+                              : "Decline"}
                           </button>
                         </div>
                       </div>
@@ -959,64 +1143,9 @@ const RideBuddy = () => {
                 </div>
               )}
 
-              {/* Outgoing Requests */}
-              {outgoingRequests.length > 0 && (
-                <div className="card">
-                  <h3 className="text-xl font-bold text-white mb-6 text-readable">
-                    Pending Requests ({outgoingRequests.length})
-                  </h3>
-                  <div className="grid gap-4">
-                    {outgoingRequests.map((request) => (
-                      <div
-                        key={request._id}
-                        className="flex items-center justify-between p-4 bg-black/30 border border-white/10 rounded-lg"
-                      >
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 bg-sawaari-yellow-muted border border-sawaari-yellow-border rounded-full flex items-center justify-center">
-                            <span className="text-sawaari-yellow font-semibold">
-                              {(
-                                request.receiverName ||
-                                `User ${request.receiverId?.slice(-4)}`
-                              )
-                                ?.charAt(0)
-                                ?.toUpperCase() || "U"}
-                            </span>
-                          </div>
-                          <div>
-                            <h4 className="font-semibold text-white text-readable">
-                              {request.receiverName ||
-                                `User ${request.receiverId?.slice(-4)}`}
-                            </h4>
-                            <p className="text-sm text-gray-300 text-readable-secondary">
-                              {request.routeDetails?.senderRoute?.source ||
-                                "Unknown"}{" "}
-                              →{" "}
-                              {request.routeDetails?.senderRoute?.destination ||
-                                "Unknown"}
-                            </p>
-                            {request.routeDetails?.estimatedSharedFare && (
-                              <p className="text-xs text-green-400">
-                                Shared Fare: ₹
-                                {Math.round(
-                                  request.routeDetails.estimatedSharedFare
-                                )}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                        <span className="px-4 py-2 bg-yellow-600 text-white rounded-lg">
-                          Pending
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
               {/* Empty State */}
               {incomingRequests.length === 0 &&
-                activeConnections.length === 0 &&
-                outgoingRequests.length === 0 && (
+                activeConnections.length === 0 && (
                   <div className="card text-center">
                     <div className="text-6xl mb-4">👥</div>
                     <h3 className="text-xl font-bold text-white mb-2 text-readable">
@@ -1043,6 +1172,188 @@ const RideBuddy = () => {
           )}
         </div>
       </div>
+
+      {/* How It Works Popup */}
+      {showHowItWorks && (
+        <div
+          className="fixed inset-0 bg-black/50 chat-popup-overlay flex items-center justify-center p-4 z-50"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowHowItWorks(false);
+            }
+          }}
+        >
+          <div
+            className="bg-neutral-900 rounded-xl chat-popup-container w-full max-w-2xl max-h-[80vh] overflow-y-auto relative border border-neutral-700"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Button */}
+            <button
+              onClick={() => setShowHowItWorks(false)}
+              className="absolute top-4 right-4 z-10 w-8 h-8 bg-neutral-800 hover:bg-neutral-700 rounded-full flex items-center justify-center text-white transition-colors duration-200 border border-neutral-600"
+              aria-label="Close"
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-neutral-700 bg-gradient-to-r from-neutral-800 to-neutral-700 rounded-t-xl">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-sawaari-yellow-muted border border-sawaari-yellow-border rounded-full flex items-center justify-center">
+                  <span className="text-sawaari-yellow text-lg">👥</span>
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-white">
+                    How Ride Buddy Works
+                  </h2>
+                  <p className="text-sm text-neutral-400">
+                    Connect with nearby travelers in 3 simple steps
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-6">
+              {/* What is Ride Buddy */}
+              <div className="bg-gradient-to-r from-sawaari-yellow/10 to-sawaari-green/10 border border-sawaari-yellow/20 rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-sawaari-yellow mb-2">
+                  🚗 What is Ride Buddy?
+                </h3>
+                <p className="text-gray-300 text-sm">
+                  Ride Buddy helps you find fellow travelers going on similar
+                  routes within a 2km radius. Share rides, split costs, and make
+                  your journey more enjoyable and affordable.
+                </p>
+              </div>
+
+              {/* How to Use */}
+              <div>
+                <h3 className="text-lg font-semibold text-white mb-4">
+                  📋 How to Use:
+                </h3>
+                <div className="space-y-4">
+                  <div className="flex gap-4">
+                    <div className="w-8 h-8 bg-sawaari-yellow rounded-full flex items-center justify-center text-black font-bold text-sm flex-shrink-0">
+                      1
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-white">
+                        Search for Ride Buddies
+                      </h4>
+                      <p className="text-gray-300 text-sm">
+                        Select your source and destination locations, then click
+                        &quot;Search Ride Buddies&quot; to find nearby
+                        travelers.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-4">
+                    <div className="w-8 h-8 bg-sawaari-yellow rounded-full flex items-center justify-center text-black font-bold text-sm flex-shrink-0">
+                      2
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-white">
+                        Send Connection Requests
+                      </h4>
+                      <p className="text-gray-300 text-sm">
+                        Browse available ride buddies and send connection
+                        requests to those with matching routes.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-4">
+                    <div className="w-8 h-8 bg-sawaari-yellow rounded-full flex items-center justify-center text-black font-bold text-sm flex-shrink-0">
+                      3
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-white">
+                        Connect & Chat
+                      </h4>
+                      <p className="text-gray-300 text-sm">
+                        Once accepted, you get 10 minutes to chat + 5 minutes of
+                        contact details access (15 minutes total) to coordinate
+                        your ride.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Key Features */}
+              <div>
+                <h3 className="text-lg font-semibold text-white mb-4">
+                  ✨ Key Features:
+                </h3>
+                <div className="grid md:grid-cols-2 gap-3">
+                  <div className="flex items-center gap-2 text-sm text-gray-300">
+                    <span className="text-green-400">📍</span>
+                    <span>2km radius matching</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-gray-300">
+                    <span className="text-green-400">💬</span>
+                    <span>10-min chat + 5-min contact</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-gray-300">
+                    <span className="text-green-400">💰</span>
+                    <span>Cost sharing estimates</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-gray-300">
+                    <span className="text-green-400">🔒</span>
+                    <span>Secure connections</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Important Notes */}
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-blue-400 mb-2">
+                  💡 Important Notes:
+                </h3>
+                <ul className="space-y-1 text-sm text-gray-300">
+                  <li>
+                    • Total connection time: 15 minutes (10-min chat + 5-min
+                    contact details)
+                  </li>
+                  <li>• Only users within 2km radius will appear in search</li>
+                  <li>• You can only send one request per user at a time</li>
+                  <li>
+                    • Chat messages are temporary and not stored permanently
+                  </li>
+                  <li>
+                    • Contact details remain available for 5 minutes after chat
+                    expires
+                  </li>
+                </ul>
+              </div>
+
+              {/* Get Started Button */}
+              <div className="text-center pt-4">
+                <button
+                  onClick={() => setShowHowItWorks(false)}
+                  className="px-6 py-3 bg-gradient-to-r from-sawaari-yellow to-sawaari-green text-black rounded-lg font-semibold hover:shadow-lg transition-all duration-300"
+                >
+                  Got It! Let&apos;s Start
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Live Chat Popup */}
       {activeChatId && chatPartner && (

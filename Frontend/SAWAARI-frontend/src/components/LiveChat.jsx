@@ -14,6 +14,12 @@ const LiveChat = ({ chatId, partnerName, onClose }) => {
   const [timeRemaining, setTimeRemaining] = useState(600); // 10 minutes in seconds
   const [chatExpired, setChatExpired] = useState(false);
   const [connected, setConnected] = useState(false);
+
+  // Phase tracking
+  const [connectionPhase, setConnectionPhase] = useState("chat"); // "chat" or "contact"
+  const [chatTimeRemaining, setChatTimeRemaining] = useState(600); // 10 minutes
+  const [contactTimeRemaining, setContactTimeRemaining] = useState(0); // 5 minutes
+  const [totalTimeRemaining, setTotalTimeRemaining] = useState(900); // 15 minutes total
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
   const timerRef = useRef(null);
@@ -25,15 +31,40 @@ const LiveChat = ({ chatId, partnerName, onClose }) => {
   }, []);
 
   const handleChatJoined = useCallback(
-    ({ messages: chatMessages, timeRemaining: remaining }) => {
+    ({
+      messages: chatMessages,
+      phase,
+      isChatPhase,
+      isContactPhase,
+      chatTimeRemaining: chatTime,
+      contactTimeRemaining: contactTime,
+      totalTimeRemaining: totalTime,
+    }) => {
       console.log("LiveChat: Chat joined successfully!", {
         chatMessages,
-        remaining,
+        phase,
+        isChatPhase,
+        isContactPhase,
+        chatTime,
+        contactTime,
+        totalTime,
       });
+
       setMessages(chatMessages || []);
-      setTimeRemaining(Math.floor(remaining / 1000));
+      setConnectionPhase(phase || "chat");
+      setChatTimeRemaining(Math.floor((chatTime || 0) / 1000));
+      setContactTimeRemaining(Math.floor((contactTime || 0) / 1000));
+      setTotalTimeRemaining(Math.floor((totalTime || 0) / 1000));
+      setTimeRemaining(Math.floor((totalTime || 0) / 1000));
       setConnected(true);
-      toast.success("Connected to chat!");
+
+      if (phase === "contact") {
+        toast.info(
+          "Chat time expired. Contact details available for 5 more minutes."
+        );
+      } else {
+        toast.success("Connected to chat!");
+      }
     },
     []
   );
@@ -42,6 +73,26 @@ const LiveChat = ({ chatId, partnerName, onClose }) => {
     console.log("LiveChat: Chat expired");
     setChatExpired(true);
     toast.info("Chat session has expired (10 minutes)");
+  }, []);
+
+  const handleChatPhaseExpired = useCallback(
+    ({ phase, contactTimeRemaining: contactTime }) => {
+      console.log("LiveChat: Chat phase expired, entering contact phase");
+      setConnectionPhase("contact");
+      setContactTimeRemaining(Math.floor((contactTime || 0) / 1000));
+      setChatTimeRemaining(0);
+      toast.info(
+        "Chat time expired! Contact details available for 5 more minutes."
+      );
+    },
+    []
+  );
+
+  const handleConnectionExpired = useCallback(() => {
+    console.log("LiveChat: Connection completely expired");
+    setChatExpired(true);
+    setConnectionPhase("expired");
+    toast.info("Connection expired. Contact details no longer available.");
   }, []);
 
   const handleUserJoined = useCallback(
@@ -163,6 +214,8 @@ const LiveChat = ({ chatId, partnerName, onClose }) => {
     socketService.on("chat-joined", wrappedHandleChatJoined);
     socketService.on("chat-error", handleChatError);
     socketService.on("message-sent", handleMessageSent);
+    socketService.on("chat-phase-expired", handleChatPhaseExpired);
+    socketService.on("connection-expired", handleConnectionExpired);
 
     // Join chat room
     if (socketService.getConnectionStatus().connected) {
@@ -187,9 +240,11 @@ const LiveChat = ({ chatId, partnerName, onClose }) => {
       socketService.off("user-left", handleUserLeft);
       socketService.off("user-typing", handleTyping);
       socketService.off("chat-joined", wrappedHandleChatJoined);
-      clearTimeout(joinTimeout);
       socketService.off("chat-error", handleChatError);
       socketService.off("message-sent", handleMessageSent);
+      socketService.off("chat-phase-expired", handleChatPhaseExpired);
+      socketService.off("connection-expired", handleConnectionExpired);
+      clearTimeout(joinTimeout);
 
       if (timerRef.current) {
         clearInterval(timerRef.current);
@@ -214,16 +269,34 @@ const LiveChat = ({ chatId, partnerName, onClose }) => {
   }, [messages]);
 
   useEffect(() => {
-    // Start countdown timer
-    if (connected && timeRemaining > 0) {
+    // Start countdown timer for total connection time
+    if (connected && totalTimeRemaining > 0) {
       timerRef.current = setInterval(() => {
-        setTimeRemaining((prev) => {
+        setTotalTimeRemaining((prev) => {
           if (prev <= 1) {
             setChatExpired(true);
+            setConnectionPhase("expired");
             return 0;
           }
           return prev - 1;
         });
+
+        // Update phase-specific timers
+        if (connectionPhase === "chat") {
+          setChatTimeRemaining((prev) => {
+            if (prev <= 1) {
+              setConnectionPhase("contact");
+              setContactTimeRemaining(5 * 60); // 5 minutes
+              toast.info(
+                "Chat time expired! Contact details available for 5 more minutes."
+              );
+              return 0;
+            }
+            return prev - 1;
+          });
+        } else if (connectionPhase === "contact") {
+          setContactTimeRemaining((prev) => Math.max(0, prev - 1));
+        }
       }, 1000);
     }
 
@@ -232,7 +305,7 @@ const LiveChat = ({ chatId, partnerName, onClose }) => {
         clearInterval(timerRef.current);
       }
     };
-  }, [connected, timeRemaining]);
+  }, [connected, totalTimeRemaining, connectionPhase]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -343,20 +416,38 @@ const LiveChat = ({ chatId, partnerName, onClose }) => {
             }`}
           ></div>
           <span className="text-xs font-medium text-white">
-            {chatExpired ? (
-              <span className="text-red-400 font-bold">⏰ Expired</span>
-            ) : connected ? (
-              <span
-                className={`font-bold ${
-                  timeRemaining <= 60
-                    ? "text-red-400"
-                    : timeRemaining <= 180
-                    ? "text-yellow-400"
-                    : "text-green-400"
-                }`}
-              >
-                🟢 Active • ⏱️ {formatTime(timeRemaining)}
+            {chatExpired || connectionPhase === "expired" ? (
+              <span className="text-red-400 font-bold">
+                ⏰ Connection Expired
               </span>
+            ) : connected ? (
+              connectionPhase === "chat" ? (
+                <span
+                  className={`font-bold ${
+                    chatTimeRemaining <= 60
+                      ? "text-red-400"
+                      : chatTimeRemaining <= 180
+                      ? "text-yellow-400"
+                      : "text-green-400"
+                  }`}
+                >
+                  💬 Chat Active • ⏱️ {formatTime(chatTimeRemaining)}
+                </span>
+              ) : connectionPhase === "contact" ? (
+                <span
+                  className={`font-bold ${
+                    contactTimeRemaining <= 60
+                      ? "text-red-400"
+                      : "text-blue-400"
+                  }`}
+                >
+                  📞 Contact Details • ⏱️ {formatTime(contactTimeRemaining)}
+                </span>
+              ) : (
+                <span className="text-green-400 font-bold">
+                  🟢 Connected • ⏱️ {formatTime(totalTimeRemaining)}
+                </span>
+              )
             ) : (
               <span className="text-yellow-400 font-bold">
                 ⏳ Connecting...
@@ -466,14 +557,37 @@ const LiveChat = ({ chatId, partnerName, onClose }) => {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Compact Input */}
+      {/* Input Section / Contact Details */}
       <div className="p-3 border-t border-neutral-700 bg-neutral-800">
-        {chatExpired ? (
+        {chatExpired || connectionPhase === "expired" ? (
           <div className="flex items-center justify-center gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
             <span className="text-red-400">⏰</span>
             <span className="text-xs text-red-400 text-center">
-              Chat expired. Use contact details to continue.
+              Connection expired. Contact details no longer available.
             </span>
+          </div>
+        ) : connectionPhase === "contact" ? (
+          <div className="space-y-3">
+            <div className="flex items-center justify-center gap-2 p-2 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+              <span className="text-blue-400">📞</span>
+              <span className="text-xs text-blue-400 text-center">
+                Chat time expired. Contact details available for{" "}
+                {formatTime(contactTimeRemaining)}
+              </span>
+            </div>
+            <div className="bg-neutral-700 rounded-lg p-3 space-y-2">
+              <div className="text-center">
+                <h4 className="text-sm font-semibold text-white mb-2">
+                  Contact Details
+                </h4>
+                <div className="text-xs text-neutral-300">
+                  <p className="mb-1">👤 {partnerName}</p>
+                  <p className="text-sawaari-yellow">
+                    Use these details to coordinate your ride
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         ) : !connected ? (
           <div className="flex items-center justify-center gap-2 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
@@ -489,11 +603,16 @@ const LiveChat = ({ chatId, partnerName, onClose }) => {
               placeholder="Type message..."
               className="flex-1 px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-sm placeholder-neutral-400 focus:border-sawaari-yellow focus:ring-1 focus:ring-sawaari-yellow/20 focus:outline-none transition-all duration-300"
               maxLength={500}
-              disabled={chatExpired || !connected}
+              disabled={chatExpired || !connected || connectionPhase !== "chat"}
             />
             <button
               type="submit"
-              disabled={!newMessage.trim() || chatExpired || !connected}
+              disabled={
+                !newMessage.trim() ||
+                chatExpired ||
+                !connected ||
+                connectionPhase !== "chat"
+              }
               className="px-4 py-2 bg-gradient-to-r from-sawaari-yellow to-sawaari-green text-black rounded-lg font-semibold hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
             >
               <span className="text-sm">Send</span>
