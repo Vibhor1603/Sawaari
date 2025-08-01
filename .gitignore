@@ -3,22 +3,43 @@ logs
 *.log
 npm-debug.log*
 yarn-debug.log*
-yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+# Dependency directories
+node_modules/
+Frontend/SAWAARI-frontend/node_modules/
+sawaari/node_modules/
+
+# Build outputs
+dist/
+dist-ssr/
+Frontend/SAWAARI-frontend/dist/
+sawaari/dist/
+
+# Env files
 .env
-# Editor directories and files
+.env.local
+Frontend/SAWAARI-frontend/.env
+sawaari/.env
+
+# Lock files (optional – keep only the one you use)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# IDE settings
 .vscode/*
 !.vscode/extensions.json
-.idea
+.idea/
+
+# System files
 .DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+
+# Misc
+*.local
