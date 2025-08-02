@@ -1,9 +1,11 @@
 import { useContext, useState, useEffect, useRef } from "react";
 import { NavLink } from "react-router-dom";
 import { AuthContext } from "./AuthContext";
+import { useAuthModal } from "./contexts/AuthModalContext";
 
 export default function Navbar() {
   const { isAuthenticated, user } = useContext(AuthContext);
+  const { openSigninModal, openSignupModal } = useAuthModal();
   const [isNavOpen, setIsNavOpen] = useState(false);
   const navRef = useRef(null);
 
@@ -134,18 +136,18 @@ export default function Navbar() {
                 </div>
               ) : (
                 <div className="flex items-center space-x-3">
-                  <NavLink
-                    to="/signin"
+                  <button
+                    onClick={openSigninModal}
                     className="px-4 py-2 text-sm font-medium text-gray-300 hover:text-sawaari-yellow hover:bg-sawaari-yellow-muted/50 rounded-lg transition-all duration-300 text-readable-secondary"
                   >
                     Sign In
-                  </NavLink>
-                  <NavLink
-                    to="/signup"
+                  </button>
+                  <button
+                    onClick={openSignupModal}
                     className="btn-primary px-4 py-2 text-sm"
                   >
                     Sign Up
-                  </NavLink>
+                  </button>
                 </div>
               )}
             </div>
@@ -270,20 +272,24 @@ export default function Navbar() {
                   </div>
                 ) : (
                   <div className="flex flex-col space-y-2">
-                    <NavLink
-                      to="/signin"
-                      onClick={closeNav}
-                      className="px-4 py-3 text-sm font-medium text-gray-300 hover:text-sawaari-yellow hover:bg-sawaari-yellow-muted/50 rounded-lg transition-all duration-300 text-readable-secondary"
+                    <button
+                      onClick={() => {
+                        openSigninModal();
+                        closeNav();
+                      }}
+                      className="px-4 py-3 text-sm font-medium text-gray-300 hover:text-sawaari-yellow hover:bg-sawaari-yellow-muted/50 rounded-lg transition-all duration-300 text-readable-secondary text-left"
                     >
                       Sign In
-                    </NavLink>
-                    <NavLink
-                      to="/signup"
-                      onClick={closeNav}
+                    </button>
+                    <button
+                      onClick={() => {
+                        openSignupModal();
+                        closeNav();
+                      }}
                       className="btn-primary px-4 py-3 text-sm w-full text-center"
                     >
                       Sign Up
-                    </NavLink>
+                    </button>
                   </div>
                 )}
               </div>

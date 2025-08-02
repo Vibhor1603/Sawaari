@@ -285,17 +285,6 @@ export default function SignUpForm({
             </div>
           )}
         </button>
-
-        {/* Sign In Link */}
-        <div className="text-center text-sm">
-          <span className="text-gray-200">Already have an account? </span>
-          <a
-            href="/signin"
-            className="text-sawaari-yellow hover:text-white transition-colors duration-300"
-          >
-            Sign In
-          </a>
-        </div>
       </form>
     </div>
   );

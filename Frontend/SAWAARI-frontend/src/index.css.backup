@@ -1,0 +1,2585 @@
+/* Import Google Fonts - Inter for modern, clean typography */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700;800;900&family=Kalam:wght@300;400;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base styles for vibrant, modern look */
+@layer base {
+  * {
+    @apply antialiased;
+  }
+
+  body {
+    @apply font-sans text-white;
+    background: linear-gradient(135deg, #000000 0%, #1a1a1a 50%, #000000 100%);
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* Enhanced animated background pattern with subtle colors */
+  body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: radial-gradient(
+        circle at 20% 80%,
+        rgba(244, 185, 66, 0.08) 0%,
+        transparent 50%
+      ),
+      radial-gradient(
+        circle at 80% 20%,
+        rgba(45, 80, 22, 0.08) 0%,
+        transparent 50%
+      ),
+      radial-gradient(
+        circle at 40% 40%,
+        rgba(244, 185, 66, 0.03) 0%,
+        transparent 50%
+      ),
+      radial-gradient(
+        circle at 60% 60%,
+        rgba(45, 80, 22, 0.05) 0%,
+        transparent 50%
+      );
+    animation: backgroundShift 25s ease-in-out infinite;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  @keyframes backgroundShift {
+    0%,
+    100% {
+      transform: translateX(0) translateY(0);
+    }
+    25% {
+      transform: translateX(-15px) translateY(-15px);
+    }
+    50% {
+      transform: translateX(15px) translateY(15px);
+    }
+    75% {
+      transform: translateX(-8px) translateY(8px);
+    }
+  }
+
+  /* Enhanced text readability */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-semibold tracking-tight text-white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  }
+
+  /* Improved paragraph readability */
+  p {
+    @apply text-gray-100 leading-relaxed;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Enhanced link readability */
+  a {
+    @apply text-gray-100 hover:text-sawaari-yellow transition-colors duration-300;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Better form text readability */
+  input,
+  select,
+  textarea {
+    @apply text-white placeholder-gray-400;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Enhanced button text */
+  button {
+    @apply text-white font-medium;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+  }
+}
+
+/* Component styles following SAWAARI design guidelines */
+@layer components {
+  /* Enhanced Primary Button with subtle effects - Responsive */
+  .btn-primary {
+    @apply inline-flex items-center justify-center text-black font-semibold rounded-lg transition-all duration-300 hover:shadow-sawaari-subtle transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-sawaari-yellow/50 focus:ring-offset-2 focus:ring-offset-black disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden;
+    background: linear-gradient(135deg, #f4b942 0%, #e6a635 100%);
+    box-shadow: 0 4px 15px rgba(244, 185, 66, 0.2);
+    text-shadow: none;
+    /* Responsive sizing */
+    padding: 8px 16px;
+    font-size: 14px;
+    min-width: 100px;
+    max-width: 200px;
+  }
+
+  @media (min-width: 480px) {
+    .btn-primary {
+      padding: 10px 20px;
+      font-size: 14px;
+      min-width: 120px;
+      max-width: 250px;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .btn-primary {
+      padding: 12px 24px;
+      font-size: 16px;
+      min-width: 140px;
+      max-width: 300px;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .btn-primary {
+      padding: 12px 32px;
+      font-size: 16px;
+      min-width: 160px;
+    }
+  }
+
+  .btn-primary::before {
+    content: "🛺";
+    position: absolute;
+    top: -20px;
+    right: -20px;
+    font-size: 2rem;
+    opacity: 0.1;
+    transform: rotate(15deg);
+    transition: all 0.3s ease;
+  }
+
+  .btn-primary:hover {
+    background: linear-gradient(135deg, #e6a635 0%, #d49429 100%);
+    box-shadow: 0 6px 25px rgba(244, 185, 66, 0.4);
+    transform: scale(1.05) translateY(-2px);
+  }
+
+  .btn-primary:hover::before {
+    opacity: 0.2;
+    transform: rotate(25deg) scale(1.1);
+  }
+
+  .btn-primary:focus {
+    box-shadow: 0 0 0 3px rgba(244, 185, 66, 0.3);
+  }
+
+  /* Enhanced Secondary Button - Responsive */
+  .btn-secondary {
+    @apply inline-flex items-center justify-center text-white font-semibold rounded-lg transition-all duration-300 hover:shadow-lg transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-black disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden;
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.1) 0%,
+      rgba(255, 255, 255, 0.05) 100%
+    );
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    /* Responsive sizing */
+    padding: 8px 16px;
+    font-size: 14px;
+    min-width: 100px;
+    max-width: 200px;
+  }
+
+  @media (min-width: 480px) {
+    .btn-secondary {
+      padding: 10px 20px;
+      font-size: 14px;
+      min-width: 120px;
+      max-width: 250px;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .btn-secondary {
+      padding: 12px 24px;
+      font-size: 16px;
+      min-width: 140px;
+      max-width: 300px;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .btn-secondary {
+      padding: 12px 32px;
+      font-size: 16px;
+      min-width: 160px;
+    }
+  }
+
+  .btn-secondary::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.1),
+      transparent
+    );
+    transition: left 0.5s ease;
+  }
+
+  .btn-secondary:hover {
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.15) 0%,
+      rgba(255, 255, 255, 0.08) 100%
+    );
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: scale(1.05) translateY(-2px);
+  }
+
+  .btn-secondary:hover::before {
+    left: 100%;
+  }
+
+  .btn-secondary:focus {
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
+  }
+
+  /* Enhanced Card Component with better readability */
+  .card {
+    @apply bg-black/40 border border-white/10 rounded-xl p-6 transition-all duration-300 hover:shadow-sawaari-lg hover:border-sawaari-yellow/30 relative;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    z-index: 10; /* Ensure cards appear above floating rickshaws */
+  }
+
+  .card h3 {
+    @apply text-white font-semibold mb-2;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  }
+
+  .card p {
+    @apply text-gray-200 leading-relaxed;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Enhanced Glass Effect */
+  .glass {
+    @apply bg-white/5 backdrop-blur-md border border-white/10 rounded-xl;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  }
+
+  .glass::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.1) 0%,
+      rgba(255, 255, 255, 0.05) 50%,
+      rgba(255, 255, 255, 0.02) 100%
+    );
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  /* Enhanced Strong Glass Effect with dark green accents */
+  .glass-strong {
+    @apply bg-white/10 backdrop-blur-lg border border-white/20 rounded-xl relative overflow-hidden;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  }
+
+  .glass-strong:hover {
+    @apply border-sawaari-green/40;
+    box-shadow: 0 12px 40px rgba(45, 80, 22, 0.2);
+  }
+
+  /* Enhanced Form Input with better readability */
+  .form-input {
+    @apply w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sawaari-green/50 focus:border-sawaari-green/50 transition-all duration-300 backdrop-blur-sm;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+  }
+
+  .form-input:focus {
+    @apply bg-black/40 border-sawaari-green/50;
+    box-shadow: 0 0 0 3px rgba(45, 80, 22, 0.2);
+  }
+
+  .form-input:hover {
+    @apply border-white/30 bg-black/35;
+  }
+
+  .form-input::placeholder {
+    @apply text-gray-400;
+  }
+
+  /* Enhanced Section Components */
+  .section {
+    @apply py-20 relative;
+    z-index: 5; /* Ensure sections appear above floating rickshaws */
+  }
+
+  .section-dark {
+    @apply bg-black/30;
+  }
+
+  .section-light {
+    @apply bg-white/5;
+  }
+
+  .section-gradient {
+    background: linear-gradient(
+      135deg,
+      rgba(244, 185, 66, 0.05) 0%,
+      rgba(45, 80, 22, 0.05) 100%
+    );
+  }
+
+  /* Enhanced Container */
+  .container-sawaari {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative;
+    z-index: 10; /* Ensure containers appear above floating rickshaws */
+  }
+
+  /* Enhanced Rickshaw Decoration */
+  .rickshaw-decoration {
+    @apply relative;
+  }
+
+  .rickshaw-decoration::before {
+    content: "🛺";
+    @apply absolute -top-2 -right-2 text-lg opacity-60 animate-subtle-float;
+  }
+
+  /* Enhanced Route Line */
+  .route-line {
+    @apply relative;
+  }
+
+  .route-line::after {
+    content: "";
+    @apply absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-sawaari-green/30 to-transparent;
+    animation: routeFlow 3s ease-in-out infinite;
+  }
+
+  @keyframes routeFlow {
+    0%,
+    100% {
+      transform: translateX(-100%);
+    }
+    50% {
+      transform: translateX(100%);
+    }
+  }
+
+  /* Enhanced Wheel Accent */
+  .wheel-accent {
+    @apply relative;
+  }
+
+  .wheel-accent::before {
+    content: "";
+    @apply absolute inset-0 border-2 border-sawaari-green rounded-full animate-wheel-rotate;
+  }
+
+  /* Enhanced Gradient Text */
+  .gradient-text-sawaari {
+    background: linear-gradient(135deg, #f4b942 0%, #e6a635 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .gradient-text {
+    background: linear-gradient(135deg, #ffffff 0%, #e5e5e5 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Enhanced Animations */
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-20px);
+    }
+  }
+
+  .animate-bounce-slow {
+    animation: bounce-slow 3s ease-in-out infinite;
+  }
+
+  @keyframes bounce-slow {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+
+  .animate-pulse-slow {
+    animation: pulse-slow 4s ease-in-out infinite;
+  }
+
+  @keyframes pulse-slow {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.7;
+    }
+  }
+
+  /* Enhanced Subtle Animations */
+  .animate-subtle-fade {
+    animation: subtleFade 8s ease-in-out infinite;
+  }
+
+  .animate-subtle-float {
+    animation: subtleFloat 6s ease-in-out infinite;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.8s ease-out;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.6s ease-out;
+  }
+
+  .animate-fade-in-up {
+    animation: fadeInUp 0.8s ease-out;
+  }
+
+  @keyframes subtleFade {
+    0%,
+    100% {
+      opacity: 0.3;
+    }
+    50% {
+      opacity: 0.8;
+    }
+  }
+
+  @keyframes subtleFloat {
+    0%,
+    100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-5px);
+    }
+  }
+
+  @keyframes slideUp {
+    0% {
+      transform: translateY(30px);
+      opacity: 0;
+    }
+    100% {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes scaleIn {
+    0% {
+      transform: scale(0.9);
+      opacity: 0;
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  @keyframes fadeInUp {
+    0% {
+      transform: translateY(20px);
+      opacity: 0;
+    }
+    100% {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  /* Enhanced Drift Animation */
+  .animate-drift {
+    animation: drift 10s ease-in-out infinite;
+  }
+
+  @keyframes drift {
+    0%,
+    100% {
+      transform: translateX(0) translateY(0) rotate(0deg);
+    }
+    25% {
+      transform: translateX(10px) translateY(-5px) rotate(2deg);
+    }
+    50% {
+      transform: translateX(-5px) translateY(10px) rotate(-1deg);
+    }
+    75% {
+      transform: translateX(-10px) translateY(-5px) rotate(3deg);
+    }
+  }
+
+  /* Enhanced Floating Auto Rickshaws */
+  .animate-rickshaw-float {
+    animation: rickshawFloat 15s ease-in-out infinite;
+  }
+
+  @keyframes rickshawFloat {
+    0%,
+    100% {
+      transform: translateX(0) translateY(0) rotate(0deg) scale(1);
+      opacity: 0.05;
+    }
+    25% {
+      transform: translateX(20px) translateY(-10px) rotate(5deg) scale(1.1);
+      opacity: 0.08;
+    }
+    50% {
+      transform: translateX(-15px) translateY(15px) rotate(-3deg) scale(0.9);
+      opacity: 0.06;
+    }
+    75% {
+      transform: translateX(-25px) translateY(-8px) rotate(8deg) scale(1.05);
+      opacity: 0.07;
+    }
+  }
+
+  /* Enhanced Pulse Animation */
+  .animate-pulse-slow {
+    animation: pulse-slow 4s ease-in-out infinite;
+  }
+
+  @keyframes pulse-slow {
+    0%,
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.8;
+      transform: scale(1.05);
+    }
+  }
+
+  /* Enhanced Bounce Animation */
+  .animate-bounce-slow {
+    animation: bounce-slow 3s ease-in-out infinite;
+  }
+
+  @keyframes bounce-slow {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+
+  /* Enhanced Wiggle Animation */
+  .animate-wiggle {
+    animation: wiggle 2s ease-in-out infinite;
+  }
+
+  @keyframes wiggle {
+    0%,
+    100% {
+      transform: rotate(0deg);
+    }
+    25% {
+      transform: rotate(2deg);
+    }
+    75% {
+      transform: rotate(-2deg);
+    }
+  }
+
+  /* Enhanced Glow Animation */
+  .animate-glow {
+    animation: glow 2s ease-in-out infinite;
+  }
+
+  @keyframes glow {
+    0%,
+    100% {
+      box-shadow: 0 0 5px rgba(244, 185, 66, 0.3);
+    }
+    50% {
+      box-shadow: 0 0 20px rgba(244, 185, 66, 0.6);
+    }
+  }
+
+  /* Enhanced Shimmer Effect */
+  .animate-shimmer {
+    animation: shimmer 3s ease-in-out infinite;
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: -200% center;
+    }
+    100% {
+      background-position: 200% center;
+    }
+  }
+
+  /* Enhanced Scale Animation */
+  .animate-scale-in {
+    animation: scaleIn 0.6s ease-out;
+  }
+
+  @keyframes scaleIn {
+    0% {
+      transform: scale(0.9);
+      opacity: 0;
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  /* Enhanced Slide Animation */
+  .animate-slide-up {
+    animation: slideUp 0.8s ease-out;
+  }
+
+  @keyframes slideUp {
+    0% {
+      transform: translateY(30px);
+      opacity: 0;
+    }
+    100% {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  /* Enhanced Fade Animation */
+  .animate-fade-in {
+    animation: fadeIn 1s ease-out;
+  }
+
+  @keyframes fadeIn {
+    0% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+
+  /* Enhanced Rickshaw Animations */
+  .rickshaw-bounce {
+    animation: rickshawBounce 2s ease-in-out infinite;
+  }
+
+  @keyframes rickshawBounce {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-8px);
+    }
+  }
+
+  .rickshaw-wiggle {
+    animation: rickshawWiggle 3s ease-in-out infinite;
+  }
+
+  @keyframes rickshawWiggle {
+    0%,
+    100% {
+      transform: rotate(0deg);
+    }
+    25% {
+      transform: rotate(2deg);
+    }
+    75% {
+      transform: rotate(-2deg);
+    }
+  }
+
+  /* Enhanced Gradient Border */
+  .gradient-border {
+    @apply relative;
+  }
+
+  .gradient-border::before {
+    content: "";
+    @apply absolute inset-0 rounded-lg p-[1px] bg-gradient-to-r from-sawaari-green via-sawaari-yellow to-sawaari-green;
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+  }
+
+  @keyframes gradientShift {
+    0%,
+    100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+
+  /* Enhanced Neon Effects */
+  .neon-yellow {
+    text-shadow: 0 0 10px rgba(244, 185, 66, 0.5);
+  }
+
+  .neon-green {
+    text-shadow: 0 0 10px rgba(45, 80, 22, 0.5);
+  }
+
+  @keyframes neonPulse {
+    0%,
+    100% {
+      text-shadow: 0 0 10px rgba(244, 185, 66, 0.5);
+    }
+    50% {
+      text-shadow: 0 0 20px rgba(244, 185, 66, 0.8);
+    }
+  }
+
+  /* Enhanced Hover Effects */
+  .hover-lift {
+    @apply transition-all duration-300;
+  }
+
+  .hover-lift:hover {
+    @apply transform -translate-y-2 shadow-sawaari-lg;
+  }
+
+  /* Enhanced Pattern Dots */
+  .pattern-dots {
+    background-image: radial-gradient(
+      circle,
+      rgba(244, 185, 66, 0.3) 1px,
+      transparent 1px
+    );
+    background-size: 20px 20px;
+    animation: patternMove 20s linear infinite;
+  }
+
+  @keyframes patternMove {
+    0% {
+      background-position: 0 0;
+    }
+    100% {
+      background-position: 40px 40px;
+    }
+  }
+
+  /* Enhanced Rickshaw Hover */
+  .rickshaw-hover {
+    @apply relative overflow-hidden;
+  }
+
+  .rickshaw-hover::before {
+    content: "🛺";
+    @apply absolute -top-4 -right-4 text-2xl opacity-0 transition-all duration-300;
+  }
+
+  .rickshaw-hover:hover::before {
+    @apply opacity-60 animate-rickshaw-bounce;
+  }
+
+  @keyframes rickshawBounce {
+    0%,
+    100% {
+      transform: translateY(0) rotate(0deg);
+    }
+    50% {
+      transform: translateY(-10px) rotate(10deg);
+    }
+  }
+
+  /* Enhanced Tab Active */
+  .tab-active {
+    @apply relative text-sawaari-green font-semibold;
+  }
+
+  .tab-active::after {
+    content: "";
+    @apply absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-sawaari-green to-sawaari-yellow rounded-full;
+    animation: tabGlow 2s ease-in-out infinite;
+  }
+
+  @keyframes tabGlow {
+    0%,
+    100% {
+      box-shadow: 0 0 5px rgba(45, 80, 22, 0.3);
+    }
+    50% {
+      box-shadow: 0 0 15px rgba(45, 80, 22, 0.6);
+    }
+  }
+
+  /* Enhanced Move Background */
+  .animate-move-bg {
+    animation: moveBg 20s ease-in-out infinite;
+  }
+
+  @keyframes moveBg {
+    0%,
+    100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+
+  /* Enhanced Map Overlay */
+  .map-overlay {
+    @apply absolute inset-0 bg-black/20 backdrop-blur-sm;
+  }
+
+  /* Enhanced Loading Rickshaw */
+  .loading-rickshaw {
+    @apply inline-block animate-rickshaw-spin;
+  }
+
+  /* Enhanced Skeleton Loading */
+  .skeleton {
+    @apply bg-white/10 animate-pulse rounded;
+  }
+
+  .skeleton-text {
+    @apply h-4 bg-white/10 animate-pulse rounded;
+  }
+
+  .skeleton-avatar {
+    @apply w-12 h-12 bg-white/10 animate-pulse rounded-full;
+  }
+
+  .skeleton-button {
+    @apply h-10 bg-white/10 animate-pulse rounded-lg;
+  }
+
+  /* Enhanced Shimmer Effect */
+  .shimmer {
+    @apply relative overflow-hidden;
+  }
+
+  .shimmer::before {
+    content: "";
+    @apply absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent;
+    animation: shimmer 2s infinite;
+  }
+
+  @keyframes shimmer {
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  /* Enhanced Glass Card */
+  .glass-card {
+    @apply bg-white/5 backdrop-blur-md border border-white/10 rounded-xl p-6;
+  }
+
+  /* Enhanced Glass Button */
+  .glass-button {
+    @apply bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg px-4 py-2 text-white hover:bg-white/20 transition-all duration-300;
+  }
+
+  /* Enhanced Status Indicators */
+  .status-online {
+    @apply w-3 h-3 bg-green-500 rounded-full;
+  }
+
+  .status-offline {
+    @apply w-3 h-3 bg-gray-500 rounded-full;
+  }
+
+  .status-away {
+    @apply w-3 h-3 bg-yellow-500 rounded-full;
+  }
+
+  /* Enhanced Text Readability Classes */
+  .text-readable {
+    @apply text-white font-medium;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  }
+
+  .text-readable-secondary {
+    @apply text-gray-200 font-normal;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+  }
+
+  .text-readable-muted {
+    @apply text-gray-300 font-normal;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Enhanced Form Styling */
+  .form-select {
+    @apply w-full p-3 bg-black/30 border border-white/20 rounded-lg text-white focus:border-sawaari-green focus:ring-2 focus:ring-sawaari-green/20 focus:outline-none transition-all duration-300 backdrop-blur-sm text-sm;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+  }
+
+  .form-select option {
+    @apply text-white bg-black;
+  }
+
+  .form-label {
+    @apply block text-xs font-semibold text-sawaari-yellow mb-1;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Leaflet Popup Custom Styling */
+  .leaflet-popup-content-wrapper {
+    background: transparent !important;
+    backdrop-filter: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+
+  .leaflet-popup-content {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+  }
+
+  .leaflet-popup-tip {
+    background: transparent !important;
+    border: none !important;
+  }
+
+  .leaflet-popup-close-button {
+    color: #f4b942 !important;
+    font-size: 14px !important;
+    font-weight: bold !important;
+    padding: 4px !important;
+    background: rgba(0, 0, 0, 0.8) !important;
+    border-radius: 50% !important;
+    width: 20px !important;
+    height: 20px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.2s ease !important;
+  }
+
+  .leaflet-popup-close-button:hover {
+    color: #e6a635 !important;
+    background: rgba(244, 185, 66, 0.2) !important;
+    transform: scale(1.1) !important;
+  }
+
+  /* Custom scrollbar for popup content */
+  .leaflet-popup-content .overflow-y-auto::-webkit-scrollbar {
+    width: 3px !important;
+  }
+
+  .leaflet-popup-content .overflow-y-auto::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border-radius: 2px !important;
+  }
+
+  .leaflet-popup-content .overflow-y-auto::-webkit-scrollbar-thumb {
+    background: rgba(244, 185, 66, 0.5) !important;
+    border-radius: 2px !important;
+  }
+
+  .leaflet-popup-content .overflow-y-auto::-webkit-scrollbar-thumb:hover {
+    background: rgba(244, 185, 66, 0.7) !important;
+  }
+}
+
+/* Comprehensive Responsive Button System */
+
+/* Button Container Classes */
+.btn-container-center {
+  @apply flex justify-center;
+}
+
+.btn-group-responsive {
+  @apply flex flex-col sm:flex-row gap-3 sm:gap-4 items-center justify-center;
+}
+
+.responsive-btn-container {
+  @apply flex justify-center items-center;
+}
+
+/* Specialized Button Classes */
+.feature-btn {
+  @apply btn-primary;
+  /* Feature card buttons */
+  min-width: 120px;
+  max-width: 200px;
+}
+
+@media (min-width: 640px) {
+  .feature-btn {
+    min-width: 140px;
+    max-width: 250px;
+  }
+}
+
+.nav-btn {
+  @apply btn-secondary;
+  /* Navigation buttons */
+  min-width: 80px;
+  max-width: 150px;
+}
+
+@media (min-width: 640px) {
+  .nav-btn {
+    min-width: 100px;
+    max-width: 180px;
+  }
+}
+
+.cta-btn {
+  @apply btn-primary;
+  /* Call-to-action buttons */
+  min-width: 140px;
+  max-width: 250px;
+}
+
+@media (min-width: 640px) {
+  .cta-btn {
+    min-width: 180px;
+    max-width: 300px;
+  }
+}
+
+/* Mobile-First Button Constraints */
+.btn-mobile-constrained {
+  max-width: 80vw;
+  width: auto;
+}
+
+/* Button Size Variants */
+.btn-xs {
+  padding: 6px 12px;
+  font-size: 12px;
+  min-width: 80px;
+}
+
+.btn-sm {
+  padding: 8px 16px;
+  font-size: 14px;
+  min-width: 100px;
+}
+
+.btn-md {
+  padding: 10px 20px;
+  font-size: 14px;
+  min-width: 120px;
+}
+
+.btn-lg {
+  padding: 12px 24px;
+  font-size: 16px;
+  min-width: 140px;
+}
+
+.btn-xl {
+  padding: 14px 28px;
+  font-size: 18px;
+  min-width: 160px;
+}
+
+/* Comprehensive Responsive Button System */
+
+/* Button Container Classes */
+.btn-container-center {
+  @apply flex justify-center;
+}
+
+.btn-group-responsive {
+  @apply flex flex-col sm:flex-row gap-3 sm:gap-4 items-center justify-center;
+}
+
+.responsive-btn-container {
+  @apply flex justify-center items-center;
+}
+
+/* Specialized Button Classes */
+.feature-btn {
+  @apply btn-primary;
+  /* Feature card buttons */
+  min-width: 120px;
+  max-width: 200px;
+}
+
+@media (min-width: 640px) {
+  .feature-btn {
+    min-width: 140px;
+    max-width: 250px;
+  }
+}
+
+.nav-btn {
+  @apply btn-secondary;
+  /* Navigation buttons */
+  min-width: 80px;
+  max-width: 150px;
+}
+
+@media (min-width: 640px) {
+  .nav-btn {
+    min-width: 100px;
+    max-width: 180px;
+  }
+}
+
+.cta-btn {
+  @apply btn-primary;
+  /* Call-to-action buttons */
+  min-width: 140px;
+  max-width: 250px;
+}
+
+@media (min-width: 640px) {
+  .cta-btn {
+    min-width: 180px;
+    max-width: 300px;
+  }
+}
+
+/* Mobile-First Button Constraints */
+.btn-mobile-constrained {
+  max-width: 80vw;
+  width: auto;
+}
+
+/* Button Size Variants */
+.btn-xs {
+  padding: 6px 12px;
+  font-size: 12px;
+  min-width: 80px;
+  max-width: 150px;
+}
+
+.btn-sm {
+  padding: 8px 16px;
+  font-size: 14px;
+  min-width: 100px;
+  max-width: 180px;
+}
+
+.btn-md {
+  padding: 10px 20px;
+  font-size: 14px;
+  min-width: 120px;
+  max-width: 220px;
+}
+
+.btn-lg {
+  padding: 12px 24px;
+  font-size: 16px;
+  min-width: 140px;
+  max-width: 280px;
+}
+
+.btn-xl {
+  padding: 14px 28px;
+  font-size: 18px;
+  min-width: 160px;
+  max-width: 320px;
+}
+
+/* Button Stack Utilities */
+.btn-stack-mobile {
+  @apply flex flex-col gap-3;
+}
+
+@media (min-width: 640px) {
+  .btn-stack-mobile {
+    @apply flex-row gap-4;
+  }
+}
+
+/* Button Width Constraints */
+.btn-auto-width {
+  width: auto;
+  min-width: fit-content;
+}
+
+.btn-full-mobile {
+  @apply w-full;
+}
+
+@media (min-width: 640px) {
+  .btn-full-mobile {
+    @apply w-auto;
+  }
+}
+
+/* Button Alignment Utilities */
+.btn-center {
+  @apply mx-auto;
+}
+
+.btn-left {
+  @apply mr-auto;
+}
+
+.btn-right {
+  @apply ml-auto;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .glass-strong {
+    @apply p-4;
+  }
+
+  .chat-messages {
+    @apply max-h-64;
+  }
+
+  .section {
+    @apply py-12;
+  }
+
+  .grid.md\\:grid-cols-2 {
+    @apply grid-cols-1;
+  }
+
+  h1 {
+    @apply text-4xl;
+  }
+
+  h2 {
+    @apply text-3xl;
+  }
+
+  h3 {
+    @apply text-xl;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1024px) {
+  .container-sawaari {
+    @apply px-6;
+  }
+}
+
+/* Accessibility Enhancements */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (prefers-contrast: high) {
+  .btn-primary {
+    @apply border-2 border-black;
+  }
+
+  .btn-secondary {
+    @apply border-2 border-white;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .btn-primary,
+  .btn-secondary {
+    @apply bg-gray-900 text-white border border-gray-700;
+  }
+}
+/* Chat Popup Styles */
+.chat-popup-overlay {
+  backdrop-filter: blur(8px);
+  animation: fadeIn 0.2s ease-out;
+}
+
+.chat-popup-container {
+  animation: slideUp 0.3s ease-out;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Ensure popup is above everything */
+.chat-popup-overlay {
+  z-index: 9999 !important;
+}
+
+/* Mobile responsive adjustments for chat popup */
+@media (max-width: 640px) {
+  .chat-popup-container {
+    width: 95vw !important;
+    height: 85vh !important;
+    max-height: 85vh !important;
+  }
+}
+/* Chat Message Improvements */
+.chat-message-sent {
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.2);
+}
+
+.chat-message-sent:hover {
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+  transform: scale(1.02);
+}
+
+.chat-message-received {
+  background: linear-gradient(135deg, #404040 0%, #262626 100%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.chat-message-received:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  transform: scale(1.02);
+}
+/* Auto-Rickshaw Themed Toast Notifications */
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 400px;
+  pointer-events: none;
+}
+
+.toast {
+  background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+  border: 2px solid #f4b942;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 8px 32px rgba(244, 185, 66, 0.3);
+  backdrop-filter: blur(10px);
+  transform: translateX(400px);
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: auto;
+  position: relative;
+  overflow: hidden;
+}
+
+.toast::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #f4b942, #2d5016);
+}
+
+.toast-show {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.toast-exit {
+  transform: translateX(400px);
+  opacity: 0;
+}
+
+.toast-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.toast-rickshaw-icon {
+  font-size: 24px;
+  animation: rickshawBounce 2s infinite;
+}
+
+@keyframes rickshawBounce {
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-3px) rotate(1deg);
+  }
+  50% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  75% {
+    transform: translateY(-2px) rotate(-1deg);
+  }
+}
+
+.toast-message {
+  flex: 1;
+  color: #ffffff;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.toast-close {
+  background: none;
+  border: none;
+  color: #f4b942;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  font-size: 16px;
+}
+
+.toast-close:hover {
+  background: rgba(244, 185, 66, 0.1);
+  transform: scale(1.1);
+}
+
+.toast-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #f4b942, #2d5016);
+  width: 0%;
+}
+
+.toast-progress-animate {
+  animation: toastProgress linear forwards;
+}
+
+@keyframes toastProgress {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}
+
+/* Toast Type Variations */
+.toast-success {
+  border-color: #2d5016;
+  box-shadow: 0 8px 32px rgba(45, 80, 22, 0.3);
+}
+
+.toast-success::before {
+  background: linear-gradient(90deg, #2d5016, #f4b942);
+}
+
+.toast-error {
+  border-color: #dc2626;
+  box-shadow: 0 8px 32px rgba(220, 38, 38, 0.3);
+}
+
+.toast-error::before {
+  background: linear-gradient(90deg, #dc2626, #f4b942);
+}
+
+.toast-warning {
+  border-color: #f59e0b;
+  box-shadow: 0 8px 32px rgba(245, 158, 11, 0.3);
+}
+
+.toast-warning::before {
+  background: linear-gradient(90deg, #f59e0b, #f4b942);
+}
+
+.toast-info {
+  border-color: #3b82f6;
+  box-shadow: 0 8px 32px rgba(59, 130, 246, 0.3);
+}
+
+.toast-info::before {
+  background: linear-gradient(90deg, #3b82f6, #f4b942);
+}
+
+.toast-loading .toast-rickshaw-icon {
+  animation: rickshawLoading 1s infinite linear;
+}
+
+@keyframes rickshawLoading {
+  0% {
+    transform: translateX(-10px);
+  }
+  100% {
+    transform: translateX(10px);
+  }
+}
+
+/* Mobile Responsive */
+@media (max-width: 640px) {
+  .toast-container {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    max-width: none;
+  }
+
+  .toast {
+    transform: translateY(-100px);
+  }
+
+  .toast-show {
+    transform: translateY(0);
+  }
+
+  .toast-exit {
+    transform: translateY(-100px);
+  }
+}
+
+/* Enhanced Floating Auto-Rickshaw Animations with Depth Layers */
+.floating-rickshaw {
+  position: fixed;
+  font-size: 22px;
+  pointer-events: none;
+  animation: floatRickshaw linear infinite;
+  z-index: 1 !important; /* Float in background space but visible */
+}
+
+.floating-rickshaw:nth-child(odd) {
+  animation-direction: reverse;
+}
+
+/* Horizontal rickshaws - floating in background space but visible */
+.floating-rickshaw-1 {
+  animation-duration: 35s;
+  top: 15%;
+  opacity: 0.15; /* Background layer */
+  z-index: 1;
+}
+.floating-rickshaw-2 {
+  animation-duration: 40s;
+  top: 35%;
+  opacity: 0.2; /* Mid-background layer */
+  z-index: 2;
+}
+.floating-rickshaw-3 {
+  animation-duration: 45s;
+  top: 55%;
+  opacity: 0.25; /* Mid-foreground layer */
+  z-index: 3;
+}
+.floating-rickshaw-4 {
+  animation-duration: 38s;
+  top: 75%;
+  opacity: 0.3; /* Foreground layer */
+  z-index: 4;
+}
+.floating-rickshaw-5 {
+  animation-duration: 42s;
+  top: 25%;
+  opacity: 0.15; /* Background layer */
+  z-index: 1;
+}
+
+@keyframes floatRickshaw {
+  0% {
+    transform: translateX(-100px) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: inherit; /* Use the opacity defined in the class */
+  }
+  90% {
+    opacity: inherit; /* Use the opacity defined in the class */
+  }
+  100% {
+    transform: translateX(calc(100vw + 100px)) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+@keyframes floatRickshawVertical {
+  0% {
+    transform: translateY(-100px) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: inherit; /* Use the opacity defined in the class */
+  }
+  90% {
+    opacity: inherit; /* Use the opacity defined in the class */
+  }
+  100% {
+    transform: translateY(calc(100vh + 100px)) rotate(180deg);
+    opacity: 0;
+  }
+}
+
+/* Vertical floating rickshaws with layered depth */
+.floating-rickshaw-vertical {
+  position: fixed;
+  font-size: 20px;
+  pointer-events: none;
+  animation: floatRickshawVertical linear infinite;
+  z-index: 1 !important; /* Float in background space but visible */
+}
+
+/* Vertical rickshaws - always behind components with subtle visibility */
+.floating-rickshaw-vertical-1 {
+  animation-duration: 40s;
+  left: 15%;
+  opacity: 0.08; /* Background layer */
+  z-index: -10;
+}
+.floating-rickshaw-vertical-2 {
+  animation-duration: 45s;
+  left: 35%;
+  opacity: 0.12; /* Mid-background layer */
+  z-index: -8;
+}
+.floating-rickshaw-vertical-3 {
+  animation-duration: 50s;
+  left: 55%;
+  opacity: 0.15; /* Mid-foreground layer */
+  z-index: -6;
+}
+.floating-rickshaw-vertical-4 {
+  animation-duration: 43s;
+  left: 75%;
+  opacity: 0.18; /* Foreground layer */
+  z-index: -4;
+}
+
+@keyframes floatRickshawVertical {
+  0% {
+    transform: translateY(-100px) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: inherit; /* Use the opacity defined in the class */
+  }
+  90% {
+    opacity: inherit; /* Use the opacity defined in the class */
+  }
+  100% {
+    transform: translateY(calc(100vh + 100px)) rotate(180deg);
+    opacity: 0;
+  }
+}
+
+/* Vertical rickshaws - floating in background space but visible */
+.floating-rickshaw-vertical-1 {
+  animation-duration: 40s;
+  left: 15%;
+  opacity: 0.15; /* Background layer */
+  z-index: 1;
+}
+.floating-rickshaw-vertical-2 {
+  animation-duration: 45s;
+  left: 35%;
+  opacity: 0.2; /* Mid-background layer */
+  z-index: 2;
+}
+.floating-rickshaw-vertical-3 {
+  animation-duration: 50s;
+  left: 55%;
+  opacity: 0.25; /* Mid-foreground layer */
+  z-index: 3;
+}
+.floating-rickshaw-vertical-4 {
+  animation-duration: 43s;
+  left: 75%;
+  opacity: 0.3; /* Foreground layer */
+  z-index: 4;
+}
+/* Additional animations for hero component */
+@keyframes wheel-rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-wheel-rotate {
+  animation: wheel-rotate 4s linear infinite;
+}
+
+@keyframes map-trail {
+  0% {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+}
+
+.animate-map-trail {
+  animation: map-trail 3s ease-in-out infinite;
+}
+
+@keyframes rickshaw-drive {
+  0%,
+  100% {
+    transform: translateX(0px) rotate(0deg);
+  }
+  25% {
+    transform: translateX(10px) rotate(2deg);
+  }
+  50% {
+    transform: translateX(0px) rotate(0deg);
+  }
+  75% {
+    transform: translateX(-10px) rotate(-2deg);
+  }
+}
+
+.animate-rickshaw-drive {
+  animation: rickshaw-drive 4s ease-in-out infinite;
+}
+
+@keyframes rickshaw-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-rickshaw-spin {
+  animation: rickshaw-spin 2s linear infinite;
+}
+/* Horizontal rickshaws - floating in background space but visible */
+.floating-rickshaw-1 {
+  animation-duration: 35s;
+  top: 15%;
+  opacity: 0.15; /* Background layer */
+  z-index: 1;
+}
+.floating-rickshaw-2 {
+  animation-duration: 40s;
+  top: 35%;
+  opacity: 0.2; /* Mid-background layer */
+  z-index: 2;
+}
+.floating-rickshaw-3 {
+  animation-duration: 45s;
+  top: 55%;
+  opacity: 0.25; /* Mid-foreground layer */
+  z-index: 3;
+}
+.floating-rickshaw-4 {
+  animation-duration: 38s;
+  top: 75%;
+  opacity: 0.3; /* Foreground layer */
+  z-index: 4;
+}
+.floating-rickshaw-5 {
+  animation-duration: 42s;
+  top: 25%;
+  opacity: 0.15; /* Background layer */
+  z-index: 1;
+}
+/* Enhanced Rickshaw Float Animation for Root component */
+.animate-rickshaw-float {
+  animation: rickshawFloat 15s ease-in-out infinite;
+}
+
+@keyframes rickshawFloat {
+  0%,
+  100% {
+    transform: translateX(0) translateY(0) rotate(0deg) scale(1);
+  }
+  25% {
+    transform: translateX(20px) translateY(-10px) rotate(5deg) scale(1.1);
+  }
+  50% {
+    transform: translateX(-15px) translateY(15px) rotate(-3deg) scale(0.9);
+  }
+  75% {
+    transform: translateX(-25px) translateY(-8px) rotate(8deg) scale(1.05);
+  }
+}
+/* Enhanced animations for Did You Know section */
+@keyframes glow {
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(244, 185, 66, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(244, 185, 66, 0.6), 0 0 60px rgba(45, 80, 22, 0.3);
+  }
+}
+
+.animate-glow {
+  animation: glow 3s ease-in-out infinite;
+}
+
+@keyframes drift {
+  0%,
+  100% {
+    transform: translateX(0) translateY(0) rotate(0deg);
+  }
+  25% {
+    transform: translateX(10px) translateY(-5px) rotate(5deg);
+  }
+  50% {
+    transform: translateX(-5px) translateY(10px) rotate(-3deg);
+  }
+  75% {
+    transform: translateX(-10px) translateY(-5px) rotate(8deg);
+  }
+}
+
+.animate-drift {
+  animation: drift 8s ease-in-out infinite;
+}
+
+@keyframes wiggle {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(5deg);
+  }
+  75% {
+    transform: rotate(-5deg);
+  }
+}
+
+.animate-wiggle {
+  animation: wiggle 2s ease-in-out infinite;
+}
+
+@keyframes typewriter {
+  0% {
+    width: 0;
+  }
+  100% {
+    width: 100%;
+  }
+}
+
+.animate-typewriter {
+  overflow: hidden;
+  white-space: nowrap;
+  animation: typewriter 2s steps(40, end);
+}
+
+@keyframes sparkle {
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-sparkle {
+  animation: sparkle 2s ease-in-out infinite;
+}
+
+/* Gradient text animation */
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradient-shift 3s ease infinite;
+}
+
+/* Floating particles */
+@keyframes float-up {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+}
+
+.animate-float-up {
+  animation: float-up 3s ease-in-out infinite;
+}
+
+/* Pulsing border */
+@keyframes pulse-border {
+  0%,
+  100% {
+    border-color: rgba(244, 185, 66, 0.3);
+  }
+  50% {
+    border-color: rgba(244, 185, 66, 0.8);
+  }
+}
+
+.animate-pulse-border {
+  animation: pulse-border 2s ease-in-out infinite;
+}
+/* Enhanced subtle animations for WhySawaari component */
+@keyframes ripple {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+.animate-ripple {
+  animation: ripple 0.6s ease-out;
+}
+
+@keyframes gentle-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 10px rgba(244, 185, 66, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(244, 185, 66, 0.4);
+  }
+}
+
+.animate-gentle-glow {
+  animation: gentle-glow 3s ease-in-out infinite;
+}
+
+@keyframes slide-in-left {
+  0% {
+    transform: translateX(-20px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-left {
+  animation: slide-in-left 0.6s ease-out;
+}
+
+@keyframes slide-in-right {
+  0% {
+    transform: translateX(20px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.6s ease-out;
+}
+
+/* Responsive spacing utilities */
+@media (max-width: 768px) {
+  .container-sawaari {
+    @apply px-4;
+  }
+
+  /* Reduce excessive spacing on mobile */
+  .section {
+    @apply py-12;
+  }
+
+  /* Tighter grid gaps on mobile */
+  .grid {
+    @apply gap-4;
+  }
+}
+/* Comprehensive Responsive Design System */
+
+/* Extra Small Devices (phones, 320px and up) */
+@media (max-width: 479px) {
+  .container-sawaari {
+    @apply px-3 max-w-full;
+  }
+
+  .section {
+    @apply py-8;
+  }
+
+  /* Typography scaling for very small screens */
+  h1 {
+    @apply text-2xl leading-tight;
+  }
+
+  h2 {
+    @apply text-xl leading-tight;
+  }
+
+  h3 {
+    @apply text-lg;
+  }
+
+  /* Button adjustments */
+  .btn-primary,
+  .btn-secondary {
+    @apply px-4 py-2.5 text-sm;
+  }
+
+  /* Card padding reduction */
+  .card {
+    @apply p-4;
+  }
+
+  /* Grid adjustments */
+  .grid {
+    @apply gap-3;
+  }
+}
+
+/* Small Devices (landscape phones, 480px and up) */
+@media (min-width: 480px) and (max-width: 767px) {
+  .container-sawaari {
+    @apply px-4;
+  }
+
+  .section {
+    @apply py-10;
+  }
+
+  /* Better spacing for small tablets */
+  .grid {
+    @apply gap-4;
+  }
+
+  .card {
+    @apply p-5;
+  }
+}
+
+/* Medium Devices (tablets, 768px and up) */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .container-sawaari {
+    @apply px-6;
+  }
+
+  .section {
+    @apply py-12;
+  }
+
+  /* Optimal spacing for tablets */
+  .grid {
+    @apply gap-6;
+  }
+
+  .card {
+    @apply p-6;
+  }
+}
+
+/* Large Devices (desktops, 1024px and up) */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .container-sawaari {
+    @apply px-8;
+  }
+
+  .section {
+    @apply py-16;
+  }
+}
+
+/* Extra Large Devices (large desktops, 1280px and up) */
+@media (min-width: 1280px) {
+  .container-sawaari {
+    @apply px-8;
+  }
+
+  .section {
+    @apply py-20;
+  }
+}
+
+/* Responsive Typography System */
+@media (max-width: 640px) {
+  /* Small screen typography */
+  .text-readable {
+    @apply text-sm;
+  }
+
+  .text-readable-secondary {
+    @apply text-xs;
+  }
+
+  /* Reduce line heights for better mobile reading */
+  p {
+    @apply leading-relaxed;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  /* Medium screen typography */
+  .text-readable {
+    @apply text-base;
+  }
+
+  .text-readable-secondary {
+    @apply text-sm;
+  }
+}
+
+/* Responsive Spacing System */
+.responsive-mb-sm {
+  @apply mb-4 sm:mb-6 lg:mb-8;
+}
+.responsive-mb-md {
+  @apply mb-6 sm:mb-8 lg:mb-12;
+}
+.responsive-mb-lg {
+  @apply mb-8 sm:mb-12 lg:mb-16;
+}
+.responsive-mb-xl {
+  @apply mb-12 sm:mb-16 lg:mb-20;
+}
+
+.responsive-p-sm {
+  @apply p-3 sm:p-4 lg:p-6;
+}
+.responsive-p-md {
+  @apply p-4 sm:p-6 lg:p-8;
+}
+.responsive-p-lg {
+  @apply p-6 sm:p-8 lg:p-12;
+}
+
+/* Responsive Grid System */
+.responsive-grid-1-2-3 {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3;
+}
+
+.responsive-grid-1-2 {
+  @apply grid grid-cols-1 lg:grid-cols-2;
+}
+
+/* Responsive Flexbox Utilities */
+.responsive-flex-col-row {
+  @apply flex flex-col sm:flex-row;
+}
+
+.responsive-items-center {
+  @apply items-start sm:items-center;
+}
+
+/* Responsive Text Alignment */
+.responsive-text-center-left {
+  @apply text-center sm:text-left;
+}
+
+/* Hero Section Specific Responsive Fixes */
+@media (max-width: 1024px) {
+  /* Ensure hero content doesn't overflow */
+  .min-h-screen {
+    @apply min-h-[80vh];
+  }
+}
+
+@media (max-width: 640px) {
+  /* Mobile hero adjustments */
+  .min-h-screen {
+    @apply min-h-[70vh];
+  }
+
+  /* Reduce excessive spacing on mobile */
+  .py-20 {
+    @apply py-8;
+  }
+
+  .py-16 {
+    @apply py-6;
+  }
+
+  .py-12 {
+    @apply py-4;
+  }
+}
+
+/* Fix for small laptop screens (1024px - 1366px) */
+@media (min-width: 1024px) and (max-width: 1366px) {
+  .container-sawaari {
+    @apply max-w-5xl;
+  }
+
+  /* Slightly reduce font sizes for better fit */
+  .text-6xl {
+    @apply text-5xl;
+  }
+
+  .text-7xl {
+    @apply text-6xl;
+  }
+
+  /* Adjust hero visual size */
+  .w-80.h-80 {
+    @apply w-72 h-72;
+  }
+}
+
+/* Landscape phone orientation fixes */
+@media (max-height: 500px) and (orientation: landscape) {
+  .min-h-screen {
+    @apply min-h-[90vh];
+  }
+
+  .py-20 {
+    @apply py-4;
+  }
+
+  .py-16 {
+    @apply py-3;
+  }
+
+  .section {
+    @apply py-6;
+  }
+}
+
+/* High DPI screen adjustments */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  /* Ensure crisp rendering on retina displays */
+  .border {
+    @apply border-[0.5px];
+  }
+}
+
+/* Accessibility improvements for responsive design */
+@media (prefers-reduced-motion: reduce) {
+  .animate-subtle-float,
+  .animate-bounce-slow,
+  .animate-pulse-slow,
+  .animate-rickshaw-bounce,
+  .animate-wheel-rotate,
+  .animate-map-trail,
+  .animate-rickshaw-drive {
+    animation: none !important;
+  }
+}
+
+/* Print styles for responsive design */
+@media print {
+  .section {
+    @apply py-4;
+  }
+
+  .container-sawaari {
+    @apply max-w-full px-0;
+  }
+
+  /* Hide decorative elements in print */
+  .animate-subtle-float,
+  .absolute {
+    @apply hidden;
+  }
+}
+/* Floating Rickshaw Styles - Consistent Reduced Opacity */
+
+/* Enhanced Floating Auto-Rickshaw Animations with Depth Layers */
+.floating-rickshaw {
+  position: fixed;
+  font-size: 18px;
+  pointer-events: none;
+  animation: floatRickshaw linear infinite;
+  z-index: 1 !important; /* Float in background space but visible */
+}
+
+.floating-rickshaw:nth-child(odd) {
+  animation-direction: reverse;
+}
+
+/* Horizontal rickshaws - consistent reduced opacity */
+.floating-rickshaw-1 {
+  animation-duration: 35s;
+  top: 15%;
+  opacity: 0.12; /* Background layer */
+  z-index: 1;
+}
+.floating-rickshaw-2 {
+  animation-duration: 40s;
+  top: 35%;
+  opacity: 0.15; /* Mid-background layer */
+  z-index: 2;
+}
+.floating-rickshaw-3 {
+  animation-duration: 45s;
+  top: 55%;
+  opacity: 0.18; /* Mid-foreground layer */
+  z-index: 3;
+}
+.floating-rickshaw-4 {
+  animation-duration: 38s;
+  top: 75%;
+  opacity: 0.15; /* Foreground layer (reduced) */
+  z-index: 4;
+}
+
+@keyframes floatRickshaw {
+  0% {
+    transform: translateX(-100px) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: inherit; /* Use the opacity defined in the class */
+  }
+  90% {
+    opacity: inherit; /* Use the opacity defined in the class */
+  }
+  100% {
+    transform: translateX(calc(100vw + 100px)) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+/* Vertical floating rickshaws with layered depth */
+.floating-rickshaw-vertical {
+  position: fixed;
+  font-size: 16px;
+  pointer-events: none;
+  animation: floatRickshawVertical linear infinite;
+  z-index: 1 !important; /* Float in background space but visible */
+}
+
+/* Vertical rickshaws - consistent reduced opacity */
+.floating-rickshaw-vertical-1 {
+  animation-duration: 40s;
+  left: 15%;
+  opacity: 0.12; /* Background layer */
+  z-index: 1;
+}
+.floating-rickshaw-vertical-2 {
+  animation-duration: 45s;
+  left: 35%;
+  opacity: 0.15; /* Mid-background layer */
+  z-index: 2;
+}
+.floating-rickshaw-vertical-3 {
+  animation-duration: 50s;
+  left: 55%;
+  opacity: 0.18; /* Mid-foreground layer */
+  z-index: 3;
+}
+
+@keyframes floatRickshawVertical {
+  0% {
+    transform: translateY(-100px) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: inherit; /* Use the opacity defined in the class */
+  }
+  90% {
+    opacity: inherit; /* Use the opacity defined in the class */
+  }
+  100% {
+    transform: translateY(calc(100vh + 100px)) rotate(180deg);
+    opacity: 0;
+  }
+}
+
+/* Responsive adjustments for floating rickshaws */
+@media (max-width: 768px) {
+  .floating-rickshaw {
+    font-size: 14px;
+  }
+
+  .floating-rickshaw-vertical {
+    font-size: 12px;
+  }
+
+  /* Hide some rickshaws on very small screens */
+  .floating-rickshaw-4,
+  .floating-rickshaw-vertical-3 {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Hide even more rickshaws on very small screens */
+  .floating-rickshaw-3,
+  .floating-rickshaw-vertical-2 {
+    display: none;
+  }
+}
+/* Enhanced Responsive Button System */
+
+/* Button Container Utilities */
+.btn-container-center {
+  @apply flex justify-center;
+}
+
+.btn-container-responsive {
+  @apply flex flex-col sm:flex-row gap-3 sm:gap-4 items-center justify-center;
+}
+
+/* Responsive Button Sizing */
+@media (max-width: 479px) {
+  /* Extra small screens - compact buttons */
+  .btn-primary,
+  .btn-secondary {
+    @apply px-4 py-2 text-sm min-w-[100px] max-w-[200px];
+  }
+}
+
+@media (min-width: 480px) and (max-width: 767px) {
+  /* Small screens - medium buttons */
+  .btn-primary,
+  .btn-secondary {
+    @apply px-5 py-2.5 text-sm min-w-[120px] max-w-[250px];
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  /* Medium screens - standard buttons */
+  .btn-primary,
+  .btn-secondary {
+    @apply px-6 py-3 text-base min-w-[140px] max-w-[300px];
+  }
+}
+
+@media (min-width: 1024px) {
+  /* Large screens - full-size buttons */
+  .btn-primary,
+  .btn-secondary {
+    @apply px-8 py-3 text-base min-w-[160px];
+  }
+}
+
+/* Button Group Responsive Layouts */
+.btn-group-responsive {
+  @apply flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-center justify-center;
+}
+
+.btn-group-responsive .btn-primary,
+.btn-group-responsive .btn-secondary {
+  @apply flex-shrink-0;
+}
+
+/* Feature Button Specific Styles */
+.feature-btn {
+  @apply inline-flex items-center justify-center px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base font-medium rounded-lg transition-all duration-300 min-w-[120px] sm:min-w-[140px] max-w-[200px] sm:max-w-none;
+}
+
+/* Navigation Button Styles */
+.nav-btn {
+  @apply inline-flex items-center justify-center px-3 sm:px-4 py-2 text-sm sm:text-base font-medium rounded-lg transition-all duration-300 min-w-[80px] sm:min-w-[100px];
+}
+
+/* CTA Button Styles */
+.cta-btn {
+  @apply inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold rounded-lg transition-all duration-300 min-w-[140px] sm:min-w-[180px];
+}
+
+/* Button Width Utilities */
+.btn-auto {
+  width: auto;
+}
+.btn-fit {
+  @apply w-fit;
+}
+.btn-min {
+  @apply min-w-[100px];
+}
+.btn-compact {
+  @apply min-w-[120px] max-w-[200px];
+}
+.btn-standard {
+  @apply min-w-[140px] max-w-[250px];
+}
+.btn-wide {
+  @apply min-w-[160px] max-w-[300px];
+}
+
+/* Responsive Button Containers */
+.responsive-btn-container {
+  @apply flex flex-col sm:flex-row gap-3 sm:gap-4 items-center justify-center w-full;
+}
+
+.responsive-btn-container .btn-primary,
+.responsive-btn-container .btn-secondary {
+  @apply flex-shrink-0 w-auto;
+}
+
+/* Mobile-First Button Approach */
+@media (max-width: 640px) {
+  /* Prevent buttons from being too wide on mobile */
+  .btn-primary,
+  .btn-secondary {
+    max-width: 80vw;
+  }
+
+  /* Stack buttons vertically on mobile */
+  .btn-group-responsive {
+    @apply flex-col;
+  }
+
+  /* Ensure buttons don't stretch full width */
+  .w-full.btn-primary,
+  .w-full.btn-secondary {
+    @apply w-auto min-w-[120px] max-w-[200px];
+  }
+}

@@ -109,18 +109,12 @@ export default function Signinform({
         </button>
 
         {/* Links */}
-        <div className="flex justify-between items-center text-sm pt-2">
+        <div className="flex justify-center items-center text-sm pt-2">
           <a
             href="/forgot-password"
             className="text-sawaari-yellow hover:text-white transition-colors duration-300"
           >
             Forgot Password?
-          </a>
-          <a
-            href="/signup"
-            className="text-sawaari-yellow hover:text-white transition-colors duration-300"
-          >
-            Sign Up
           </a>
         </div>
       </form>

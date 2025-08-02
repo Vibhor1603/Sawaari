@@ -1,6 +1,7 @@
 import { useState, useEffect, useContext, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "./AuthContext";
+import { useAuthGuard } from "./hooks/useAuthGuard";
 import rideBuddyService from "./services/rideBuddyService";
 import { useHotspotData } from "./useHotspotData";
 import socketService from "./services/socketService";
@@ -10,9 +11,19 @@ import toast from "./utils/toast";
 import React from "react"; // Added missing import for React
 
 const RideBuddy = () => {
-  const { user, isAuthenticated } = useContext(AuthContext);
-  const navigate = useNavigate();
+  const { user } = useContext(AuthContext);
+  const { isAuthenticated, isLoading } = useAuthGuard(
+    "Please sign in to access Ride Buddy"
+  );
+  const navigate = useNavigate(); // Add this hook
 
+  // Add this useEffect at the top of your component
+  useEffect(() => {
+    if (!user) {
+      toast.error("Please login first to access this feature");
+      navigate("/"); // Navigate to home page
+    }
+  }, [user, navigate]);
   // Helper function to safely extract location name
   const getLocationName = (location) => {
     if (!location) return "Unknown";
@@ -68,6 +79,117 @@ const RideBuddy = () => {
   // How it works popup state
   const [showHowItWorks, setShowHowItWorks] = useState(false);
 
+  // Define functions using useCallback to avoid hoisting issues
+  const loadRequests = useCallback(async () => {
+    // Prevent multiple simultaneous calls
+    if (requestsLoading) {
+      console.log("🔄 loadRequests already in progress, skipping...");
+      return;
+    }
+
+    try {
+      setRequestsLoading(true);
+      window.lastRequestLoadTime = Date.now();
+      // Use the correct method name from the old version
+      const result = await rideBuddyService.getRequests();
+      if (result.success) {
+        // Only update if we have valid data to prevent flickering
+        if (result.data && (result.data.requests || result.data.sentRequests)) {
+          setIncomingRequests(result.data.requests || []);
+          setOutgoingRequests(result.data.sentRequests || []);
+
+          // Update sent request IDs to prevent duplicate sends
+          const sentIds = new Set();
+          const sentTimes = new Map();
+
+          (result.data.sentRequests || [])
+            .filter((req) => req.status === "pending")
+            .forEach((req) => {
+              const receiverId = req.receiverId.toString();
+              sentIds.add(receiverId);
+              sentTimes.set(receiverId, new Date(req.createdAt).getTime());
+            });
+
+          setSentRequestIds(sentIds);
+          setSentRequestTimes(sentTimes);
+          setRequestsLoaded(true);
+        } else {
+          // If no data returned, don't clear existing requests immediately
+          // This prevents flickering when cache is being updated
+          console.log("⚠️ No request data returned, keeping existing requests");
+          // Only clear if we've been trying for a while (more than 5 seconds)
+          const now = Date.now();
+          if (
+            !window.lastRequestLoadTime ||
+            now - window.lastRequestLoadTime > 5000
+          ) {
+            console.log("🔄 Clearing requests after timeout");
+            setIncomingRequests([]);
+            setOutgoingRequests([]);
+            setRequestsLoaded(true);
+          }
+        }
+      } else {
+        // On error, don't clear existing requests immediately
+        console.log("⚠️ Request load failed, keeping existing requests");
+      }
+    } catch (error) {
+      console.error("Error loading requests:", error);
+      toast.error("Failed to load ride requests");
+    } finally {
+      setRequestsLoading(false);
+    }
+  }, [requestsLoading, incomingRequests, outgoingRequests]);
+
+  const loadConnections = useCallback(async (forceRefresh = false) => {
+    try {
+      // Clear cache if force refresh is requested
+      if (forceRefresh) {
+        rideBuddyService.clearCache && rideBuddyService.clearCache();
+      }
+
+      // Use the correct method name from the old version
+      const result = await rideBuddyService.getMatches();
+      if (result.success) {
+        console.log("Loaded connections:", result.data);
+        console.log(
+          "Connection details:",
+          result.data.map((conn) => ({
+            matchId: conn.matchId,
+            partnerName: conn.partner?.name,
+            partnerPhone: conn.partner?.phone,
+            hasPhone: !!conn.partner?.phone,
+          }))
+        );
+
+        // Filter out expired connections on the frontend as well
+        const validConnections = (result.data || []).filter((connection) => {
+          if (
+            connection.chatTimeRemaining &&
+            connection.chatTimeRemaining <= 0
+          ) {
+            console.log(
+              `Filtering out expired connection: ${connection.matchId}`
+            );
+            return false;
+          }
+          return true;
+        });
+
+        setActiveConnections(validConnections);
+
+        // Show message if connections were filtered out
+        if (result.data.length > validConnections.length) {
+          const expiredCount = result.data.length - validConnections.length;
+          toast.info(`${expiredCount} expired connection(s) removed`);
+        }
+      }
+    } catch (error) {
+      console.error("Error loading connections:", error);
+      toast.error("Failed to load connections");
+    }
+  }, []);
+
   // Clean up expired sent requests
   useEffect(() => {
     const cleanupInterval = setInterval(() => {
@@ -98,14 +220,7 @@ const RideBuddy = () => {
     return () => clearInterval(cleanupInterval);
   }, [sentRequestTimes]);
 
-  // Redirect if not authenticated
-  useEffect(() => {
-    if (!isAuthenticated) {
-      toast.error("Please sign in to access Ride Buddy");
-      navigate("/signin");
-      return;
-    }
-  }, [isAuthenticated, navigate]);
+  // Auth guard will handle authentication check
 
   // Initialize socket connection and load data
   useEffect(() => {
@@ -381,129 +496,12 @@ const RideBuddy = () => {
     activeChatId,
     isAuthenticated,
     user,
-    navigate,
     activeTab,
     loadRequestsTimeout,
+    loadRequests,
+    incomingRequests,
+    outgoingRequests.length,
   ]);
-
-  const loadRequests = async () => {
-    // Prevent multiple simultaneous calls
-    if (requestsLoading) {
-      console.log("🔄 loadRequests already in progress, skipping...");
-      return;
-    }
-
-    try {
-      setRequestsLoading(true);
-      window.lastRequestLoadTime = Date.now();
-      // Use the correct method name from the old version
-      const result = await rideBuddyService.getRequests();
-      if (result.success) {
-        // Only update if we have valid data to prevent flickering
-        if (result.data && (result.data.requests || result.data.sentRequests)) {
-          setIncomingRequests(result.data.requests || []);
-          setOutgoingRequests(result.data.sentRequests || []);
-
-          // Update sent request IDs to prevent duplicate sends
-          const sentIds = new Set();
-          const sentTimes = new Map();
-
-          (result.data.sentRequests || [])
-            .filter((req) => req.status === "pending")
-            .forEach((req) => {
-              const receiverId = req.receiverId.toString();
-              sentIds.add(receiverId);
-              sentTimes.set(receiverId, new Date(req.createdAt).getTime());
-            });
-
-          setSentRequestIds(sentIds);
-          setSentRequestTimes(sentTimes);
-          setRequestsLoaded(true);
-        } else {
-          // If no data returned, don't clear existing requests immediately
-          // This prevents flickering when cache is being updated
-          console.log("⚠️ No request data returned, keeping existing requests");
-          // Only clear if we've been trying for a while (more than 5 seconds)
-          const now = Date.now();
-          if (
-            !window.lastRequestLoadTime ||
-            now - window.lastRequestLoadTime > 5000
-          ) {
-            console.log("🔄 Clearing requests after timeout");
-            setIncomingRequests([]);
-            setOutgoingRequests([]);
-            setRequestsLoaded(true);
-          }
-        }
-      } else {
-        // On error, don't clear existing requests immediately
-        console.log("⚠️ Request load failed, keeping existing requests");
-      }
-    } catch (error) {
-      console.error("Error loading requests:", error);
-      toast.error("Failed to load ride requests");
-    } finally {
-      setRequestsLoading(false);
-    }
-  };
-
-  const loadConnections = async (forceRefresh = false) => {
-    try {
-      // Clear cache if force refresh is requested
-      if (forceRefresh) {
-        rideBuddyService.clearCache && rideBuddyService.clearCache();
-      }
-
-      // Use the correct method name from the old version
-      const result = await rideBuddyService.getMatches();
-      if (result.success) {
-        console.log("Loaded connections:", result.data);
-        console.log(
-          "Connection details:",
-          result.data.map((conn) => ({
-            matchId: conn.matchId,
-            partnerName: conn.partner?.name,
-            partnerPhone: conn.partner?.phone,
-            hasPhone: !!conn.partner?.phone,
-          }))
-        );
-        console.log(
-          "📞 Full connection data for debugging:",
-          result.data.map((conn) => ({
-            matchId: conn.matchId,
-            partner: conn.partner,
-            hasPartner: !!conn.partner,
-            hasPartnerPhone: !!conn.partner?.phone,
-          }))
-        );
-
-        // Filter out expired connections on the frontend as well
-        const validConnections = (result.data || []).filter((connection) => {
-          if (
-            connection.chatTimeRemaining &&
-            connection.chatTimeRemaining <= 0
-          ) {
-            console.log(
-              `Filtering out expired connection: ${connection.matchId}`
-            );
-            return false;
-          }
-          return true;
-        });
-
-        setActiveConnections(validConnections);
-
-        // Show message if connections were filtered out
-        if (result.data.length > validConnections.length) {
-          const expiredCount = result.data.length - validConnections.length;
-          toast.info(`${expiredCount} expired connection(s) removed`);
-        }
-      }
-    } catch (error) {
-      console.error("Error loading connections:", error);
-      toast.error("Failed to load active connections");
-    }
-  };
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -834,7 +832,19 @@ const RideBuddy = () => {
     }
   }, [activeChatId, closeChat, showHowItWorks]);
 
-  // Don't render if not authenticated
+  // Show loading state while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-black pt-20 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-sawaari-yellow border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-200">Loading Ride Buddy...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render if not authenticated (auth guard will handle modal)
   if (!isAuthenticated) {
     return null;
   }

@@ -8,9 +8,9 @@ import Footer from "./footer";
 import Root from "./Root";
 import Routeinfo from "./RouteInfo";
 import RideBuddy from "./RideBuddy";
-import SignUp from "./Signup";
-import SignIn from "./SignIn";
 import { AuthContext } from "./AuthContext";
+import { AuthModalProvider } from "./contexts/AuthModalContext";
+import AuthModalContainer from "./components/AuthModalContainer";
 import Logout from "./Logout";
 import ForgotPassword from "./ForgotPassword";
 import Contact from "./Contact";
@@ -23,22 +23,23 @@ export default function App() {
 
   return (
     <Router>
-      <FloatingRickshaws />
-      <Navbar />
-      <Routes>
-        <Route index element={<Root />} />
-        <Route path="/home" element={<Root />} />
-        <Route path="/hotspots" element={<Hotspots hotspot={hotspot} />} />
-        <Route path="/routes" element={<Routeinfo hotspot={hotspot} />} />
-        <Route path="/ridebuddy" element={token ? <RideBuddy /> : <SignIn />} />
-        <Route path="/profile" element={token ? <UserProfile /> : <SignIn />} />
-        <Route path="/signin" element={<SignIn />} />
-        <Route path="/signup" element={<SignUp />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/logout" element={<Logout />} />
-        <Route path="/feedbacks" element={<Contact />} />
-      </Routes>
-      <Footer />
+      <AuthModalProvider>
+        <FloatingRickshaws />
+        <Navbar />
+        <Routes>
+          <Route index element={<Root />} />
+          <Route path="/home" element={<Root />} />
+          <Route path="/hotspots" element={<Hotspots hotspot={hotspot} />} />
+          <Route path="/routes" element={<Routeinfo hotspot={hotspot} />} />
+          <Route path="/ridebuddy" element={<RideBuddy />} />
+          <Route path="/profile" element={<UserProfile />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/logout" element={<Logout />} />
+          <Route path="/feedbacks" element={<Contact />} />
+        </Routes>
+        <Footer />
+        <AuthModalContainer />
+      </AuthModalProvider>
     </Router>
   );
 }

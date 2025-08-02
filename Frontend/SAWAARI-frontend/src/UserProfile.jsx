@@ -1,13 +1,15 @@
 import { useState, useEffect, useContext } from "react";
-import { useNavigate } from "react-router-dom";
 import { AuthContext } from "./AuthContext";
+import { useAuthGuard } from "./hooks/useAuthGuard";
 import authService from "./services/authService";
 import toast from "./utils/toast";
 import FloatingRickshaws from "./components/FloatingRickshaws";
 
 const UserProfile = () => {
-  const { user, isAuthenticated, updateUser } = useContext(AuthContext);
-  const navigate = useNavigate();
+  const { user, updateUser } = useContext(AuthContext);
+  const { isAuthenticated, isLoading } = useAuthGuard(
+    "Please sign in to access your profile"
+  );
 
   // Profile states
   const [profileData, setProfileData] = useState({
@@ -27,20 +29,14 @@ const UserProfile = () => {
   const [otpLoading, setOtpLoading] = useState(false);
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      toast.error("🛺 Please sign in to access your profile");
-      navigate("/signin");
-      return;
-    }
-
-    if (user) {
+    if (isAuthenticated && user) {
       setProfileData({
         name: user.name || "",
         email: user.email || "",
         phone: user.phone || "",
       });
     }
-  }, [isAuthenticated, user, navigate]);
+  }, [isAuthenticated, user]);
 
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
@@ -52,7 +48,7 @@ const UserProfile = () => {
 
     // Validate phone number if provided
     if (profileData.phone && profileData.phone.trim()) {
-      const phoneRegex = /^[+]?[\d\s\-\(\)]{10,15}$/;
+      const phoneRegex = /^[+]?[\d\s\-\()]{10,15}$/;
       if (!phoneRegex.test(profileData.phone.trim())) {
         toast.error("🛺 Please enter a valid phone number");
         return;
@@ -210,6 +206,19 @@ const UserProfile = () => {
     setConfirmPassword("");
   };
 
+  // Show loading state while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-black pt-20 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-sawaari-yellow border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-200">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render if not authenticated (auth guard will handle modal)
   if (!isAuthenticated) {
     return null;
   }
