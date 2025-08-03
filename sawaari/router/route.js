@@ -34,6 +34,7 @@ const {
 const {
   authLimiter,
   apiLimiter,
+  hotspotsLimiter,
   rideBuddyLimiter,
   chatLimiter,
   securityActionLimiter,
@@ -359,7 +360,7 @@ router
 // ===== GEOLOCATION-BASED HOTSPOT API ENDPOINTS =====
 
 // Get hotspots within map bounds (for viewport-based loading)
-router.route("/api/hotspots/bounds").post(async (req, res) => {
+router.route("/api/hotspots/bounds").post(hotspotsLimiter, async (req, res) => {
   try {
     const { bounds, zoom } = req.body;
 
@@ -388,7 +389,7 @@ router.route("/api/hotspots/bounds").post(async (req, res) => {
 });
 
 // Get hotspots near a specific location
-router.route("/api/hotspots/nearby").post(async (req, res) => {
+router.route("/api/hotspots/nearby").post(hotspotsLimiter, async (req, res) => {
   try {
     const { latitude, longitude, radius } = req.body;
 

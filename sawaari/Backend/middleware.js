@@ -29,11 +29,18 @@ const authLimiter = createRateLimiter(
   "Too many authentication attempts, please try again later"
 );
 
-// General API rate limiter
+// General API rate limiter - more lenient
 const apiLimiter = createRateLimiter(
   15 * 60 * 1000, // 15 minutes
-  100, // 100 requests
+  500, // 500 requests (increased from 100)
   "Too many API requests, please try again later"
+);
+
+// Hotspots specific rate limiter - very lenient for map interactions
+const hotspotsLimiter = createRateLimiter(
+  5 * 60 * 1000, // 5 minutes
+  100, // 100 requests for hotspots
+  "Too many hotspot requests, please slow down"
 );
 
 // Ride buddy specific rate limiter - more restrictive for search/request operations
@@ -241,6 +248,7 @@ const corsOptions = {
 module.exports = {
   authLimiter,
   apiLimiter,
+  hotspotsLimiter,
   rideBuddyLimiter,
   chatLimiter,
   securityActionLimiter,

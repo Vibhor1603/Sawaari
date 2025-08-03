@@ -614,9 +614,22 @@ const handleRequest = async (req, res) => {
       userId,
       body: req.body,
       params: req.params,
+      headers: {
+        authorization: req.headers.authorization ? "Bearer [REDACTED]" : "None",
+        contentType: req.headers["content-type"],
+      },
     });
 
     // Validate request ID
+    if (!requestId) {
+      console.error(`❌ Missing request ID`);
+      return res.status(400).json({
+        success: false,
+        error: "Missing request ID",
+        message: "Request ID is required",
+      });
+    }
+
     if (!ObjectId.isValid(requestId)) {
       console.error(`❌ Invalid request ID format: ${requestId}`);
       return res.status(400).json({
@@ -627,12 +640,31 @@ const handleRequest = async (req, res) => {
     }
 
     // Validate action
+    if (!action) {
+      console.error(`❌ Missing action`);
+      return res.status(400).json({
+        success: false,
+        error: "Missing action",
+        message: "Action is required",
+      });
+    }
+
     if (!["accept", "decline"].includes(action)) {
       console.error(`❌ Invalid action: ${action}`);
       return res.status(400).json({
         success: false,
         error: "Invalid action",
         message: "Action must be 'accept' or 'decline'",
+      });
+    }
+
+    // Validate user ID
+    if (!userId) {
+      console.error(`❌ Missing user ID from token`);
+      return res.status(401).json({
+        success: false,
+        error: "Authentication required",
+        message: "User ID not found in token",
       });
     }
 
@@ -647,11 +679,44 @@ const handleRequest = async (req, res) => {
     console.log(`📋 Found ${requests.length} matching requests`);
 
     if (requests.length === 0) {
-      console.error(`❌ Request ${requestId} not found or already processed`);
+      console.error(
+        `❌ Request ${requestId} not found or already processed for user ${userId}`
+      );
+
+      // Check if request exists but for different user or with different status
+      const anyRequest = await findRideBuddyRequests({
+        _id: new ObjectId(requestId),
+      });
+
+      if (anyRequest.length > 0) {
+        const req = anyRequest[0];
+        console.log(`📋 Found request but not for current user:`, {
+          requestId: req._id,
+          senderId: req.senderId,
+          receiverId: req.receiverId,
+          status: req.status,
+          currentUserId: userId,
+        });
+
+        if (req.receiverId.toString() !== userId) {
+          return res.status(403).json({
+            success: false,
+            error: "Access denied",
+            message: "You are not authorized to respond to this request",
+          });
+        } else if (req.status !== "pending") {
+          return res.status(409).json({
+            success: false,
+            error: "Request already processed",
+            message: `This request has already been ${req.status}`,
+          });
+        }
+      }
+
       return res.status(404).json({
         success: false,
         error: "Request not found",
-        message: "Request not found or already processed",
+        message: "Request not found or no longer available",
       });
     }
 
