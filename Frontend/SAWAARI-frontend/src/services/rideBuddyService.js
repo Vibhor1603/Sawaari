@@ -237,6 +237,8 @@ const handleConnectionRequest = async (
       }),
     });
 
+    console.log("🔧 API Response:", response);
+
     if (response.success) {
       // Clear relevant caches
       cache.delete("user_requests");
@@ -251,10 +253,32 @@ const handleConnectionRequest = async (
         message: response.message || `Request ${action}ed successfully`,
       };
     } else {
-      throw new Error(response.message || `Failed to ${action} request`);
+      // Handle specific error cases
+      let errorMessage =
+        response.message || response.error || `Failed to ${action} request`;
+
+      if (response.error === "Request not found") {
+        errorMessage =
+          "This request is no longer available. It may have already been processed.";
+      } else if (response.error === "Invalid request ID") {
+        errorMessage = "Invalid request. Please refresh and try again.";
+      } else if (response.error === "Token expired") {
+        errorMessage = "Your session has expired. Please sign in again.";
+      }
+
+      throw new Error(errorMessage);
     }
   } catch (error) {
     console.error(`Failed to ${action} connection request:`, error);
+
+    // Handle network errors specifically
+    if (error.name === "TypeError" && error.message.includes("fetch")) {
+      return {
+        success: false,
+        error: "Network error. Please check your connection and try again.",
+      };
+    }
+
     return {
       success: false,
       error: error.message || `Network error while ${action}ing request`,

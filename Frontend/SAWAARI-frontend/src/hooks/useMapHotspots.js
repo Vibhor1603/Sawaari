@@ -18,21 +18,21 @@ export const useMapHotspots = (initialCenter = null, initialZoom = 10) => {
     async (bounds, zoom) => {
       // Prevent concurrent loading
       if (loadingRef.current) {
-        if (process.env.NODE_ENV === "development") {
+        if (import.meta.env.DEV) {
           console.log("⏳ Already loading, skipping request");
         }
         return;
       }
 
-      // Check if bounds are the same as last request
+      // Check if bounds are the same as last request (increased threshold)
       if (
         lastBounds &&
-        Math.abs(bounds.north - lastBounds.north) < 0.01 &&
-        Math.abs(bounds.south - lastBounds.south) < 0.01 &&
-        Math.abs(bounds.east - lastBounds.east) < 0.01 &&
-        Math.abs(bounds.west - lastBounds.west) < 0.01
+        Math.abs(bounds.north - lastBounds.north) < 0.05 &&
+        Math.abs(bounds.south - lastBounds.south) < 0.05 &&
+        Math.abs(bounds.east - lastBounds.east) < 0.05 &&
+        Math.abs(bounds.west - lastBounds.west) < 0.05
       ) {
-        if (process.env.NODE_ENV === "development") {
+        if (import.meta.env.DEV) {
           console.log("📍 Bounds haven't changed significantly, skipping");
         }
         return;
@@ -44,7 +44,7 @@ export const useMapHotspots = (initialCenter = null, initialZoom = 10) => {
         setError(null);
 
         // Only log in development
-        if (process.env.NODE_ENV === "development") {
+        if (import.meta.env.DEV) {
           console.log("🗺️ Loading hotspots for bounds:", bounds, "zoom:", zoom);
         }
 
@@ -65,7 +65,7 @@ export const useMapHotspots = (initialCenter = null, initialZoom = 10) => {
           });
 
           // Only log in development
-          if (process.env.NODE_ENV === "development") {
+          if (import.meta.env.DEV) {
             console.log(
               `✅ Loaded ${result.data.length} hotspots ${
                 result.cached ? "(cached)" : "(fresh)"
@@ -89,13 +89,13 @@ export const useMapHotspots = (initialCenter = null, initialZoom = 10) => {
 
   // Debounced hotspot loading to prevent too many API calls during map movement
   const loadHotspotsDebounced = useCallback(
-    (bounds, zoom, delay = 500) => {
+    (bounds, zoom, delay = 2000) => {
       // Clear existing timeout
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
 
-      // Set new timeout
+      // Set new timeout with longer delay
       timeoutRef.current = setTimeout(() => {
         loadHotspots(bounds, zoom);
       }, delay);
@@ -107,7 +107,7 @@ export const useMapHotspots = (initialCenter = null, initialZoom = 10) => {
   const loadNearbyHotspots = useCallback(
     async (latitude, longitude, radius = 5) => {
       if (loadingRef.current) {
-        if (process.env.NODE_ENV === "development") {
+        if (import.meta.env.DEV) {
           console.log("⏳ Already loading nearby hotspots, skipping");
         }
         return;
@@ -119,7 +119,7 @@ export const useMapHotspots = (initialCenter = null, initialZoom = 10) => {
         setError(null);
 
         // Only log in development
-        if (process.env.NODE_ENV === "development") {
+        if (import.meta.env.DEV) {
           console.log(
             "📍 Loading nearby hotspots for location:",
             latitude,
@@ -144,7 +144,7 @@ export const useMapHotspots = (initialCenter = null, initialZoom = 10) => {
           });
 
           // Only log in development
-          if (process.env.NODE_ENV === "development") {
+          if (import.meta.env.DEV) {
             console.log(
               `✅ Loaded ${result.data.length} nearby hotspots ${
                 result.cached ? "(cached)" : "(fresh)"
@@ -175,7 +175,7 @@ export const useMapHotspots = (initialCenter = null, initialZoom = 10) => {
       }
 
       // Skip if bounds haven't changed significantly (moved to loadHotspots)
-      loadHotspotsDebounced(bounds, zoom, 800); // Increased debounce delay
+      loadHotspotsDebounced(bounds, zoom, 3000); // Much longer debounce delay
     },
     [loadHotspotsDebounced]
   );

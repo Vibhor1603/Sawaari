@@ -27,6 +27,7 @@ const UserProfile = () => {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [otpLoading, setOtpLoading] = useState(false);
+  const [otpData, setOtpData] = useState({ token: "", resetToken: "" });
 
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -48,7 +49,7 @@ const UserProfile = () => {
 
     // Validate phone number if provided
     if (profileData.phone && profileData.phone.trim()) {
-      const phoneRegex = /^[+]?[\d\s\-\()]{10,15}$/;
+      const phoneRegex = /^[+]?[\d\s\-()]{10,15}$/;
       if (!phoneRegex.test(profileData.phone.trim())) {
         toast.error("🛺 Please enter a valid phone number");
         return;
@@ -90,17 +91,23 @@ const UserProfile = () => {
   const handlePasswordResetRequest = async () => {
     setOtpLoading(true);
     try {
-      const response = await authService.apiRequest(
-        "/api/auth/forgot-password",
+      const response = await fetch(
+        `${
+          import.meta.env.VITE_API_BASE_URL || "https://sawaari.onrender.com"
+        }/forgot-password/send-otp`,
         {
           method: "POST",
-          body: JSON.stringify({ email: user.email }),
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ identifier: user.email }),
         }
       );
 
       const data = await response.json();
 
       if (response.ok && data.success) {
+        setOtpData({ token: data.token, resetToken: "" });
         setPasswordResetStep(2);
         toast.success("🛺 OTP sent to your email!");
       } else {
@@ -124,13 +131,19 @@ const UserProfile = () => {
 
     setOtpLoading(true);
     try {
-      const response = await authService.apiRequest(
-        "/api/auth/verify-reset-otp",
+      const response = await fetch(
+        `${
+          import.meta.env.VITE_API_BASE_URL || "https://sawaari.onrender.com"
+        }/forgot-password/verify-otp`,
         {
           method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
           body: JSON.stringify({
-            email: user.email,
+            identifier: user.email,
             otp: otp.trim(),
+            token: otpData.token,
           }),
         }
       );
@@ -138,6 +151,7 @@ const UserProfile = () => {
       const data = await response.json();
 
       if (response.ok && data.success) {
+        setOtpData((prev) => ({ ...prev, resetToken: data.resetToken }));
         setPasswordResetStep(3);
         toast.success("🛺 OTP verified! Set your new password");
       } else {
@@ -166,13 +180,17 @@ const UserProfile = () => {
 
     setOtpLoading(true);
     try {
-      const response = await authService.apiRequest(
-        "/api/auth/reset-password",
+      const response = await fetch(
+        `${
+          import.meta.env.VITE_API_BASE_URL || "https://sawaari.onrender.com"
+        }/forgot-password/reset`,
         {
           method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
           body: JSON.stringify({
-            email: user.email,
-            otp: otp.trim(),
+            resetToken: otpData.resetToken,
             newPassword,
           }),
         }
@@ -186,6 +204,7 @@ const UserProfile = () => {
         setOtp("");
         setNewPassword("");
         setConfirmPassword("");
+        setOtpData({ token: "", resetToken: "" });
         toast.success("🛺 Password reset successfully!");
       } else {
         throw new Error(data.message || "Failed to reset password");
@@ -204,6 +223,7 @@ const UserProfile = () => {
     setOtp("");
     setNewPassword("");
     setConfirmPassword("");
+    setOtpData({ token: "", resetToken: "" });
   };
 
   // Show loading state while checking authentication
@@ -399,7 +419,7 @@ const UserProfile = () => {
                 {passwordResetStep === 1 && (
                   <div className="space-y-4">
                     <p className="text-gray-300 text-sm">
-                      We'll send an OTP to your email address:{" "}
+                      We&apos;ll send an OTP to your email address:{" "}
                       <strong>{user?.email}</strong>
                     </p>
                     <button

@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext, useCallback } from "react";
+import { useState, useEffect, useContext, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "./AuthContext";
 import { useAuthGuard } from "./hooks/useAuthGuard";
@@ -12,18 +12,10 @@ import React from "react"; // Added missing import for React
 
 const RideBuddy = () => {
   const { user } = useContext(AuthContext);
+  const navigate = useNavigate();
   const { isAuthenticated, isLoading } = useAuthGuard(
     "Please sign in to access Ride Buddy"
   );
-  const navigate = useNavigate(); // Add this hook
-
-  // Add this useEffect at the top of your component
-  useEffect(() => {
-    if (!user) {
-      toast.error("Please login first to access this feature");
-      navigate("/"); // Navigate to home page
-    }
-  }, [user, navigate]);
   // Helper function to safely extract location name
   const getLocationName = (location) => {
     if (!location) return "Unknown";
@@ -31,6 +23,67 @@ const RideBuddy = () => {
     if (location.name) return location.name;
     return "Unknown";
   };
+
+  // Helper function to calculate connection expiry
+  const isConnectionExpired = useCallback((connection) => {
+    if (!connection.createdAt) return true;
+
+    const connectionTime = new Date(connection.createdAt).getTime();
+    const now = Date.now();
+    const totalConnectionDuration = 15 * 60 * 1000; // 15 minutes total (10 chat + 5 contact)
+
+    return now - connectionTime > totalConnectionDuration;
+  }, []);
+
+  // Helper function to calculate remaining time for connection
+  const getConnectionTimeRemaining = useCallback((connection) => {
+    if (!connection.createdAt) return 0;
+
+    const connectionTime = new Date(connection.createdAt).getTime();
+    const now = Date.now();
+    const totalConnectionDuration = 15 * 60 * 1000; // 15 minutes total
+    const chatDuration = 10 * 60 * 1000; // 10 minutes chat
+
+    const elapsed = now - connectionTime;
+
+    if (elapsed > totalConnectionDuration) {
+      return 0; // Completely expired
+    } else if (elapsed > chatDuration) {
+      return -1; // Chat expired, but contact details still available
+    } else {
+      return chatDuration - elapsed; // Chat time remaining
+    }
+  }, []);
+
+  // Helper function to clear expired connections from localStorage
+  const clearExpiredConnections = useCallback(() => {
+    try {
+      const saved = localStorage.getItem("rideBuddy_activeConnections");
+      if (saved) {
+        const connections = JSON.parse(saved);
+        const validConnections = connections.filter((connection) => {
+          return !isConnectionExpired(connection);
+        });
+
+        if (validConnections.length !== connections.length) {
+          localStorage.setItem(
+            "rideBuddy_activeConnections",
+            JSON.stringify(validConnections)
+          );
+          console.log(
+            `🧹 Cleared ${
+              connections.length - validConnections.length
+            } expired connections from localStorage`
+          );
+        }
+      }
+    } catch (error) {
+      console.error(
+        "Error clearing expired connections from localStorage:",
+        error
+      );
+    }
+  }, [isConnectionExpired]);
 
   // Get hotspot data for dropdowns
   const [hotspotData] = useHotspotData();
@@ -66,11 +119,22 @@ const RideBuddy = () => {
   // Requests and connections
   const [incomingRequests, setIncomingRequests] = useState([]);
   const [outgoingRequests, setOutgoingRequests] = useState([]);
-  const [activeConnections, setActiveConnections] = useState([]);
+  const [activeConnections, setActiveConnections] = useState(() => {
+    // Load connections from localStorage on component mount
+    try {
+      const saved = localStorage.getItem("rideBuddy_activeConnections");
+      return saved ? JSON.parse(saved) : [];
+    } catch (error) {
+      console.error("Error loading saved connections:", error);
+      return [];
+    }
+  });
   const [requestsLoading, setRequestsLoading] = useState(false);
+  const [connectionsLoading, setConnectionsLoading] = useState(false);
   const [processingRequests, setProcessingRequests] = useState(new Set()); // Track requests being processed
   const [loadRequestsTimeout, setLoadRequestsTimeout] = useState(null); // Track loadRequests timeout
   const [requestsLoaded, setRequestsLoaded] = useState(false); // Track if requests have been successfully loaded
+  const [connectionsLoaded, setConnectionsLoaded] = useState(false); // Track if connections have been loaded
 
   // Live chat state
   const [activeChatId, setActiveChatId] = useState(null);
@@ -79,11 +143,40 @@ const RideBuddy = () => {
   // How it works popup state
   const [showHowItWorks, setShowHowItWorks] = useState(false);
 
+  // Add ref to track if component is mounted to prevent memory leaks
+  const isMountedRef = useRef(true);
+
+  // Save connections to localStorage whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        "rideBuddy_activeConnections",
+        JSON.stringify(activeConnections)
+      );
+    } catch (error) {
+      console.error("Error saving connections to localStorage:", error);
+    }
+  }, [activeConnections]);
+
+  // Clear expired connections on component mount
+  useEffect(() => {
+    clearExpiredConnections();
+  }, [clearExpiredConnections]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
   // Define functions using useCallback to avoid hoisting issues
   const loadRequests = useCallback(async () => {
     // Prevent multiple simultaneous calls
-    if (requestsLoading) {
-      console.log("🔄 loadRequests already in progress, skipping...");
+    if (requestsLoading || !isMountedRef.current) {
+      console.log(
+        "🔄 loadRequests already in progress or component unmounted, skipping..."
+      );
       return;
     }
 
@@ -139,63 +232,97 @@ const RideBuddy = () => {
     } finally {
       setRequestsLoading(false);
     }
-  }, [requestsLoading, incomingRequests, outgoingRequests]);
+  }, [requestsLoading]);
 
-  const loadConnections = useCallback(async (forceRefresh = false) => {
-    try {
-      // Clear cache if force refresh is requested
-      if (forceRefresh) {
-        rideBuddyService.clearCache && rideBuddyService.clearCache();
+  const loadConnections = useCallback(
+    async (forceRefresh = false) => {
+      // Check if component is still mounted
+      if (!isMountedRef.current) {
+        console.log("🔄 Component unmounted, skipping loadConnections");
+        return;
       }
 
-      // Use the correct method name from the old version
-      const result = await rideBuddyService.getMatches();
-      if (result.success) {
-        console.log("Loaded connections:", result.data);
-        console.log(
-          "Connection details:",
-          result.data.map((conn) => ({
-            matchId: conn.matchId,
-            partnerName: conn.partner?.name,
-            partnerPhone: conn.partner?.phone,
-            hasPhone: !!conn.partner?.phone,
-          }))
-        );
+      // Prevent multiple simultaneous calls
+      if (connectionsLoading && !forceRefresh) {
+        console.log("🔄 loadConnections already in progress, skipping...");
+        return;
+      }
 
-        // Filter out expired connections on the frontend as well
-        const validConnections = (result.data || []).filter((connection) => {
-          if (
-            connection.chatTimeRemaining &&
-            connection.chatTimeRemaining <= 0
-          ) {
-            console.log(
-              `Filtering out expired connection: ${connection.matchId}`
-            );
-            return false;
-          }
-          return true;
-        });
+      try {
+        setConnectionsLoading(true);
 
-        setActiveConnections(validConnections);
-
-        // Show message if connections were filtered out
-        if (result.data.length > validConnections.length) {
-          const expiredCount = result.data.length - validConnections.length;
-          toast.info(`${expiredCount} expired connection(s) removed`);
+        // Clear cache if force refresh is requested
+        if (forceRefresh) {
+          rideBuddyService.clearCache && rideBuddyService.clearCache();
         }
-      }
-    } catch (error) {
-      console.error("Error loading connections:", error);
-      toast.error("Failed to load connections");
-    }
-  }, []);
 
-  // Clean up expired sent requests
+        // Use the correct method name from the old version
+        const result = await rideBuddyService.getMatches();
+        if (result.success) {
+          console.log("Loaded connections:", result.data);
+          console.log(
+            "Connection details:",
+            result.data.map((conn) => ({
+              matchId: conn.matchId,
+              partnerName: conn.partner?.name,
+              partnerPhone: conn.partner?.phone,
+              hasPhone: !!conn.partner?.phone,
+            }))
+          );
+
+          // Filter out expired connections and update time remaining
+          const validConnections = (result.data || [])
+            .filter((connection) => {
+              if (isConnectionExpired(connection)) {
+                console.log(
+                  `Filtering out expired connection: ${connection.matchId} (15 minutes elapsed)`
+                );
+                return false;
+              }
+              return true;
+            })
+            .map((connection) => ({
+              ...connection,
+              chatTimeRemaining: getConnectionTimeRemaining(connection),
+            }));
+
+          console.log(
+            `📊 Server returned ${result.data?.length || 0} connections, ${
+              validConnections.length
+            } are still valid`
+          );
+
+          setActiveConnections(validConnections);
+          setConnectionsLoaded(true);
+
+          // Show message if connections were filtered out
+          if (result.data.length > validConnections.length) {
+            const expiredCount = result.data.length - validConnections.length;
+            toast.info(`${expiredCount} expired connection(s) removed`);
+          }
+        } else {
+          console.log("⚠️ Failed to load connections:", result.error);
+          // Don't clear existing connections on error, just mark as loaded
+          setConnectionsLoaded(true);
+        }
+      } catch (error) {
+        console.error("Error loading connections:", error);
+        toast.error("Failed to load connections");
+        setConnectionsLoaded(true);
+      } finally {
+        setConnectionsLoading(false);
+      }
+    },
+    [connectionsLoading, isConnectionExpired, getConnectionTimeRemaining]
+  );
+
+  // Clean up expired sent requests and connections
   useEffect(() => {
     const cleanupInterval = setInterval(() => {
       const now = Date.now();
-      const expiredIds = [];
 
+      // Clean up expired sent requests
+      const expiredIds = [];
       sentRequestTimes.forEach((sentTime, userId) => {
         if (now - sentTime > 10 * 60 * 1000) {
           // 10 minutes
@@ -215,10 +342,35 @@ const RideBuddy = () => {
           return newMap;
         });
       }
+
+      // Clean up expired connections
+      setActiveConnections((prev) => {
+        const validConnections = prev.filter((connection) => {
+          if (isConnectionExpired(connection)) {
+            console.log(
+              `🧹 Removing expired connection: ${connection.matchId} (15 minutes elapsed)`
+            );
+            return false;
+          }
+          return true;
+        });
+
+        // Update remaining time for valid connections
+        const updatedConnections = validConnections.map((connection) => ({
+          ...connection,
+          chatTimeRemaining: getConnectionTimeRemaining(connection),
+        }));
+
+        // Only update if there were changes
+        return updatedConnections.length !== prev.length ||
+          JSON.stringify(updatedConnections) !== JSON.stringify(prev)
+          ? updatedConnections
+          : prev;
+      });
     }, 60000); // Check every minute
 
     return () => clearInterval(cleanupInterval);
-  }, [sentRequestTimes]);
+  }, [sentRequestTimes, isConnectionExpired, getConnectionTimeRemaining]);
 
   // Auth guard will handle authentication check
 
@@ -259,7 +411,7 @@ const RideBuddy = () => {
           } else {
             toast.error("Authentication failed. Please sign in again.");
             authService.clearTokens();
-            navigate("/signin");
+            // Auth guard will handle modal opening
           }
         });
 
@@ -294,21 +446,20 @@ const RideBuddy = () => {
       } else {
         console.error("No authentication token found");
         toast.error("Authentication required. Please sign in again.");
-        navigate("/signin");
+        // Auth guard will handle modal opening
         return;
       }
 
-      // Load initial data with force refresh
+      // Load initial data with force refresh - ONLY ONCE on mount
       loadRequests();
-      loadConnections(true); // Force refresh to bypass cache
 
-      // Retry loading requests after a short delay to ensure they're loaded
+      // Load connections with a slight delay to allow saved connections to render first
       setTimeout(() => {
-        if (incomingRequests.length === 0 && outgoingRequests.length === 0) {
-          console.log("🔄 Retrying initial load of requests...");
-          loadRequests();
-        }
-      }, 2000);
+        loadConnections(true); // Force refresh to get latest data from server
+      }, 100);
+
+      // Remove the retry logic that was causing repeated calls
+      // The socket listeners will handle real-time updates
 
       // Set up real-time notification listeners
       socketService.on("ride_buddy_new_request", (data) => {
@@ -366,28 +517,11 @@ const RideBuddy = () => {
           // Switch to connections tab to show the match
           setActiveTab("connections");
 
-          // Add to active connections immediately for sender
-          if (data.matchId && data.chatId) {
-            const connection = {
-              matchId: data.matchId,
-              chatId: data.chatId,
-              partner: {
-                id: data.responderId,
-                name: data.responderName,
-                phone: data.responderPhone,
-              },
-              routeDetails: data.routeDetails,
-              estimatedSharedFare: data.estimatedSharedFare,
-              createdAt: new Date().toISOString(),
-              chatTimeRemaining: 10 * 60 * 1000, // 10 minutes
-            };
-
-            console.log(
-              "📞 Created connection with partner data:",
-              connection.partner
-            );
-            setActiveConnections((prev) => [connection, ...prev]);
-          }
+          // Don't add connection here - let ride_buddy_new_match handle it
+          // This prevents duplicate connections for the sender
+          console.log(
+            "✅ Request accepted, waiting for new_match event to add connection"
+          );
 
           // Reload connections with delay to ensure backend processing is complete
           setTimeout(() => loadConnections(true), 500);
@@ -491,16 +625,26 @@ const RideBuddy = () => {
           clearTimeout(loadRequestsTimeout);
         }
       };
+    } else {
+      // Clear saved connections when user is not authenticated
+      try {
+        localStorage.removeItem("rideBuddy_activeConnections");
+        setActiveConnections([]);
+        setConnectionsLoaded(false);
+      } catch (error) {
+        console.error("Error clearing saved connections:", error);
+      }
     }
   }, [
     activeChatId,
-    isAuthenticated,
-    user,
     activeTab,
-    loadRequestsTimeout,
-    loadRequests,
     incomingRequests,
-    outgoingRequests.length,
+    isAuthenticated,
+    loadConnections,
+    loadRequests,
+    loadRequestsTimeout,
+    navigate,
+    user,
   ]);
 
   const handleSearch = async (e) => {
@@ -680,6 +824,7 @@ const RideBuddy = () => {
     // Prevent multiple clicks on the same request
     if (processingRequests.has(requestId)) {
       console.log(`Request ${requestId} is already being processed`);
+      toast.info("Request is already being processed...");
       return;
     }
 
@@ -694,14 +839,16 @@ const RideBuddy = () => {
       );
       if (!requestToProcess) {
         console.error(`Request ${requestId} not found in incoming requests`);
+        toast.error("Request not found. It may have already been processed.");
         return;
       }
 
       console.log(`📋 Processing request:`, requestToProcess);
 
-      // Immediately remove from UI to prevent double-clicking
-      setIncomingRequests((prev) => prev.filter((r) => r._id !== requestId));
-      console.log(`🗑️ Removed request ${requestId} from UI`);
+      // Show loading state
+      toast.info(
+        `${action === "accepted" ? "Accepting" : "Declining"} request...`
+      );
 
       if (action === "accepted") {
         console.log(`✅ Calling acceptRequest for ${requestId}`);
@@ -709,6 +856,11 @@ const RideBuddy = () => {
         console.log(`📡 Accept result:`, result);
 
         if (result.success) {
+          // Remove from UI after successful processing
+          setIncomingRequests((prev) =>
+            prev.filter((r) => r._id !== requestId)
+          );
+
           // Add to active connections immediately for better UX
           const connection = {
             matchId: result.data.matchId,
@@ -732,8 +884,7 @@ const RideBuddy = () => {
         } else {
           console.error(`❌ Accept failed:`, result.error);
           toast.error(result.error || "Failed to accept request");
-          // Restore the request to UI if failed
-          setIncomingRequests((prev) => [requestToProcess, ...prev]);
+          // Keep the request in UI if failed
         }
       } else {
         console.log(`❌ Calling declineRequest for ${requestId}`);
@@ -741,23 +892,33 @@ const RideBuddy = () => {
         console.log(`📡 Decline result:`, result);
 
         if (result.success) {
+          // Remove from UI after successful processing
+          setIncomingRequests((prev) =>
+            prev.filter((r) => r._id !== requestId)
+          );
           toast.success("Request declined");
         } else {
           console.error(`❌ Decline failed:`, result.error);
           toast.error(result.error || "Failed to decline request");
-          // Restore the request to UI if failed
-          setIncomingRequests((prev) => [requestToProcess, ...prev]);
+          // Keep the request in UI if failed
         }
       }
     } catch (error) {
       console.error(`💥 Error responding to request ${requestId}:`, error);
-      toast.error("Failed to respond to request");
-      // Restore the request to UI on error
-      const requestToProcess = incomingRequests.find(
-        (r) => r._id === requestId
-      );
-      if (requestToProcess) {
-        setIncomingRequests((prev) => [requestToProcess, ...prev]);
+
+      // Show specific error messages
+      if (error.message.includes("Network")) {
+        toast.error(
+          "Network error. Please check your connection and try again."
+        );
+      } else if (error.message.includes("Token")) {
+        toast.error("Session expired. Please sign in again.");
+      } else if (error.message.includes("404")) {
+        toast.error("Request not found. It may have already been processed.");
+        // Remove from UI if request doesn't exist
+        setIncomingRequests((prev) => prev.filter((r) => r._id !== requestId));
+      } else {
+        toast.error("Failed to respond to request. Please try again.");
       }
     } finally {
       // Remove from processing set
@@ -1235,11 +1396,19 @@ const RideBuddy = () => {
               )}
 
               {/* Active Connections */}
-              {activeConnections.length > 0 && (
+              {(activeConnections.length > 0 || connectionsLoading) && (
                 <div className="card">
-                  <h3 className="text-xl font-bold text-white mb-6 text-readable">
-                    Your Connections ({activeConnections.length})
-                  </h3>
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-xl font-bold text-white text-readable">
+                      Your Connections ({activeConnections.length})
+                    </h3>
+                    {connectionsLoading && (
+                      <div className="flex items-center text-sm text-gray-400">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-sawaari-yellow mr-2"></div>
+                        Updating...
+                      </div>
+                    )}
+                  </div>
                   <div className="grid gap-4">
                     {activeConnections.map((connection) => (
                       <div
@@ -1308,13 +1477,22 @@ const RideBuddy = () => {
                               {Math.ceil(connection.chatTimeRemaining / 60000)}{" "}
                               min left)
                             </button>
+                          ) : connection.chatTimeRemaining === -1 ? (
+                            <div className="px-4 py-2 bg-orange-600 text-white rounded-lg text-center">
+                              <div className="text-sm font-medium">
+                                Chat Expired
+                              </div>
+                              <div className="text-xs">
+                                Contact details available
+                              </div>
+                            </div>
                           ) : (
                             <button
                               disabled
                               className="px-4 py-2 bg-gray-600 text-gray-400 rounded-lg cursor-not-allowed"
-                              title="Chat session has expired"
+                              title="Connection has completely expired"
                             >
-                              Chat Expired
+                              Connection Expired
                             </button>
                           )}
                         </div>
@@ -1357,9 +1535,28 @@ const RideBuddy = () => {
                           </div>
                         )}
 
-                        <div className="mt-2 text-xs text-gray-400">
-                          Connected:{" "}
-                          {new Date(connection.createdAt).toLocaleDateString()}
+                        <div className="mt-2 flex items-center justify-between text-xs text-gray-400">
+                          <span>
+                            Connected:{" "}
+                            {new Date(
+                              connection.createdAt
+                            ).toLocaleDateString()}
+                          </span>
+                          {connection.chatTimeRemaining > 0 ? (
+                            <span className="text-green-400 font-medium">
+                              💬 Chat:{" "}
+                              {Math.ceil(connection.chatTimeRemaining / 60000)}{" "}
+                              min left
+                            </span>
+                          ) : connection.chatTimeRemaining === -1 ? (
+                            <span className="text-orange-400 font-medium">
+                              📞 Contact details available
+                            </span>
+                          ) : (
+                            <span className="text-red-400 font-medium">
+                              ⏰ Connection expired
+                            </span>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -1367,31 +1564,63 @@ const RideBuddy = () => {
                 </div>
               )}
 
-              {/* Empty State */}
+              {/* Loading State */}
+              {(requestsLoading || connectionsLoading) &&
+                incomingRequests.length === 0 &&
+                activeConnections.length === 0 && (
+                  <div className="card text-center">
+                    <div className="flex items-center justify-center p-8">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sawaari-yellow"></div>
+                      <span className="ml-4 text-gray-400 text-lg">
+                        Loading your connections...
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+              {/* Empty State - Only show when not loading and data is loaded */}
               {incomingRequests.length === 0 &&
                 activeConnections.length === 0 &&
                 !requestsLoading &&
-                requestsLoaded && (
+                !connectionsLoading &&
+                requestsLoaded &&
+                connectionsLoaded && (
                   <div className="card text-center">
                     <div className="text-6xl mb-4">👥</div>
                     <h3 className="text-xl font-bold text-white mb-2 text-readable">
                       No Connections Yet
                     </h3>
-                    <p className="text-gray-300 text-readable-secondary">
+                    <p className="text-gray-300 text-readable-secondary mb-4">
                       Start by searching for ride buddies or wait for incoming
                       requests.
                     </p>
-                    <button
-                      onClick={() => {
-                        console.log("🔄 Manual refresh triggered");
-                        loadRequests();
-                        loadConnections(true);
-                        toast.info("Data refreshed!");
-                      }}
-                      className="mt-4 px-6 py-2 bg-sawaari-yellow text-black rounded-lg hover:bg-sawaari-yellow/80 transition-colors"
-                    >
-                      Refresh Data
-                    </button>
+                    <div className="space-y-3">
+                      <button
+                        onClick={() => setActiveTab("search")}
+                        className="w-full px-6 py-3 bg-gradient-to-r from-sawaari-yellow to-sawaari-green text-black rounded-lg hover:shadow-lg transition-all duration-300 font-semibold"
+                      >
+                        🔍 Search for Ride Buddies
+                      </button>
+                      <button
+                        onClick={() => {
+                          console.log("🔄 Manual refresh triggered");
+                          loadRequests();
+                          loadConnections(true);
+                          toast.info("Refreshing your data...");
+                        }}
+                        className="w-full px-6 py-2 bg-neutral-700 text-white rounded-lg hover:bg-neutral-600 transition-colors"
+                        disabled={requestsLoading || connectionsLoading}
+                      >
+                        {requestsLoading || connectionsLoading ? (
+                          <>
+                            <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            Refreshing...
+                          </>
+                        ) : (
+                          "🔄 Refresh Data"
+                        )}
+                      </button>
+                    </div>
                   </div>
                 )}
             </div>

@@ -3,7 +3,8 @@ class GeoHotspotService {
   constructor() {
     this.baseURL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
     this.cache = new Map();
-    this.cacheTimeout = 5 * 60 * 1000; // 5 minutes cache
+    this.cacheTimeout = 15 * 60 * 1000; // 15 minutes cache (increased)
+    this.pendingRequests = new Map(); // Track pending requests to prevent duplicates
   }
 
   // Generate cache key for bounds
@@ -32,7 +33,7 @@ class GeoHotspotService {
 
       // Return cached data if valid
       if (this.isCacheValid(cachedData)) {
-        if (process.env.NODE_ENV === "development") {
+        if (import.meta.env.DEV) {
           console.log("📦 Using cached hotspots for bounds");
         }
         return {
@@ -41,34 +42,29 @@ class GeoHotspotService {
         };
       }
 
-      if (process.env.NODE_ENV === "development") {
+      // Check if there's already a pending request for this key
+      if (this.pendingRequests.has(cacheKey)) {
+        if (import.meta.env.DEV) {
+          console.log("⏳ Request already pending, waiting for result");
+        }
+        return await this.pendingRequests.get(cacheKey);
+      }
+
+      if (import.meta.env.DEV) {
         console.log("🌐 Fetching hotspots for bounds from API");
       }
 
-      const response = await fetch(`${this.baseURL}/api/hotspots/bounds`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ bounds, zoom }),
-      });
+      // Create the request promise and store it
+      const requestPromise = this._fetchHotspotsBounds(bounds, zoom, cacheKey);
+      this.pendingRequests.set(cacheKey, requestPromise);
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || "Failed to fetch hotspots");
+      try {
+        const result = await requestPromise;
+        return result;
+      } finally {
+        // Clean up pending request
+        this.pendingRequests.delete(cacheKey);
       }
-
-      // Cache the result
-      this.cache.set(cacheKey, {
-        data: result,
-        timestamp: Date.now(),
-      });
-
-      return {
-        ...result,
-        cached: false,
-      };
     } catch (error) {
       console.error("Error fetching hotspots by bounds:", error);
       return {
@@ -77,6 +73,34 @@ class GeoHotspotService {
         data: [],
       };
     }
+  }
+
+  // Private method to handle the actual API call
+  async _fetchHotspotsBounds(bounds, zoom, cacheKey) {
+    const response = await fetch(`${this.baseURL}/api/hotspots/bounds`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ bounds, zoom }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || "Failed to fetch hotspots");
+    }
+
+    // Cache the result
+    this.cache.set(cacheKey, {
+      data: result,
+      timestamp: Date.now(),
+    });
+
+    return {
+      ...result,
+      cached: false,
+    };
   }
 
   // Get hotspots near a specific location
@@ -158,8 +182,9 @@ class GeoHotspotService {
   // Clear cache (useful for forced refresh)
   clearCache() {
     this.cache.clear();
+    this.pendingRequests.clear(); // Also clear pending requests
     if (process.env.NODE_ENV === "development") {
-      console.log("🗑️ Hotspot cache cleared");
+      console.log("🗑️ Hotspot cache and pending requests cleared");
     }
   }
 

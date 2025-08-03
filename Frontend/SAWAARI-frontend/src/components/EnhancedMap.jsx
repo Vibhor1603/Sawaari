@@ -1,5 +1,6 @@
+/* eslint-disable react/prop-types */
 // Enhanced Map component with geolocation-based hotspot loading
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MapContainer, TileLayer, useMap, useMapEvents } from "react-leaflet";
 import { useMapHotspots } from "../hooks/useMapHotspots";
 import HotspotMarkers from "../HotspotMarkers";
@@ -29,7 +30,7 @@ function MapEventHandler({ onBoundsChange, onLocationChange }) {
         };
 
         onBoundsChange(boundsObj, zoom);
-      }, 1000); // Increased delay to 1 second
+      }, 3000); // Much longer delay to prevent spam
     },
 
     zoomend: () => {
@@ -50,7 +51,7 @@ function MapEventHandler({ onBoundsChange, onLocationChange }) {
         };
 
         onBoundsChange(boundsObj, zoom);
-      }, 500); // Shorter delay for zoom as it's less frequent
+      }, 2000); // Longer delay for zoom too
     },
 
     locationfound: (e) => {
@@ -257,7 +258,7 @@ export default function EnhancedMap({
       )}
 
       {/* Add CSS for spinner animation */}
-      <style jsx>{`
+      <style>{`
         @keyframes spin {
           0% {
             transform: rotate(0deg);

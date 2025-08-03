@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { useAuthModal } from "./contexts/AuthModalContext";
 import toast from "./utils/toast";
 
 const ForgotPassword = () => {
@@ -61,7 +62,7 @@ const ForgotPassword = () => {
       const response = await fetch(
         `${
           import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"
-        }/forgot-password/send-otp`,
+        }/api/auth/forgot-password/send-otp`,
         {
           method: "POST",
           headers: {
@@ -112,7 +113,7 @@ const ForgotPassword = () => {
       const response = await fetch(
         `${
           import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"
-        }/forgot-password/verify-otp`,
+        }/api/auth/forgot-password/verify-otp`,
         {
           method: "POST",
           headers: {
@@ -169,7 +170,7 @@ const ForgotPassword = () => {
       const response = await fetch(
         `${
           import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"
-        }/forgot-password/reset`,
+        }/api/auth/forgot-password/reset`,
         {
           method: "POST",
           headers: {
@@ -294,7 +295,7 @@ const ForgotPassword = () => {
                   className="form-input h-11"
                 />
                 <p className="text-xs text-gray-200 mt-1">
-                  We'll send you an OTP to reset your password
+                  We&apos;ll send you an OTP to reset your password
                 </p>
               </div>
 
