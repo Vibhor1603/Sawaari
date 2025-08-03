@@ -120,10 +120,11 @@ const cleanupExpiredPendingRequests = async () => {
 setInterval(async () => {
   const cleanedUpExpired = await cleanupExpiredRequests();
   const cleanedUpPending = await cleanupExpiredPendingRequests();
+  const cleanedUpMatches = await cleanupExpiredMatches();
 
-  if (cleanedUpExpired > 0 || cleanedUpPending > 0) {
+  if (cleanedUpExpired > 0 || cleanedUpPending > 0 || cleanedUpMatches > 0) {
     console.log(
-      `🧹 Cleaned up ${cleanedUpExpired} expired requests and ${cleanedUpPending} expired pending requests`
+      `🧹 Cleaned up ${cleanedUpExpired} expired requests, ${cleanedUpPending} expired pending requests, and ${cleanedUpMatches} expired matches`
     );
   }
 }, 60000); // Run every minute
@@ -966,6 +967,42 @@ const debugUserData = async (req, res) => {
 };
 
 /**
+ * Clean up expired matches from database
+ */
+const cleanupExpiredMatches = async () => {
+  try {
+    const now = new Date();
+    const TOTAL_CONNECTION_DURATION = 15 * 60 * 1000; // 15 minutes total
+
+    // Find matches that are older than 15 minutes
+    const expiredMatches = await findRideBuddyMatches({
+      status: "active",
+      createdAt: { $lt: new Date(now.getTime() - TOTAL_CONNECTION_DURATION) },
+    });
+
+    console.log(
+      `🧹 Found ${expiredMatches.length} expired matches to clean up`
+    );
+
+    // Update expired matches to "expired" status
+    for (const match of expiredMatches) {
+      await updateRideBuddyMatch(match._id, {
+        status: "expired",
+        expiredAt: now,
+      });
+      console.log(
+        `🧹 Expired match ${match._id} between users ${match.user1Id} and ${match.user2Id}`
+      );
+    }
+
+    return expiredMatches.length;
+  } catch (error) {
+    console.error("Error cleaning up expired matches:", error);
+    return 0;
+  }
+};
+
+/**
  * GET /api/ride-buddy/matches
  * Get confirmed matches for the authenticated user with caching
  */
@@ -973,17 +1010,30 @@ const getMatches = async (req, res) => {
   try {
     const userId = req.user.userId;
 
+    // Clean up expired matches first
+    await cleanupExpiredMatches();
+
     // Check cache first
     const cached = rideBuddyCacheService.getMatches(userId);
     if (cached) {
-      return res.status(200).json({
-        success: true,
-        message: "Matches retrieved successfully (cached)",
-        data: cached,
-        count: cached.length,
-        cached: true,
-        timestamp: new Date().toISOString(),
+      // Filter out expired connections from cache
+      const validCached = cached.filter((match) => {
+        const connectionTime = new Date(match.createdAt).getTime();
+        const now = Date.now();
+        const totalDuration = 15 * 60 * 1000; // 15 minutes
+        return now - connectionTime <= totalDuration;
       });
+
+      if (validCached.length > 0) {
+        return res.status(200).json({
+          success: true,
+          message: "Matches retrieved successfully (cached)",
+          data: validCached,
+          count: validCached.length,
+          cached: true,
+          timestamp: new Date().toISOString(),
+        });
+      }
     }
 
     // Find matches where user is either user1 or user2
