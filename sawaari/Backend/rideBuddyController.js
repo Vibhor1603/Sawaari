@@ -119,6 +119,7 @@ const cleanupExpiredPendingRequests = async () => {
 // Start periodic cleanup
 setInterval(async () => {
   const cleanedUpExpired = await cleanupExpiredRequests();
+  const cleanedUpSearches = await cleanupExpiredSearches();
   const cleanedUpPending = await cleanupExpiredPendingRequests();
   const cleanedUpMatches = await cleanupExpiredMatches();
 
@@ -375,6 +376,9 @@ const sendRequest = async (req, res) => {
     }
 
     // Check for any existing requests between these users (pending, accepted, or declined)
+    // Also check for very recent requests (within last 30 seconds) to prevent race conditions
+    const thirtySecondsAgo = new Date(Date.now() - 30 * 1000);
+
     const existingRequests = await findRideBuddyRequests({
       $or: [
         {
@@ -387,6 +391,24 @@ const sendRequest = async (req, res) => {
         },
       ],
     });
+
+    // Also check for very recent requests from the same sender to prevent rapid-fire duplicates
+    const recentRequests = await findRideBuddyRequests({
+      senderId: new ObjectId(senderId),
+      receiverId: new ObjectId(receiverId),
+      createdAt: { $gt: thirtySecondsAgo },
+    });
+
+    if (recentRequests.length > 0) {
+      console.log(
+        `🚫 Blocking rapid duplicate request - found ${recentRequests.length} recent requests`
+      );
+      return res.status(429).json({
+        success: false,
+        error: "Too many requests",
+        message: "Please wait before sending another request to this user",
+      });
+    }
 
     console.log(
       `🔍 Found ${existingRequests.length} existing requests between users ${senderId} and ${receiverId}`
@@ -546,6 +568,10 @@ const sendRequest = async (req, res) => {
       message: message.trim(),
       expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes from now
     };
+
+    // Add a unique identifier to prevent race condition duplicates
+    const requestKey = `${senderId}-${receiverId}-${Date.now()}`;
+    requestData.requestKey = requestKey;
 
     // Save request to database
     const result = await createRideBuddyRequest(requestData);
@@ -1255,6 +1281,21 @@ const getRequests = async (req, res) => {
       ],
     });
 
+    console.log(
+      `📥 Found ${incomingRequests.length} incoming requests for user ${userId}`
+    );
+
+    // Check for duplicates in incoming requests
+    const incomingIds = incomingRequests.map((req) => req._id.toString());
+    const uniqueIncomingIds = [...new Set(incomingIds)];
+    if (incomingIds.length !== uniqueIncomingIds.length) {
+      console.warn(
+        `⚠️ Found ${
+          incomingIds.length - uniqueIncomingIds.length
+        } duplicate incoming requests in database!`
+      );
+    }
+
     // Find outgoing requests (where user is sender) - exclude expired pending requests
     const outgoingRequests = await findRideBuddyRequests({
       senderId: new ObjectId(userId),
@@ -1266,8 +1307,23 @@ const getRequests = async (req, res) => {
       ],
     });
 
+    // Deduplicate incoming requests by _id (server-side safety)
+    const uniqueIncomingRequests = incomingRequests.filter(
+      (request, index, self) =>
+        index ===
+        self.findIndex((r) => r._id.toString() === request._id.toString())
+    );
+
+    if (uniqueIncomingRequests.length !== incomingRequests.length) {
+      console.warn(
+        `🧹 Removed ${
+          incomingRequests.length - uniqueIncomingRequests.length
+        } duplicate incoming requests`
+      );
+    }
+
     // Format incoming requests
-    const formattedIncoming = incomingRequests.map((request) => ({
+    const formattedIncoming = uniqueIncomingRequests.map((request) => ({
       _id: request._id,
       senderId: request.senderId,
       senderName: request.senderName,
@@ -1280,8 +1336,23 @@ const getRequests = async (req, res) => {
       expiresAt: request.expiresAt,
     }));
 
+    // Deduplicate outgoing requests by _id (server-side safety)
+    const uniqueOutgoingRequests = outgoingRequests.filter(
+      (request, index, self) =>
+        index ===
+        self.findIndex((r) => r._id.toString() === request._id.toString())
+    );
+
+    if (uniqueOutgoingRequests.length !== outgoingRequests.length) {
+      console.warn(
+        `🧹 Removed ${
+          outgoingRequests.length - uniqueOutgoingRequests.length
+        } duplicate outgoing requests`
+      );
+    }
+
     // Format outgoing requests
-    const formattedOutgoing = outgoingRequests.map((request) => ({
+    const formattedOutgoing = uniqueOutgoingRequests.map((request) => ({
       _id: request._id,
       receiverId: request.receiverId,
       receiverName: request.receiverName,
@@ -1373,6 +1444,98 @@ const getActiveChats = async (req, res) => {
   }
 };
 
+/**
+ * Clean up expired searches (older than 10 minutes)
+ */
+const cleanupExpiredSearches = async () => {
+  try {
+    const now = new Date();
+    console.log("🧹 Cleaning up expired searches at:", now);
+
+    // Find and remove expired searches
+    const expiredSearches = await findRideBuddySearches({
+      status: "active",
+      expiresAt: { $lt: now },
+    });
+
+    if (expiredSearches.length > 0) {
+      // Update expired searches to inactive status
+      for (const search of expiredSearches) {
+        await updateRideBuddySearch(search._id, {
+          status: "expired",
+          expiredAt: now,
+        });
+      }
+
+      console.log(`✅ Cleaned up ${expiredSearches.length} expired searches`);
+      return expiredSearches.length;
+    }
+
+    return 0;
+  } catch (error) {
+    console.error("❌ Error cleaning up expired searches:", error);
+    return 0;
+  }
+};
+
+/**
+ * Clean up expired requests API endpoint (older than 10 minutes)
+ */
+const cleanupExpiredRequestsAPI = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+
+    console.log("🧹 Cleaning up expired requests for user:", userId);
+    console.log("🕐 Cutoff time:", tenMinutesAgo);
+
+    // Find and remove expired requests
+    const expiredRequests = await RideBuddyRequest.find({
+      $or: [{ senderId: userId }, { receiverId: userId }],
+      status: "pending",
+      createdAt: { $lt: tenMinutesAgo },
+    });
+
+    console.log(`🗑️ Found ${expiredRequests.length} expired requests`);
+
+    if (expiredRequests.length > 0) {
+      // Remove expired requests
+      await RideBuddyRequest.deleteMany({
+        _id: { $in: expiredRequests.map((req) => req._id) },
+      });
+
+      // TODO: Emit socket events to notify users when socket service is properly configured
+      // For now, the frontend will handle expiration checking locally
+      console.log(
+        `📡 Would notify ${expiredRequests.length} users about expired requests`
+      );
+
+      console.log(`✅ Cleaned up ${expiredRequests.length} expired requests`);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Cleaned up ${expiredRequests.length} expired requests`,
+      data: {
+        cleanedCount: expiredRequests.length,
+        expiredRequests: expiredRequests.map((req) => ({
+          id: req._id,
+          senderId: req.senderId,
+          receiverId: req.receiverId,
+          createdAt: req.createdAt,
+        })),
+      },
+    });
+  } catch (error) {
+    console.error("❌ Error cleaning up expired requests:", error);
+    res.status(500).json({
+      success: false,
+      error: "Cleanup failed",
+      message: "Unable to clean up expired requests",
+    });
+  }
+};
+
 module.exports = {
   searchRideBuddies,
   sendRequest,
@@ -1382,4 +1545,5 @@ module.exports = {
   getRequests,
   getActiveChats,
   debugUserData,
+  cleanupExpiredRequestsAPI,
 };

@@ -10,6 +10,7 @@ const { saveRideRequest, getAllRideRequests } = require("./database");
 
 const { generateToken, hashPassword, comparePassword } = require("./auth");
 const { JWTService } = require("./Backend/jwtToken");
+const { ObjectId } = require("mongodb");
 
 // Home endpoint
 async function home(req, res) {
@@ -67,26 +68,26 @@ async function signup(req, res) {
 
     // Hash password and create user
     const hashedPassword = await hashPassword(password);
-    
+
     console.log("📞 Creating user with phone data:", {
       name: name.trim(),
       email: email.toLowerCase().trim(),
       phone: phone.trim(),
       hasPhone: !!phone.trim(),
-      phoneLength: phone.trim().length
+      phoneLength: phone.trim().length,
     });
-    
+
     const result = await createUser({
       name: name.trim(),
       email: email.toLowerCase().trim(),
       phone: phone.trim(),
       password: hashedPassword,
     });
-    
+
     console.log("📞 User creation result:", {
       success: result.success,
       insertedId: result.insertedId,
-      message: result.message
+      message: result.message,
     });
 
     res.status(201).json({
@@ -141,9 +142,9 @@ async function signin(req, res) {
       email: user.email,
       phone: user.phone,
       hasPhone: !!user.phone,
-      phoneLength: user.phone ? user.phone.length : 0
+      phoneLength: user.phone ? user.phone.length : 0,
     });
-    
+
     const tokenPair = JWTService.generateTokenPair(user);
 
     res.json({
@@ -279,7 +280,7 @@ async function submitFeedback(req, res) {
 async function debugUserDatabase(req, res) {
   try {
     const { email } = req.query;
-    
+
     if (!email) {
       return res.status(400).json({
         success: false,
@@ -288,7 +289,7 @@ async function debugUserDatabase(req, res) {
     }
 
     const user = await findUserByEmail(email);
-    
+
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -306,14 +307,212 @@ async function debugUserDatabase(req, res) {
         hasPhone: !!user.phone,
         phoneLength: user.phone ? user.phone.length : 0,
         createdAt: user.createdAt,
-        isActive: user.isActive
-      }
+        isActive: user.isActive,
+      },
     });
   } catch (error) {
     console.error("Debug user database error:", error);
     res.status(500).json({
       success: false,
       message: "Server error during debug",
+    });
+  }
+}
+
+// Get user profile
+async function getUserProfile(req, res) {
+  try {
+    const userId = req.user.userId;
+
+    // Find user by ID
+    const { dbService } = require("./Backend/database");
+    const collection = await dbService.getCollection("users");
+    const user = await collection.findOne({
+      _id: new ObjectId(userId),
+      isActive: true,
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Return user profile (excluding password)
+    res.status(200).json({
+      success: true,
+      data: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        createdAt: user.createdAt,
+      },
+      message: "Profile retrieved successfully",
+    });
+  } catch (error) {
+    console.error("Get profile error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to retrieve profile",
+    });
+  }
+}
+
+// Update user profile
+async function updateUserProfile(req, res) {
+  try {
+    const userId = req.user.userId;
+    const { name, phone } = req.body;
+
+    // Validate input
+    if (!name || !name.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Name is required",
+      });
+    }
+
+    // Validate phone number if provided
+    if (phone && phone.trim()) {
+      const phoneRegex = /^[+]?[\d\s\-()]{10,15}$/;
+      if (!phoneRegex.test(phone.trim())) {
+        return res.status(400).json({
+          success: false,
+          message: "Please enter a valid phone number",
+        });
+      }
+
+      // Check if phone number is already taken by another user
+      const { dbService } = require("./Backend/database");
+      const collection = await dbService.getCollection("users");
+      const existingPhone = await collection.findOne({
+        phone: phone.trim(),
+        _id: { $ne: new ObjectId(userId) },
+        isActive: true,
+      });
+
+      if (existingPhone) {
+        return res.status(400).json({
+          success: false,
+          message: "Phone number is already registered with another account",
+        });
+      }
+    }
+
+    // Update user profile
+    const { dbService } = require("./Backend/database");
+    const collection = await dbService.getCollection("users");
+    const result = await collection.updateOne(
+      { _id: new ObjectId(userId) },
+      {
+        $set: {
+          name: name.trim(),
+          phone: phone ? phone.trim() : "",
+          updatedAt: new Date(),
+        },
+      }
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+    });
+  } catch (error) {
+    console.error("Update profile error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to update profile",
+    });
+  }
+}
+
+// Change password for authenticated users
+async function changePassword(req, res) {
+  try {
+    const userId = req.user.userId;
+    const { currentPassword, newPassword } = req.body;
+
+    // Validate input
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Current password and new password are required",
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: "New password must be at least 6 characters long",
+      });
+    }
+
+    // Find user
+    const { dbService } = require("./Backend/database");
+    const collection = await dbService.getCollection("users");
+    const user = await collection.findOne({
+      _id: new ObjectId(userId),
+      isActive: true,
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Verify current password
+    const isCurrentPasswordValid = await comparePassword(
+      currentPassword,
+      user.password
+    );
+    if (!isCurrentPasswordValid) {
+      return res.status(400).json({
+        success: false,
+        message: "Current password is incorrect",
+      });
+    }
+
+    // Hash new password
+    const hashedNewPassword = await hashPassword(newPassword);
+
+    // Update password
+    const result = await collection.updateOne(
+      { _id: new ObjectId(userId) },
+      {
+        $set: {
+          password: hashedNewPassword,
+          updatedAt: new Date(),
+        },
+      }
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Failed to update password",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Password changed successfully",
+    });
+  } catch (error) {
+    console.error("Change password error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to change password",
     });
   }
 }
@@ -327,4 +526,7 @@ module.exports = {
   getHotspotsData,
   submitFeedback,
   debugUserDatabase,
+  getUserProfile,
+  updateUserProfile,
+  changePassword,
 };

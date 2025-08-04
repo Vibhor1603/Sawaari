@@ -14,6 +14,9 @@ const {
   getRideRequests,
   getHotspotsData,
   submitFeedback,
+  getUserProfile,
+  updateUserProfile,
+  changePassword,
 } = require("./controllers");
 
 // Import route calculation functions
@@ -120,6 +123,11 @@ router.get("/api/ride-buddy/requests", requireAuth, getRequests);
 router.get("/api/ride-buddy/matches", requireAuth, getMatches);
 router.delete("/api/ride-buddy/match/:id", requireAuth, endMatch);
 router.get("/api/ride-buddy/chats", requireAuth, getActiveChats);
+
+// User Profile API endpoints (protected)
+router.get("/api/user/profile", requireAuth, getUserProfile);
+router.put("/api/user/profile", requireAuth, updateUserProfile);
+router.post("/api/user/change-password", requireAuth, changePassword);
 
 // Protected routes (authentication required)
 router.post("/ridebuddy", requireAuth, submitRideRequest);

@@ -9,7 +9,7 @@ const { rideBuddyCacheService } = require("./cacheService");
  */
 class RouteMatchingService {
   constructor(options = {}) {
-    this.defaultRadius = options.defaultRadius || 10; // 10km default radius
+    this.defaultRadius = options.defaultRadius || 2; // 2km default radius
     this.minOverlapPercentage = options.minOverlapPercentage || 25; // 25% minimum overlap
     this.maxResults = options.maxResults || 50; // Maximum number of results to return
   }
@@ -252,8 +252,16 @@ class RouteMatchingService {
         }
 
         // Fallback to name-based matching when coordinates are not available
+        // For now, include all users and let the overlap calculation handle filtering
+        console.log(
+          `📍 No coordinates available for ${search.userName}, using name-based matching`
+        );
         return true; // Include all users for name-based matching
       });
+
+      console.log(
+        `🔍 After filtering: ${nearbyUsers.length} nearby users found`
+      );
 
       // Sort by proximity if coordinates are available, otherwise keep original order
       if (
@@ -413,6 +421,10 @@ class RouteMatchingService {
 
       // Calculate overlap and fare sharing for each nearby user
       const potentialMatches = [];
+
+      console.log(
+        `🔍 Processing ${nearbyUsers.length} nearby users for overlap calculation`
+      );
 
       for (const nearbyUser of nearbyUsers) {
         const overlapResult = this.calculateRouteOverlap(userRoute, nearbyUser);

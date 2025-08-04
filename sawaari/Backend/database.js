@@ -151,7 +151,7 @@ const createUser = async (userData) => {
       email: userData.email,
       phone: userData.phone,
       hasPhone: !!userData.phone,
-      phoneLength: userData.phone ? userData.phone.length : 0
+      phoneLength: userData.phone ? userData.phone.length : 0,
     });
 
     const userDoc = {
@@ -168,16 +168,16 @@ const createUser = async (userData) => {
       email: userDoc.email,
       phone: userDoc.phone,
       hasPhone: !!userDoc.phone,
-      phoneLength: userDoc.phone ? userDoc.phone.length : 0
+      phoneLength: userDoc.phone ? userDoc.phone.length : 0,
     });
 
     const result = await collection.insertOne(userDoc);
-    
+
     console.log("📞 User inserted successfully:", {
       insertedId: result.insertedId,
-      success: true
+      success: true,
     });
-    
+
     return {
       success: true,
       insertedId: result.insertedId,
@@ -193,15 +193,15 @@ const findUserByEmail = async (email) => {
       email: email.toLowerCase(),
       isActive: true,
     });
-    
+
     console.log("📞 findUserByEmail result:", {
       email: email.toLowerCase(),
       found: !!user,
       hasPhone: !!user?.phone,
       phone: user?.phone,
-      phoneLength: user?.phone ? user.phone.length : 0
+      phoneLength: user?.phone ? user.phone.length : 0,
     });
-    
+
     return user;
   });
 };
@@ -298,7 +298,7 @@ const createRideBuddySearch = async (searchData) => {
       ...searchData,
       status: "active",
       createdAt: new Date(),
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+      expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes
       lastActive: new Date(),
     };
 

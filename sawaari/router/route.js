@@ -234,6 +234,7 @@ const {
   getRequests,
   getActiveChats,
   debugUserData,
+  cleanupExpiredRequestsAPI,
 } = require("../Backend/rideBuddyController");
 
 // Import ride buddy validation schemas
@@ -290,6 +291,11 @@ router
 
 // Ride buddy chat endpoints (protected)
 router.route("/api/ride-buddy/chats").get(authenticateToken, getActiveChats);
+
+// Cleanup expired requests endpoint (protected)
+router
+  .route("/api/ride-buddy/cleanup-expired")
+  .post(authenticateToken, cleanupExpiredRequestsAPI);
 
 // ===== SECURITY API ENDPOINTS =====
 
@@ -573,14 +579,14 @@ const {
 } = require("../controller/controller");
 
 // Get user profile
-router.route("/user/profile").get(authenticateToken, getUserProfile);
+router.route("/api/user/profile").get(authenticateToken, getUserProfile);
 
 // Update user profile
-router.route("/user/profile").put(authenticateToken, updateUserProfile);
+router.route("/api/user/profile").put(authenticateToken, updateUserProfile);
 
 // Change password
 router
-  .route("/user/change-password")
+  .route("/api/user/change-password")
   .post(authenticateToken, changeUserPassword);
 
 module.exports = router;
