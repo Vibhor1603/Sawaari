@@ -7,6 +7,7 @@ import { useHotspotData } from "./useHotspotData";
 import socketService from "./services/socketService";
 import authService from "./services/authService";
 import LiveChat from "./components/LiveChat";
+import LocationSelect from "./components/LocationSelect";
 import toast from "react-hot-toast";
 
 import React from "react"; // Added missing import for React
@@ -1631,82 +1632,57 @@ const RideBuddy = () => {
 
                 <form onSubmit={handleSearch} className="space-y-4">
                   <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-sawaari-yellow mb-1 text-readable">
-                        📍 Source Location
-                      </label>
-                      <select
-                        className="w-full p-2 bg-black/30 border border-white/20 rounded-lg text-white focus:border-sawaari-yellow focus:ring-2 focus:ring-sawaari-yellow/20 focus:outline-none transition-all duration-300 text-sm"
-                        value={searchForm.source.name}
-                        onChange={(e) => {
-                          const selectedHotspot = hotspotData.find(
-                            (h) => h.name === e.target.value
-                          );
-                          setSearchForm((prev) => ({
-                            ...prev,
-                            source: {
-                              name: e.target.value,
-                              coordinates: selectedHotspot
-                                ? [
-                                    selectedHotspot.latitude,
-                                    selectedHotspot.longitude,
-                                  ]
-                                : null,
-                            },
-                          }));
-                        }}
-                        required
-                      >
-                        <option value="">Select Source</option>
-                        {locationNames.map((name, index) => (
-                          <option
-                            key={index}
-                            value={name}
-                            className="text-white bg-black"
-                          >
-                            {name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-sawaari-yellow mb-1 text-readable">
-                        🎯 Destination Location
-                      </label>
-                      <select
-                        className="w-full p-2 bg-black/30 border border-white/20 rounded-lg text-white focus:border-sawaari-yellow focus:ring-2 focus:ring-sawaari-yellow/20 focus:outline-none transition-all duration-300 text-sm"
-                        value={searchForm.destination.name}
-                        onChange={(e) => {
-                          const selectedHotspot = hotspotData.find(
-                            (h) => h.name === e.target.value
-                          );
-                          setSearchForm((prev) => ({
-                            ...prev,
-                            destination: {
-                              name: e.target.value,
-                              coordinates: selectedHotspot
-                                ? [
-                                    selectedHotspot.latitude,
-                                    selectedHotspot.longitude,
-                                  ]
-                                : null,
-                            },
-                          }));
-                        }}
-                        required
-                      >
-                        <option value="">Select Destination</option>
-                        {locationNames.map((name, index) => (
-                          <option
-                            key={index}
-                            value={name}
-                            className="text-white bg-black"
-                          >
-                            {name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                    <LocationSelect
+                      value={searchForm.source.name}
+                      onChange={(selectedName) => {
+                        const selectedHotspot = hotspotData.find(
+                          (h) => h.name === selectedName
+                        );
+                        setSearchForm((prev) => ({
+                          ...prev,
+                          source: {
+                            name: selectedName,
+                            coordinates: selectedHotspot
+                              ? [
+                                  selectedHotspot.latitude,
+                                  selectedHotspot.longitude,
+                                ]
+                              : null,
+                          },
+                        }));
+                      }}
+                      options={locationNames}
+                      placeholder="Type to search source location..."
+                      label="Source Location"
+                      icon="📍"
+                      required={true}
+                    />
+
+                    <LocationSelect
+                      value={searchForm.destination.name}
+                      onChange={(selectedName) => {
+                        const selectedHotspot = hotspotData.find(
+                          (h) => h.name === selectedName
+                        );
+                        setSearchForm((prev) => ({
+                          ...prev,
+                          destination: {
+                            name: selectedName,
+                            coordinates: selectedHotspot
+                              ? [
+                                  selectedHotspot.latitude,
+                                  selectedHotspot.longitude,
+                                ]
+                              : null,
+                          },
+                        }));
+                      }}
+                      options={locationNames}
+                      placeholder="Type to search destination location..."
+                      label="Destination Location"
+                      icon="🎯"
+                      required={true}
+                    />
 
                     {/* Search Radius Selector */}
                     <div className="md:col-span-2">

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import LocationSelect from "./components/LocationSelect";
 
 export default function RouteForm({
   source,
@@ -43,62 +44,34 @@ export default function RouteForm({
 
       <form onSubmit={handleRouteSearch} className="space-y-4">
         {/* Source Location */}
-        <div>
-          <label
-            htmlFor="source"
-            className="block text-sm font-semibold text-sawaari-yellow mb-2"
-          >
-            📍 Source Location
-          </label>
-          <select
-            className="w-full p-3 bg-black/30 border border-white/20 rounded-lg text-white focus:border-sawaari-yellow focus:ring-2 focus:ring-sawaari-yellow/20 focus:outline-none transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-            id="source"
-            value={source}
-            onChange={(e) => setSource(e.target.value)}
-            required
-            disabled={isLoadingLocations}
-          >
-            <option value="" className="text-gray-400">
-              {isLoadingLocations
-                ? "Loading locations..."
-                : "-- Select Source --"}
-            </option>
-            {locationNames.map((name, index) => (
-              <option key={index} value={name} className="text-white bg-black">
-                {name}
-              </option>
-            ))}
-          </select>
-        </div>
+        <LocationSelect
+          value={source}
+          onChange={setSource}
+          options={locationNames}
+          placeholder={
+            isLoadingLocations
+              ? "Loading locations..."
+              : "Type to search source location..."
+          }
+          label="Source Location"
+          icon="📍"
+          required={true}
+        />
 
         {/* Destination Location */}
-        <div>
-          <label
-            htmlFor="destination"
-            className="block text-sm font-semibold text-sawaari-yellow mb-2"
-          >
-            🎯 Destination Location
-          </label>
-          <select
-            className="w-full p-3 bg-black/30 border border-white/20 rounded-lg text-white focus:border-sawaari-yellow focus:ring-2 focus:ring-sawaari-yellow/20 focus:outline-none transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-            id="destination"
-            value={destination}
-            onChange={(e) => setDestination(e.target.value)}
-            required
-            disabled={isLoadingLocations}
-          >
-            <option value="" className="text-gray-400">
-              {isLoadingLocations
-                ? "Loading locations..."
-                : "-- Select Destination --"}
-            </option>
-            {locationNames.map((name, index) => (
-              <option key={index} value={name} className="text-white bg-black">
-                {name}
-              </option>
-            ))}
-          </select>
-        </div>
+        <LocationSelect
+          value={destination}
+          onChange={setDestination}
+          options={locationNames}
+          placeholder={
+            isLoadingLocations
+              ? "Loading locations..."
+              : "Type to search destination location..."
+          }
+          label="Destination Location"
+          icon="🎯"
+          required={true}
+        />
 
         {/* Submit Button */}
         <button
