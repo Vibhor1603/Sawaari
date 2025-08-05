@@ -7,7 +7,8 @@ import { useHotspotData } from "./useHotspotData";
 import socketService from "./services/socketService";
 import authService from "./services/authService";
 import LiveChat from "./components/LiveChat";
-import toast from "./utils/toast";
+import toast from "react-hot-toast";
+
 import React from "react"; // Added missing import for React
 
 const RideBuddy = () => {
@@ -16,6 +17,124 @@ const RideBuddy = () => {
   const { isAuthenticated, isLoading } = useAuthGuard(
     "Please sign in to access Ride Buddy"
   );
+
+  // Toast debouncing to prevent rapid-fire duplicate toasts
+  const lastToastRef = useRef({ message: "", timestamp: 0 });
+  const showDebouncedToast = useCallback((type, message, delay = 2000) => {
+    const now = Date.now();
+    const lastToast = lastToastRef.current;
+
+    // If same message within delay period, skip
+    if (lastToast.message === message && now - lastToast.timestamp < delay) {
+      console.log(`🚫 Skipping duplicate toast: ${message}`);
+      return;
+    }
+
+    lastToastRef.current = { message, timestamp: now };
+
+    switch (type) {
+      case "success":
+        toast.success(message);
+        break;
+      case "error":
+        toast.error(message);
+        break;
+      default:
+        toast(message);
+    }
+  }, []);
+
+  // Request expiration checker
+  const checkExpiredRequests = useCallback(() => {
+    const now = Date.now();
+    const EXPIRATION_TIME = 10 * 60 * 1000; // 10 minutes
+
+    // Check incoming requests for expiration
+    setIncomingRequests((prev) => {
+      const expired = [];
+      const valid = prev.filter((request) => {
+        const requestTime = new Date(request.createdAt).getTime();
+        const isExpired = now - requestTime > EXPIRATION_TIME;
+
+        if (isExpired) {
+          expired.push(request);
+        }
+
+        return !isExpired;
+      });
+
+      // Show toast for expired requests
+      if (expired.length > 0) {
+        console.log(`⏰ ${expired.length} incoming requests expired`);
+        showDebouncedToast(
+          "default",
+          `${expired.length} request(s) expired and were removed`
+        );
+      }
+
+      return valid;
+    });
+
+    // Check outgoing requests for expiration
+    setOutgoingRequests((prev) => {
+      const expired = [];
+      const valid = prev.filter((request) => {
+        const requestTime = new Date(request.createdAt).getTime();
+        const isExpired = now - requestTime > EXPIRATION_TIME;
+
+        if (isExpired) {
+          expired.push(request);
+        }
+
+        return !isExpired;
+      });
+
+      // Show toast for expired outgoing requests
+      if (expired.length > 0) {
+        console.log(`⏰ ${expired.length} outgoing requests expired`);
+        showDebouncedToast(
+          "error",
+          `Your request has expired. Try making a new request.`
+        );
+      }
+
+      return valid;
+    });
+
+    // Call backend cleanup periodically (every 5 minutes)
+    const lastCleanup = localStorage.getItem("lastRequestCleanup");
+    const now_timestamp = Date.now();
+    const CLEANUP_INTERVAL = 5 * 60 * 1000; // 5 minutes
+
+    if (
+      !lastCleanup ||
+      now_timestamp - parseInt(lastCleanup) > CLEANUP_INTERVAL
+    ) {
+      rideBuddyService
+        .cleanupExpiredRequests()
+        .then((result) => {
+          if (result.success) {
+            localStorage.setItem(
+              "lastRequestCleanup",
+              now_timestamp.toString()
+            );
+            console.log(
+              `✅ Backend cleanup successful: ${
+                result.data?.cleanedCount || 0
+              } requests cleaned`
+            );
+          } else {
+            console.warn("⚠️ Backend cleanup failed:", result.error);
+          }
+        })
+        .catch((error) => {
+          console.error("❌ Error calling backend cleanup:", error);
+          // Don't prevent the app from working if cleanup fails
+          // Just log the error and continue
+        });
+    }
+  }, [showDebouncedToast]);
+
   // Helper function to safely extract location name
   const getLocationName = (location) => {
     if (!location) return "Unknown";
@@ -110,6 +229,7 @@ const RideBuddy = () => {
   const [searchForm, setSearchForm] = useState({
     source: { name: "", coordinates: null },
     destination: { name: "", coordinates: null },
+    searchRadius: 2, // Default 2km radius
   });
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -132,7 +252,6 @@ const RideBuddy = () => {
   const [requestsLoading, setRequestsLoading] = useState(false);
   const [connectionsLoading, setConnectionsLoading] = useState(false);
   const [processingRequests, setProcessingRequests] = useState(new Set()); // Track requests being processed
-  const [loadRequestsTimeout, setLoadRequestsTimeout] = useState(null); // Track loadRequests timeout
   const [requestsLoaded, setRequestsLoaded] = useState(false); // Track if requests have been successfully loaded
   const [connectionsLoaded, setConnectionsLoaded] = useState(false); // Track if connections have been loaded
 
@@ -145,6 +264,10 @@ const RideBuddy = () => {
 
   // Add ref to track if component is mounted to prevent memory leaks
   const isMountedRef = useRef(true);
+  const lastLoadRequestsCallRef = useRef(0);
+  const loadRequestsCallCountRef = useRef(0);
+  const loadRequestsTimeoutRef = useRef(null);
+  const componentInitializedRef = useRef(false);
 
   // Save connections to localStorage whenever they change
   useEffect(() => {
@@ -161,35 +284,85 @@ const RideBuddy = () => {
   // Clear expired connections on component mount
   useEffect(() => {
     clearExpiredConnections();
-  }, [clearExpiredConnections]);
+  }, []); // Run only once on mount
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       isMountedRef.current = false;
+      // Clear any pending loadRequests timeout
+      if (loadRequestsTimeoutRef.current) {
+        clearTimeout(loadRequestsTimeoutRef.current);
+      }
     };
   }, []);
 
   // Define functions using useCallback to avoid hoisting issues
   const loadRequests = useCallback(async () => {
-    // Prevent multiple simultaneous calls
+    const now = Date.now();
+    const MIN_CALL_INTERVAL = 1000; // Minimum 1 second between calls
+
+    // Increment call counter for debugging
+    loadRequestsCallCountRef.current += 1;
+    const callNumber = loadRequestsCallCountRef.current;
+
+    // Prevent multiple simultaneous calls and rate limiting
     if (requestsLoading || !isMountedRef.current) {
       console.log(
-        "🔄 loadRequests already in progress or component unmounted, skipping..."
+        `🔄 loadRequests #${callNumber} already in progress or component unmounted, skipping...`
       );
       return;
     }
 
+    // Rate limiting - prevent calls too close together
+    if (now - lastLoadRequestsCallRef.current < MIN_CALL_INTERVAL) {
+      console.log(
+        `⏱️ loadRequests #${callNumber} called too soon (${
+          now - lastLoadRequestsCallRef.current
+        }ms ago), skipping...`
+      );
+      return;
+    }
+
+    lastLoadRequestsCallRef.current = now;
+    console.log(`📥 loadRequests #${callNumber} starting...`);
+
     try {
       setRequestsLoading(true);
-      window.lastRequestLoadTime = Date.now();
+
       // Use the correct method name from the old version
       const result = await rideBuddyService.getRequests();
+
+      if (!isMountedRef.current) {
+        console.log(
+          `🔄 Component unmounted during loadRequests #${callNumber}, aborting...`
+        );
+        return;
+      }
+
       if (result.success) {
         // Only update if we have valid data to prevent flickering
         if (result.data && (result.data.requests || result.data.sentRequests)) {
-          setIncomingRequests(result.data.requests || []);
-          setOutgoingRequests(result.data.sentRequests || []);
+          // Deduplicate incoming requests by _id
+          const incomingData = result.data.requests || [];
+          const uniqueIncoming = incomingData.filter(
+            (request, index, self) =>
+              index === self.findIndex((r) => r._id === request._id)
+          );
+
+          // Deduplicate outgoing requests by _id
+          const outgoingData = result.data.sentRequests || [];
+          const uniqueOutgoing = outgoingData.filter(
+            (request, index, self) =>
+              index === self.findIndex((r) => r._id === request._id)
+          );
+
+          console.log(
+            `📥 loadRequests #${callNumber} setting ${uniqueIncoming.length} incoming, ${uniqueOutgoing.length} outgoing requests`
+          );
+
+          setIncomingRequests(uniqueIncoming);
+          setOutgoingRequests(uniqueOutgoing);
 
           // Update sent request IDs to prevent duplicate sends
           const sentIds = new Set();
@@ -207,32 +380,45 @@ const RideBuddy = () => {
           setSentRequestTimes(sentTimes);
           setRequestsLoaded(true);
         } else {
-          // If no data returned, don't clear existing requests immediately
-          // This prevents flickering when cache is being updated
-          console.log("⚠️ No request data returned, keeping existing requests");
-          // Only clear if we've been trying for a while (more than 5 seconds)
-          const now = Date.now();
-          if (
-            !window.lastRequestLoadTime ||
-            now - window.lastRequestLoadTime > 5000
-          ) {
-            console.log("🔄 Clearing requests after timeout");
-            setIncomingRequests([]);
-            setOutgoingRequests([]);
-            setRequestsLoaded(true);
-          }
+          console.log(
+            `⚠️ loadRequests #${callNumber} no data returned, keeping existing requests`
+          );
+          setRequestsLoaded(true);
         }
       } else {
-        // On error, don't clear existing requests immediately
-        console.log("⚠️ Request load failed, keeping existing requests");
+        console.log(`⚠️ loadRequests #${callNumber} failed:`, result.error);
+        setRequestsLoaded(true);
       }
     } catch (error) {
-      console.error("Error loading requests:", error);
-      toast.error("Failed to load ride requests");
+      console.error(`❌ loadRequests #${callNumber} error:`, error);
+      if (isMountedRef.current) {
+        toast.error("Failed to load ride requests");
+      }
     } finally {
-      setRequestsLoading(false);
+      if (isMountedRef.current) {
+        setRequestsLoading(false);
+      }
+      console.log(`✅ loadRequests #${callNumber} completed`);
     }
-  }, [requestsLoading]);
+  }, []);
+
+  // Debounced version of loadRequests for socket events
+  const debouncedLoadRequests = useCallback(
+    (delay = 1000) => {
+      // Clear any existing timeout
+      if (loadRequestsTimeoutRef.current) {
+        clearTimeout(loadRequestsTimeoutRef.current);
+      }
+
+      // Set new timeout
+      loadRequestsTimeoutRef.current = setTimeout(() => {
+        if (isMountedRef.current) {
+          loadRequests();
+        }
+      }, delay);
+    },
+    [loadRequests]
+  );
 
   const loadConnections = useCallback(
     async (forceRefresh = false) => {
@@ -298,7 +484,7 @@ const RideBuddy = () => {
           // Show message if connections were filtered out
           if (result.data.length > validConnections.length) {
             const expiredCount = result.data.length - validConnections.length;
-            toast.info(`${expiredCount} expired connection(s) removed`);
+            toast(`${expiredCount} expired connection(s) removed`);
           }
         } else {
           console.log("⚠️ Failed to load connections:", result.error);
@@ -321,32 +507,41 @@ const RideBuddy = () => {
     const cleanupInterval = setInterval(() => {
       const now = Date.now();
 
-      // Clean up expired sent requests
-      const expiredIds = [];
-      sentRequestTimes.forEach((sentTime, userId) => {
-        if (now - sentTime > 10 * 60 * 1000) {
-          // 10 minutes
-          expiredIds.push(userId);
-        }
-      });
-
-      if (expiredIds.length > 0) {
-        setSentRequestIds((prev) => {
-          const newSet = new Set(prev);
-          expiredIds.forEach((id) => newSet.delete(id));
-          return newSet;
+      // Clean up expired sent requests using current state
+      setSentRequestTimes((currentSentTimes) => {
+        const expiredIds = [];
+        currentSentTimes.forEach((sentTime, userId) => {
+          if (now - sentTime > 10 * 60 * 1000) {
+            // 10 minutes
+            expiredIds.push(userId);
+          }
         });
-        setSentRequestTimes((prev) => {
-          const newMap = new Map(prev);
+
+        if (expiredIds.length > 0) {
+          setSentRequestIds((prev) => {
+            const newSet = new Set(prev);
+            expiredIds.forEach((id) => newSet.delete(id));
+            return newSet;
+          });
+
+          const newMap = new Map(currentSentTimes);
           expiredIds.forEach((id) => newMap.delete(id));
           return newMap;
-        });
-      }
+        }
 
-      // Clean up expired connections
+        return currentSentTimes;
+      });
+
+      // Clean up expired connections using current state
       setActiveConnections((prev) => {
         const validConnections = prev.filter((connection) => {
-          if (isConnectionExpired(connection)) {
+          if (!connection.createdAt) return true;
+
+          const connectionTime = new Date(connection.createdAt).getTime();
+          const totalConnectionDuration = 15 * 60 * 1000; // 15 minutes total
+          const isExpired = now - connectionTime > totalConnectionDuration;
+
+          if (isExpired) {
             console.log(
               `🧹 Removing expired connection: ${connection.matchId} (15 minutes elapsed)`
             );
@@ -356,10 +551,25 @@ const RideBuddy = () => {
         });
 
         // Update remaining time for valid connections
-        const updatedConnections = validConnections.map((connection) => ({
-          ...connection,
-          chatTimeRemaining: getConnectionTimeRemaining(connection),
-        }));
+        const updatedConnections = validConnections.map((connection) => {
+          if (!connection.createdAt) return connection;
+
+          const connectionTime = new Date(connection.createdAt).getTime();
+          const chatDuration = 10 * 60 * 1000; // 10 minutes chat
+          const elapsed = now - connectionTime;
+
+          let chatTimeRemaining;
+          if (elapsed > chatDuration) {
+            chatTimeRemaining = -1; // Chat expired, but contact details still available
+          } else {
+            chatTimeRemaining = chatDuration - elapsed; // Chat time remaining
+          }
+
+          return {
+            ...connection,
+            chatTimeRemaining,
+          };
+        });
 
         // Only update if there were changes
         return updatedConnections.length !== prev.length ||
@@ -370,108 +580,92 @@ const RideBuddy = () => {
     }, 60000); // Check every minute
 
     return () => clearInterval(cleanupInterval);
-  }, [sentRequestTimes, isConnectionExpired, getConnectionTimeRemaining]);
+  }, []); // No dependencies - use current state in callbacks
 
   // Auth guard will handle authentication check
 
-  // Initialize socket connection and load data
+  // Initialize socket connection and load data - ONLY RUN ONCE
   useEffect(() => {
-    if (isAuthenticated && user) {
-      // Connect to socket with proper token from authService
-      const token = authService.getAccessToken();
-      if (token) {
-        console.log(
-          "Connecting to socket with token:",
-          token.substring(0, 20) + "..."
-        );
-
-        // Handle authentication errors with token refresh
-        socketService.on("auth_error", async (errorMessage) => {
-          console.error("Socket authentication failed:", errorMessage);
-
-          // Try to refresh token if it's expired
-          if (errorMessage.includes("Token expired")) {
-            console.log("Attempting to refresh token...");
-            const refreshed = await authService.refreshAccessToken();
-
-            if (refreshed) {
-              console.log("Token refreshed successfully, reconnecting...");
-              const newToken = authService.getAccessToken();
-              socketService.connect(newToken).catch((retryError) => {
-                console.error("Retry connection failed:", retryError);
-                toast.error("Session expired. Please sign in again.");
-                authService.clearTokens();
-                navigate("/signin");
-              });
-            } else {
-              toast.error("Session expired. Please sign in again.");
-              authService.clearTokens();
-              navigate("/signin");
-            }
-          } else {
-            toast.error("Authentication failed. Please sign in again.");
-            authService.clearTokens();
-            // Auth guard will handle modal opening
-          }
-        });
-
-        socketService.connect(token).catch(async (error) => {
-          console.error("Socket connection failed:", error);
-
-          // Try to refresh token if authentication failed
-          if (error.message && error.message.includes("Token expired")) {
-            console.log(
-              "Attempting to refresh token after connection failure..."
-            );
-            const refreshed = await authService.refreshAccessToken();
-
-            if (refreshed) {
-              console.log("Token refreshed, retrying connection...");
-              const newToken = authService.getAccessToken();
-              socketService.connect(newToken).catch((retryError) => {
-                console.error("Retry connection failed:", retryError);
-                toast.error("Session expired. Please sign in again.");
-                authService.clearTokens();
-                navigate("/signin");
-              });
-            } else {
-              toast.error("Session expired. Please sign in again.");
-              authService.clearTokens();
-              navigate("/signin");
-            }
-          } else {
-            toast.error("Connection failed. Please try again.");
-          }
-        });
-      } else {
-        console.error("No authentication token found");
-        toast.error("Authentication required. Please sign in again.");
-        // Auth guard will handle modal opening
-        return;
+    if (!isAuthenticated || !user) {
+      // Clear saved connections when user is not authenticated
+      try {
+        localStorage.removeItem("rideBuddy_activeConnections");
+        setActiveConnections([]);
+        setConnectionsLoaded(false);
+        componentInitializedRef.current = false;
+      } catch (error) {
+        console.error("Error clearing saved connections:", error);
       }
+      return;
+    }
 
-      // Load initial data with force refresh - ONLY ONCE on mount
-      loadRequests();
+    // Prevent multiple initializations
+    if (componentInitializedRef.current) {
+      console.log("🔄 RideBuddy already initialized, skipping...");
+      return;
+    }
 
-      // Load connections with a slight delay to allow saved connections to render first
-      setTimeout(() => {
-        loadConnections(true); // Force refresh to get latest data from server
-      }, 100);
+    componentInitializedRef.current = true;
 
-      // Remove the retry logic that was causing repeated calls
-      // The socket listeners will handle real-time updates
+    // Connect to socket with proper token from authService
+    const token = authService.getAccessToken();
+    if (!token) {
+      console.error("No authentication token found");
+      toast.error("Authentication required. Please sign in again.");
+      return;
+    }
 
-      // Set up real-time notification listeners
-      socketService.on("ride_buddy_new_request", (data) => {
-        console.log("🔔 New ride request received:", data);
-        toast.success(`New ride request from ${data.senderName}!`);
+    console.log(
+      "🚀 Initializing RideBuddy socket connection and data loading..."
+    );
+    console.log(
+      "Connecting to socket with token:",
+      token.substring(0, 20) + "..."
+    );
 
-        // Check if request already exists to prevent duplicates
-        const requestExists = incomingRequests.some(
+    // Handle authentication errors with token refresh
+    const handleAuthError = async (errorMessage) => {
+      console.error("Socket authentication failed:", errorMessage);
+
+      // Try to refresh token if it's expired
+      if (errorMessage.includes("Token expired")) {
+        console.log("Attempting to refresh token...");
+        const refreshed = await authService.refreshAccessToken();
+
+        if (refreshed) {
+          console.log("Token refreshed successfully, reconnecting...");
+          const newToken = authService.getAccessToken();
+          socketService.connect(newToken).catch((retryError) => {
+            console.error("Retry connection failed:", retryError);
+            toast.error("Session expired. Please sign in again.");
+            authService.clearTokens();
+            navigate("/signin");
+          });
+        } else {
+          toast.error("Session expired. Please sign in again.");
+          authService.clearTokens();
+          navigate("/signin");
+        }
+      } else {
+        toast.error("Authentication failed. Please sign in again.");
+        authService.clearTokens();
+      }
+    };
+
+    // Set up socket event handlers
+    const handleNewRequest = (data) => {
+      console.log("🔔 New ride request received:", data);
+      showDebouncedToast(
+        "success",
+        `New ride request from ${data.senderName}!`
+      );
+
+      // Check if request already exists to prevent duplicates
+      setIncomingRequests((prevRequests) => {
+        const requestExists = prevRequests.some(
           (req) => req._id === data.requestId
         );
         if (!requestExists) {
-          // Immediately add to incoming requests for instant UI update
           const newRequest = {
             _id: data.requestId,
             senderId: data.senderId,
@@ -483,169 +677,205 @@ const RideBuddy = () => {
             type: "incoming",
             createdAt: new Date().toISOString(),
           };
-
-          setIncomingRequests((prev) => [newRequest, ...prev]);
+          return [newRequest, ...prevRequests];
         } else {
           console.log("🔄 Request already exists in UI, skipping duplicate");
+          return prevRequests;
         }
-
-        // Switch to connections tab to show the new request
-        if (activeTab === "search") {
-          setActiveTab("connections");
-        }
-
-        // Refresh from server after a short delay to ensure consistency
-        // Use a longer delay to avoid race conditions with backend cache
-        if (loadRequestsTimeout) {
-          clearTimeout(loadRequestsTimeout);
-        }
-        const timeout = setTimeout(() => loadRequests(), 1000);
-        setLoadRequestsTimeout(timeout);
       });
 
-      socketService.on("ride_buddy_request_response", (data) => {
-        console.log("🔔 Request response received:", data);
-        console.log("📞 Request response phone data:", {
-          responderId: data.responderId,
-          responderName: data.responderName,
-          responderPhone: data.responderPhone,
-          hasPhone: !!data.responderPhone,
-        });
+      // Switch to connections tab to show the new request
+      setActiveTab((currentTab) =>
+        currentTab === "search" ? "connections" : currentTab
+      );
 
-        if (data.action === "accepted") {
-          toast.success(`${data.responderName} accepted your request!`);
-          // Switch to connections tab to show the match
-          setActiveTab("connections");
+      // Refresh from server after a delay to ensure consistency
+      // REMOVED: This was causing infinite loops on Render deployment
+      // debouncedLoadRequests(1000);
+    };
 
-          // Don't add connection here - let ride_buddy_new_match handle it
-          // This prevents duplicate connections for the sender
-          console.log(
-            "✅ Request accepted, waiting for new_match event to add connection"
-          );
+    const handleRequestResponse = (data) => {
+      console.log("🔔 Request response received:", data);
 
-          // Reload connections with delay to ensure backend processing is complete
-          setTimeout(() => loadConnections(true), 500);
-        } else {
-          toast.info(`${data.responderName} declined your request`);
-        }
-
-        // Remove from outgoing requests immediately
-        setOutgoingRequests((prev) =>
-          prev.filter((req) => req._id !== data.requestId)
+      if (data.action === "accepted") {
+        showDebouncedToast(
+          "success",
+          `${data.responderName} accepted your request!`
         );
+        setActiveTab("connections");
 
-        // Also clean up sent request tracking
-        if (data.receiverId) {
-          setSentRequestIds((prev) => {
-            const newSet = new Set(prev);
-            newSet.delete(data.receiverId);
-            return newSet;
-          });
-          setSentRequestTimes((prev) => {
-            const newMap = new Map(prev);
-            newMap.delete(data.receiverId);
-            return newMap;
-          });
-        }
-
-        // Reload requests to update status with delay
-        // Use longer delay to avoid race conditions
-        if (loadRequestsTimeout) {
-          clearTimeout(loadRequestsTimeout);
-        }
-        const timeout = setTimeout(() => loadRequests(), 800);
-        setLoadRequestsTimeout(timeout);
-      });
-
-      socketService.on("new_notification", (data) => {
-        console.log("🔔 General notification received:", data);
-        if (data.type === "ride_request") {
-          // Auto-switch to connections tab to show new request
-          setActiveTab("connections");
-        }
-      });
-
-      socketService.on("ride_buddy_connection_ended", () => {
-        toast.info("A ride connection has ended");
-        loadConnections();
-      });
-
-      socketService.on("ride_buddy_new_match", (data) => {
-        console.log("🔔 New match created:", data);
-        console.log("📞 New match phone data:", {
-          partnerId: data.partnerId,
-          partnerName: data.partnerName,
-          partnerPhone: data.partnerPhone,
-          hasPhone: !!data.partnerPhone,
-        });
-
-        // Add to active connections immediately for both users
+        // Create the connection immediately for the sender
         if (data.matchId && data.chatId) {
           const connection = {
             matchId: data.matchId,
             chatId: data.chatId,
             partner: {
-              id: data.partnerId,
-              name: data.partnerName,
-              phone: data.partnerPhone,
+              id: data.responderId,
+              name: data.responderName,
+              phone: data.responderPhone,
             },
             routeDetails: data.routeDetails,
-            estimatedSharedFare: data.estimatedSharedFare,
+            estimatedSharedFare: data.routeDetails?.estimatedSharedFare,
             createdAt: new Date().toISOString(),
             chatTimeRemaining: 10 * 60 * 1000, // 10 minutes
           };
 
-          console.log(
-            "📞 Created connection with partner data:",
-            connection.partner
-          );
+          console.log("✅ Creating connection for sender:", connection);
           setActiveConnections((prev) => [connection, ...prev]);
-
-          // Switch to connections tab to show the new match
-          setActiveTab("connections");
-
-          toast.success("New ride connection established!");
         }
-      });
 
-      return () => {
-        // Clean up socket connection and event listeners
-        if (activeChatId) {
-          socketService.leaveChatRoom(activeChatId);
-        }
-        socketService.off("auth_error");
-        socketService.off("ride_buddy_new_request");
-        socketService.off("ride_buddy_request_response");
-        socketService.off("new_notification");
-        socketService.off("ride_buddy_connection_ended");
-        socketService.off("ride_buddy_new_match");
-
-        // Clean up timeout
-        if (loadRequestsTimeout) {
-          clearTimeout(loadRequestsTimeout);
-        }
-      };
-    } else {
-      // Clear saved connections when user is not authenticated
-      try {
-        localStorage.removeItem("rideBuddy_activeConnections");
-        setActiveConnections([]);
-        setConnectionsLoaded(false);
-      } catch (error) {
-        console.error("Error clearing saved connections:", error);
+        // Also load connections from server as backup
+        setTimeout(() => {
+          if (isMountedRef.current) {
+            loadConnections(true);
+          }
+        }, 500);
+      } else {
+        toast(`${data.responderName} declined your request`);
       }
-    }
-  }, [
-    activeChatId,
-    activeTab,
-    incomingRequests,
-    isAuthenticated,
-    loadConnections,
-    loadRequests,
-    loadRequestsTimeout,
-    navigate,
-    user,
-  ]);
+
+      // Remove from outgoing requests immediately
+      setOutgoingRequests((prev) =>
+        prev.filter((req) => req._id !== data.requestId)
+      );
+
+      // Clean up sent request tracking
+      if (data.receiverId) {
+        setSentRequestIds((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(data.receiverId);
+          return newSet;
+        });
+        setSentRequestTimes((prev) => {
+          const newMap = new Map(prev);
+          newMap.delete(data.receiverId);
+          return newMap;
+        });
+      }
+
+      // Reload requests to update status with delay
+      // REMOVED: This was causing infinite loops on Render deployment
+      // debouncedLoadRequests(800);
+    };
+
+    const handleNewMatch = (data) => {
+      console.log("🔔 New match created:", data);
+
+      if (data.matchId && data.chatId) {
+        const connection = {
+          matchId: data.matchId,
+          chatId: data.chatId,
+          partner: {
+            id: data.partnerId,
+            name: data.partnerName,
+            phone: data.partnerPhone,
+          },
+          routeDetails: data.routeDetails,
+          estimatedSharedFare: data.estimatedSharedFare,
+          createdAt: new Date().toISOString(),
+          chatTimeRemaining: 10 * 60 * 1000, // 10 minutes
+        };
+
+        setActiveConnections((prev) => [connection, ...prev]);
+        setActiveTab("connections");
+        showDebouncedToast(
+          "success",
+          `🛺 Connected with ${data.partnerName}! You can now chat.`
+        );
+      }
+    };
+
+    const handleConnectionEnded = () => {
+      toast("A ride connection has ended");
+      if (isMountedRef.current) {
+        loadConnections();
+      }
+    };
+
+    const handleGeneralNotification = (data) => {
+      console.log("🔔 General notification received:", data);
+      if (data.type === "ride_request") {
+        setActiveTab("connections");
+      }
+    };
+
+    // Set up socket listeners
+    socketService.on("auth_error", handleAuthError);
+    socketService.on("ride_buddy_new_request", handleNewRequest);
+    socketService.on("ride_buddy_request_response", handleRequestResponse);
+    socketService.on("ride_buddy_new_match", handleNewMatch);
+    socketService.on("ride_buddy_connection_ended", handleConnectionEnded);
+    socketService.on("new_notification", handleGeneralNotification);
+
+    // Connect to socket
+    socketService.connect(token).catch(async (error) => {
+      console.error("Socket connection failed:", error);
+
+      if (error.message && error.message.includes("Token expired")) {
+        console.log("Attempting to refresh token after connection failure...");
+        const refreshed = await authService.refreshAccessToken();
+
+        if (refreshed) {
+          console.log("Token refreshed, retrying connection...");
+          const newToken = authService.getAccessToken();
+          socketService.connect(newToken).catch((retryError) => {
+            console.error("Retry connection failed:", retryError);
+            toast.error("Session expired. Please sign in again.");
+            authService.clearTokens();
+            navigate("/signin");
+          });
+        } else {
+          toast.error("Session expired. Please sign in again.");
+          authService.clearTokens();
+          navigate("/signin");
+        }
+      } else {
+        toast.error("Connection failed. Please try again.");
+      }
+    });
+
+    // Load initial data ONLY ONCE
+    console.log("📥 Loading initial requests and connections...");
+    loadRequests();
+    setTimeout(() => {
+      if (isMountedRef.current) {
+        loadConnections(true);
+      }
+    }, 100);
+
+    // Cleanup function
+    return () => {
+      console.log("🧹 Cleaning up RideBuddy socket listeners...");
+      socketService.off("auth_error", handleAuthError);
+      socketService.off("ride_buddy_new_request", handleNewRequest);
+      socketService.off("ride_buddy_request_response", handleRequestResponse);
+      socketService.off("ride_buddy_new_match", handleNewMatch);
+      socketService.off("ride_buddy_connection_ended", handleConnectionEnded);
+      socketService.off("new_notification", handleGeneralNotification);
+
+      if (activeChatId) {
+        socketService.leaveChatRoom(activeChatId);
+      }
+
+      // Reset initialization flag for next mount
+      componentInitializedRef.current = false;
+    };
+  }, [isAuthenticated, user?.id]); // Only depend on authentication state and user ID
+
+  // Request expiration checker - runs every minute
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    // Run immediately
+    checkExpiredRequests();
+
+    // Set up interval to check every minute
+    const interval = setInterval(() => {
+      checkExpiredRequests();
+    }, 60000); // 1 minute
+
+    return () => clearInterval(interval);
+  }, [isAuthenticated]); // Remove checkExpiredRequests from dependencies to prevent re-runs
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -665,28 +895,58 @@ const RideBuddy = () => {
       const result = await rideBuddyService.searchRideBuddies({
         source: searchForm.source,
         destination: searchForm.destination,
+        preferences: {
+          searchRadius: searchForm.searchRadius,
+        },
       });
 
       if (result.success) {
         const matches = result.data.matches || [];
-        // Filter out current user and users we've already sent requests to
-        const filteredMatches = matches.filter(
-          (match) =>
-            match.userId !== user?.id && !sentRequestIds.has(match.userId)
+        console.log(
+          `🔍 Search API returned ${matches.length} matches:`,
+          matches
         );
 
+        const now = Date.now();
+        const EXPIRATION_TIME = 10 * 60 * 1000; // 10 minutes
+
+        // Filter out current user, users we've already sent requests to, and expired searches
+        const filteredMatches = matches.filter((match) => {
+          // Exclude current user
+          if (match.userId === user?.id) {
+            console.log(`🚫 Filtering out current user: ${match.userId}`);
+            return false;
+          }
+
+          // Exclude users we've already sent requests to
+          if (sentRequestIds.has(match.userId)) {
+            console.log(
+              `🚫 Filtering out user with sent request: ${match.userId}`
+            );
+            return false;
+          }
+
+          // Note: Backend already filters expired searches, so we don't need to do it here
+          console.log(
+            `✅ Including match: ${match.userId} (${match.userName})`
+          );
+          return true;
+        });
+
+        console.log(
+          `📊 After filtering: ${filteredMatches.length} matches remaining`
+        );
         setSearchResults(filteredMatches);
 
         if (filteredMatches.length === 0) {
-          toast.info(
-            "No ride buddies found for your route. Your search is active!"
-          );
+          toast("No ride buddies found for your route. Your search is active!");
         } else {
           toast.success(
             `Found ${filteredMatches.length} potential ride buddies`
           );
         }
       } else {
+        console.error("❌ Search failed:", result.error);
         toast.error(result.error || "Failed to search for ride buddies");
         setSearchResults([]);
       }
@@ -724,9 +984,23 @@ const RideBuddy = () => {
 
     try {
       const now = Date.now();
+
+      // Double-check to prevent race conditions
+      if (
+        sentRequestIds.has(match.userId) ||
+        processingRequests.has(match.userId)
+      ) {
+        console.log(`🚫 Race condition prevented for user ${match.userId}`);
+        return;
+      }
+
       setSentRequestIds((prev) => new Set([...prev, match.userId]));
       setSentRequestTimes((prev) => new Map([...prev, [match.userId, now]]));
       setProcessingRequests((prev) => new Set([...prev, match.userId]));
+
+      console.log(
+        `📤 Sending connection request to user ${match.userId} (${match.userName})`
+      );
 
       // Use the correct method signature from the old version
       const result = await rideBuddyService.sendConnectionRequest({
@@ -750,14 +1024,17 @@ const RideBuddy = () => {
       });
 
       if (result.success) {
+        console.log(`✅ Request sent successfully to ${match.userId}`);
         toast.success(
           `Connection request sent to ${match.userName || match.userPhone}!`
         );
         setSearchResults((prev) =>
           prev.filter((m) => m.userId !== match.userId)
         );
-        loadRequests();
+        // REMOVED: This was causing infinite loops on Render deployment
+        // debouncedLoadRequests(500);
       } else {
+        console.error(`❌ Request failed to ${match.userId}:`, result.error);
         // Remove from tracking on failure
         setSentRequestIds((prev) => {
           const newSet = new Set(prev);
@@ -821,10 +1098,13 @@ const RideBuddy = () => {
   const respondToRequest = async (requestId, action) => {
     console.log(`🔧 Responding to request ${requestId} with action: ${action}`);
 
+    // Debug logging
+    console.log(`🚀 Starting respondToRequest process...`);
+
     // Prevent multiple clicks on the same request
     if (processingRequests.has(requestId)) {
       console.log(`Request ${requestId} is already being processed`);
-      toast.info("Request is already being processed...");
+      toast("Request is already being processed...");
       return;
     }
 
@@ -846,14 +1126,27 @@ const RideBuddy = () => {
       console.log(`📋 Processing request:`, requestToProcess);
 
       // Show loading state
-      toast.info(
+      const loadingToast = toast.loading(
         `${action === "accepted" ? "Accepting" : "Declining"} request...`
       );
 
       if (action === "accepted") {
         console.log(`✅ Calling acceptRequest for ${requestId}`);
-        const result = await rideBuddyService.acceptRequest(requestId);
+        console.log(`🔧 About to call rideBuddyService.acceptRequest with:`, {
+          requestId,
+          message: "",
+        });
+
+        // Test if the function exists
+        console.log(
+          "🔍 rideBuddyService.acceptRequest exists:",
+          typeof rideBuddyService.acceptRequest
+        );
+
+        const result = await rideBuddyService.acceptRequest(requestId, "");
         console.log(`📡 Accept result:`, result);
+        console.log(`📡 Accept result type:`, typeof result);
+        console.log(`📡 Accept result.success:`, result?.success);
 
         if (result.success) {
           // Remove from UI after successful processing
@@ -874,37 +1167,48 @@ const RideBuddy = () => {
 
           console.log(`🔗 Adding connection to UI:`, connection);
           setActiveConnections((prev) => [connection, ...prev]);
-          toast.success(
-            "Request accepted! You can now chat with your ride buddy."
-          );
+          toast.dismiss(loadingToast);
+          // Don't show toast here - let the socket event handle it to avoid duplicates
 
           // Clear cache and reload connections to get fresh data
           rideBuddyService.clearCache();
           setTimeout(() => loadConnections(true), 500);
         } else {
           console.error(`❌ Accept failed:`, result.error);
+          toast.dismiss(loadingToast);
           toast.error(result.error || "Failed to accept request");
           // Keep the request in UI if failed
         }
       } else {
         console.log(`❌ Calling declineRequest for ${requestId}`);
-        const result = await rideBuddyService.declineRequest(requestId);
+        console.log(`🔧 About to call rideBuddyService.declineRequest with:`, {
+          requestId,
+          message: "",
+        });
+        const result = await rideBuddyService.declineRequest(requestId, "");
         console.log(`📡 Decline result:`, result);
+        console.log(`📡 Decline result type:`, typeof result);
+        console.log(`📡 Decline result.success:`, result?.success);
 
         if (result.success) {
           // Remove from UI after successful processing
           setIncomingRequests((prev) =>
             prev.filter((r) => r._id !== requestId)
           );
+          toast.dismiss(loadingToast);
           toast.success("Request declined");
         } else {
           console.error(`❌ Decline failed:`, result.error);
+          toast.dismiss(loadingToast);
           toast.error(result.error || "Failed to decline request");
           // Keep the request in UI if failed
         }
       }
     } catch (error) {
       console.error(`💥 Error responding to request ${requestId}:`, error);
+
+      // Dismiss loading toast
+      toast.dismiss(loadingToast);
 
       // Show specific error messages
       if (error.message.includes("Network")) {
@@ -1169,6 +1473,32 @@ const RideBuddy = () => {
                           </option>
                         ))}
                       </select>
+                    </div>
+
+                    {/* Search Radius Selector */}
+                    <div>
+                      <label className="block text-sm font-semibold text-sawaari-yellow mb-2 text-readable">
+                        📏 Search Radius
+                      </label>
+                      <select
+                        value={searchForm.searchRadius}
+                        onChange={(e) =>
+                          setSearchForm((prev) => ({
+                            ...prev,
+                            searchRadius: parseInt(e.target.value),
+                          }))
+                        }
+                        className="form-input"
+                      >
+                        <option value={1}>1 km</option>
+                        <option value={2}>2 km (Default)</option>
+                        <option value={3}>3 km</option>
+                        <option value={4}>4 km</option>
+                        <option value={5}>5 km</option>
+                      </select>
+                      <p className="text-xs text-gray-400 mt-1">
+                        Find ride buddies within this distance from your route
+                      </p>
                     </div>
                   </div>
                   <button
@@ -1606,7 +1936,7 @@ const RideBuddy = () => {
                           console.log("🔄 Manual refresh triggered");
                           loadRequests();
                           loadConnections(true);
-                          toast.info("Refreshing your data...");
+                          toast("Refreshing your data...");
                         }}
                         className="w-full px-6 py-2 bg-neutral-700 text-white rounded-lg hover:bg-neutral-600 transition-colors"
                         disabled={requestsLoading || connectionsLoading}
@@ -1619,6 +1949,44 @@ const RideBuddy = () => {
                         ) : (
                           "🔄 Refresh Data"
                         )}
+                      </button>
+                      <button
+                        onClick={async () => {
+                          console.log("🧹 Manual cleanup triggered");
+                          const result =
+                            await rideBuddyService.cleanupExpiredRequests();
+                          if (result.success) {
+                            toast.success(
+                              `Cleaned up ${result.data.cleanedCount} expired requests`
+                            );
+                            loadRequests();
+                            loadConnections(true);
+                          } else {
+                            toast.error("Failed to cleanup expired requests");
+                          }
+                        }}
+                        className="w-full px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                      >
+                        🧹 Cleanup Expired
+                      </button>
+                      <button
+                        onClick={async () => {
+                          console.log("🧹 Manual duplicate cleanup triggered");
+                          const result =
+                            await rideBuddyService.cleanupDuplicateRequests();
+                          if (result.success) {
+                            toast.success(
+                              `Cleaned up ${result.data.duplicatesRemoved} duplicate requests`
+                            );
+                            loadRequests();
+                            loadConnections(true);
+                          } else {
+                            toast.error("Failed to cleanup duplicate requests");
+                          }
+                        }}
+                        className="w-full px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+                      >
+                        🗑️ Remove Duplicates
                       </button>
                     </div>
                   </div>

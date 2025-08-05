@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-vars */
 // App.jsx
-import { React, useContext } from "react";
+import { useContext } from "react";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import Navbar from "./navbar";
 import Hotspots from "./hotspots";
@@ -16,10 +16,10 @@ import ForgotPassword from "./ForgotPassword";
 import Contact from "./Contact";
 import UserProfile from "./UserProfile";
 import FloatingRickshaws from "./components/FloatingRickshaws";
+import { Toaster } from "react-hot-toast";
 
 export default function App() {
   const { hotspot } = useContext(AuthContext);
-  const { token } = useContext(AuthContext);
 
   return (
     <Router>
@@ -39,6 +39,29 @@ export default function App() {
         </Routes>
         <Footer />
         <AuthModalContainer />
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 4000,
+            style: {
+              background: "#363636",
+              color: "#fff",
+              borderRadius: "8px",
+              fontSize: "14px",
+              maxWidth: "400px",
+            },
+            success: {
+              style: {
+                background: "#10B981",
+              },
+            },
+            error: {
+              style: {
+                background: "#EF4444",
+              },
+            },
+          }}
+        />
       </AuthModalProvider>
     </Router>
   );

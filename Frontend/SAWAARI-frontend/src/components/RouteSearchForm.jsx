@@ -10,7 +10,7 @@ import PropTypes from "prop-types";
 import { AuthContext } from "../AuthContext";
 import routeService from "../services/routeService";
 import fareService from "../services/fareService";
-import toast from "../utils/toast";
+import toast from "react-hot-toast";
 
 const RouteSearchForm = memo(
   ({

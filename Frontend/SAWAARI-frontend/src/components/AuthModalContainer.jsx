@@ -4,7 +4,7 @@ import { AuthContext } from "../AuthContext";
 import { useAuthModal } from "../contexts/AuthModalContext";
 import AuthModal from "./AuthModal";
 import authService from "../services/authService";
-import toast from "../utils/toast";
+import toast from "react-hot-toast";
 
 export default function AuthModalContainer() {
   const { isModalOpen, modalMode, closeModal, switchMode } = useAuthModal();
@@ -148,44 +148,59 @@ export default function AuthModalContainer() {
       signupInfo;
 
     if (!name.trim()) {
-      setSignupError("Full name is required");
+      const errorMsg = "🛺 Full name is required to join SAWAARI";
+      setSignupError(errorMsg);
+      toast.error(errorMsg);
       return false;
     }
 
     if (name.trim().length < 2) {
-      setSignupError("Name must be at least 2 characters long");
+      const errorMsg = "🛺 Name must be at least 2 characters long";
+      setSignupError(errorMsg);
+      toast.error(errorMsg);
       return false;
     }
 
     if (!email.trim()) {
-      setSignupError("Email is required");
+      const errorMsg = "🛺 Email is required for your account";
+      setSignupError(errorMsg);
+      toast.error(errorMsg);
       return false;
     }
 
     if (!email.includes("@") || !email.includes(".")) {
-      setSignupError("Please enter a valid email address");
+      const errorMsg = "🛺 Please enter a valid email address";
+      setSignupError(errorMsg);
+      toast.error(errorMsg);
       return false;
     }
 
     if (!phone.trim()) {
-      setSignupError("Phone number is required");
+      const errorMsg = "🛺 Phone number is required for ride coordination";
+      setSignupError(errorMsg);
+      toast.error(errorMsg);
       return false;
     }
 
     if (!/^[6-9]\d{9}$/.test(phone.trim())) {
-      setSignupError(
-        "Please enter a valid 10-digit Indian mobile number starting with 6-9"
-      );
+      const errorMsg =
+        "🛺 Please enter a valid 10-digit Indian mobile number starting with 6-9";
+      setSignupError(errorMsg);
+      toast.error(errorMsg);
       return false;
     }
 
     if (!password) {
-      setSignupError("Password is required");
+      const errorMsg = "🛺 Password is required to secure your account";
+      setSignupError(errorMsg);
+      toast.error(errorMsg);
       return false;
     }
 
     if (password.length < 8) {
-      setSignupError("Password must be at least 8 characters long");
+      const errorMsg = "🛺 Password must be at least 8 characters long";
+      setSignupError(errorMsg);
+      toast.error(errorMsg);
       return false;
     }
 
@@ -195,26 +210,32 @@ export default function AuthModalContainer() {
     const hasSpecial = /[@$!%*?&]/.test(password);
 
     if (!hasLower || !hasUpper || !hasNumber || !hasSpecial) {
-      setSignupError(
-        "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&)"
-      );
+      const errorMsg =
+        "🛺 Password must contain uppercase, lowercase, number, and special character (@$!%*?&)";
+      setSignupError(errorMsg);
+      toast.error(errorMsg);
       return false;
     }
 
     if (!confirmPassword) {
-      setSignupError("Please confirm your password");
+      const errorMsg = "🛺 Please confirm your password";
+      setSignupError(errorMsg);
+      toast.error(errorMsg);
       return false;
     }
 
     if (password !== confirmPassword) {
-      setSignupError("Passwords do not match");
+      const errorMsg = "🛺 Passwords do not match";
+      setSignupError(errorMsg);
+      toast.error(errorMsg);
       return false;
     }
 
     if (!agreeTerms) {
-      setSignupError(
-        "You must agree to the Terms of Service and Privacy Policy"
-      );
+      const errorMsg =
+        "🛺 You must agree to the Terms of Service and Privacy Policy";
+      setSignupError(errorMsg);
+      toast.error(errorMsg);
       return false;
     }
 
@@ -245,7 +266,7 @@ export default function AuthModalContainer() {
         setSignupSuccessMessage(
           "Account created successfully! You can now sign in with your credentials."
         );
-        toast.success("🛺 Account created successfully!");
+        toast.success("🛺 Welcome to SAWAARI! Account created successfully");
 
         // Reset form
         setSignupInfo({
@@ -268,9 +289,11 @@ export default function AuthModalContainer() {
           }));
         }, 2000);
       } else {
-        setSignupError(
+        const errorMsg = `🛺 ${
           result.error || "Registration failed. Please try again."
-        );
+        }`;
+        setSignupError(errorMsg);
+        toast.error(errorMsg);
       }
     } catch (error) {
       console.error("Registration error:", error);

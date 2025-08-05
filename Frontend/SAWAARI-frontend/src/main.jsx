@@ -7,11 +7,11 @@ import Authstate from "./AuthContext.jsx";
 import ErrorBoundary from "./ErrorBoundary.jsx";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
-  <ErrorBoundary>
-    <Authstate>
-      <React.StrictMode>
+  <React.StrictMode>
+    <ErrorBoundary>
+      <Authstate>
         <App />
-      </React.StrictMode>
-    </Authstate>
-  </ErrorBoundary>
+      </Authstate>
+    </ErrorBoundary>
+  </React.StrictMode>
 );

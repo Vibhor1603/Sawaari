@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import PropTypes from "prop-types";
 import rideBuddyService from "../services/rideBuddyService";
-import toast from "../utils/toast";
+import toast from "react-hot-toast";
 
 const MatchResults = ({
   matches = [],

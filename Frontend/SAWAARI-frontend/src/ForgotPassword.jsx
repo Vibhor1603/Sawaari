@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuthModal } from "./contexts/AuthModalContext";
-import toast from "./utils/toast";
+import { useNavigate, Link } from "react-router-dom";
+import toast from "react-hot-toast";
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
@@ -45,7 +44,7 @@ const ForgotPassword = () => {
     e.preventDefault();
 
     if (!formData.identifier.trim()) {
-      toast.error("Please enter your email address");
+      toast.error("🛺 Please enter your email address");
       return;
     }
 
@@ -53,7 +52,7 @@ const ForgotPassword = () => {
       !formData.identifier.includes("@") ||
       !formData.identifier.includes(".")
     ) {
-      toast.error("Please enter a valid email address");
+      toast.error("🛺 Please enter a valid email address");
       return;
     }
 
@@ -61,7 +60,7 @@ const ForgotPassword = () => {
     try {
       const response = await fetch(
         `${
-          import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"
+          import.meta.env.VITE_API_BASE_URL
         }/api/auth/forgot-password/send-otp`,
         {
           method: "POST",
@@ -83,13 +82,13 @@ const ForgotPassword = () => {
           timeRemaining: data.expiresIn,
         });
         setStep(2);
-        toast.success(data.message);
+        toast.success(`🛺 ${data.message}`);
       } else {
-        toast.error(data.error || "Failed to send OTP");
+        toast.error(`🛺 ${data.error || "Failed to send OTP"}`);
       }
     } catch (error) {
       console.error("Send OTP error:", error);
-      toast.error("Network error. Please try again.");
+      toast.error("🛺 Network error. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -99,12 +98,12 @@ const ForgotPassword = () => {
     e.preventDefault();
 
     if (!formData.otp.trim()) {
-      toast.error("Please enter the OTP");
+      toast.error("🛺 Please enter the OTP");
       return;
     }
 
     if (formData.otp.length !== 6) {
-      toast.error("OTP must be 6 digits");
+      toast.error("🛺 OTP must be 6 digits");
       return;
     }
 
@@ -112,7 +111,7 @@ const ForgotPassword = () => {
     try {
       const response = await fetch(
         `${
-          import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"
+          import.meta.env.VITE_API_BASE_URL
         }/api/auth/forgot-password/verify-otp`,
         {
           method: "POST",
@@ -135,13 +134,13 @@ const ForgotPassword = () => {
           resetToken: data.resetToken,
         }));
         setStep(3);
-        toast.success(data.message);
+        toast.success(`🛺 ${data.message}`);
       } else {
-        toast.error(data.error || "Invalid OTP");
+        toast.error(`🛺 ${data.error || "Invalid OTP"}`);
       }
     } catch (error) {
       console.error("Verify OTP error:", error);
-      toast.error("Network error. Please try again.");
+      toast.error("🛺 Network error. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -168,9 +167,7 @@ const ForgotPassword = () => {
     setLoading(true);
     try {
       const response = await fetch(
-        `${
-          import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"
-        }/api/auth/forgot-password/reset`,
+        `${import.meta.env.VITE_API_BASE_URL}/api/auth/forgot-password/reset`,
         {
           method: "POST",
           headers: {

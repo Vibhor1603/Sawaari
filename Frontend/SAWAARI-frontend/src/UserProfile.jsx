@@ -2,7 +2,7 @@ import { useState, useEffect, useContext } from "react";
 import { AuthContext } from "./AuthContext";
 import { useAuthGuard } from "./hooks/useAuthGuard";
 import authService from "./services/authService";
-import toast from "./utils/toast";
+import toast from "react-hot-toast";
 import FloatingRickshaws from "./components/FloatingRickshaws";
 
 const UserProfile = () => {
@@ -20,14 +20,21 @@ const UserProfile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Password reset states
+  // Password reset states (using forgot password flow)
   const [showPasswordReset, setShowPasswordReset] = useState(false);
-  const [passwordResetStep, setPasswordResetStep] = useState(1); // 1: request, 2: verify OTP, 3: new password
-  const [otp, setOtp] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [otpLoading, setOtpLoading] = useState(false);
-  const [otpData, setOtpData] = useState({ token: "", resetToken: "" });
+  const [passwordResetStep, setPasswordResetStep] = useState(1); // 1: send OTP, 2: verify OTP, 3: new password
+  const [passwordResetData, setPasswordResetData] = useState({
+    otp: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [passwordResetLoading, setPasswordResetLoading] = useState(false);
+  const [otpData, setOtpData] = useState({
+    token: "",
+    resetToken: "",
+    expiresIn: 0,
+    timeRemaining: 0,
+  });
 
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -88,12 +95,26 @@ const UserProfile = () => {
     }
   };
 
+  // Timer for OTP expiry
+  useEffect(() => {
+    let interval;
+    if (passwordResetStep === 2 && otpData.timeRemaining > 0) {
+      interval = setInterval(() => {
+        setOtpData((prev) => ({
+          ...prev,
+          timeRemaining: Math.max(0, prev.timeRemaining - 1),
+        }));
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [passwordResetStep, otpData.timeRemaining]);
+
   const handlePasswordResetRequest = async () => {
-    setOtpLoading(true);
+    setPasswordResetLoading(true);
     try {
       const response = await fetch(
         `${
-          import.meta.env.VITE_API_BASE_URL || "https://sawaari.onrender.com"
+          import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"
         }/forgot-password/send-otp`,
         {
           method: "POST",
@@ -107,33 +128,38 @@ const UserProfile = () => {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        setOtpData({ token: data.token, resetToken: "" });
+        setOtpData({
+          token: data.token,
+          resetToken: "",
+          expiresIn: data.expiresIn,
+          timeRemaining: data.expiresIn,
+        });
         setPasswordResetStep(2);
         toast.success("🛺 OTP sent to your email!");
       } else {
-        throw new Error(data.message || "Failed to send OTP");
+        throw new Error(data.error || data.message || "Failed to send OTP");
       }
     } catch (error) {
       console.error("Password reset request error:", error);
       toast.error(`🛺 ${error.message || "Failed to send OTP"}`);
     } finally {
-      setOtpLoading(false);
+      setPasswordResetLoading(false);
     }
   };
 
   const handleOtpVerification = async (e) => {
     e.preventDefault();
 
-    if (!otp.trim() || otp.length !== 6) {
+    if (!passwordResetData.otp.trim() || passwordResetData.otp.length !== 6) {
       toast.error("🛺 Please enter a valid 6-digit OTP");
       return;
     }
 
-    setOtpLoading(true);
+    setPasswordResetLoading(true);
     try {
       const response = await fetch(
         `${
-          import.meta.env.VITE_API_BASE_URL || "https://sawaari.onrender.com"
+          import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"
         }/forgot-password/verify-otp`,
         {
           method: "POST",
@@ -142,7 +168,7 @@ const UserProfile = () => {
           },
           body: JSON.stringify({
             identifier: user.email,
-            otp: otp.trim(),
+            otp: passwordResetData.otp.trim(),
             token: otpData.token,
           }),
         }
@@ -155,34 +181,37 @@ const UserProfile = () => {
         setPasswordResetStep(3);
         toast.success("🛺 OTP verified! Set your new password");
       } else {
-        throw new Error(data.message || "Invalid OTP");
+        throw new Error(data.error || data.message || "Invalid OTP");
       }
     } catch (error) {
       console.error("OTP verification error:", error);
       toast.error(`🛺 ${error.message || "Invalid OTP"}`);
     } finally {
-      setOtpLoading(false);
+      setPasswordResetLoading(false);
     }
   };
 
   const handlePasswordReset = async (e) => {
     e.preventDefault();
 
-    if (!newPassword || newPassword.length < 6) {
+    if (
+      !passwordResetData.newPassword ||
+      passwordResetData.newPassword.length < 6
+    ) {
       toast.error("🛺 Password must be at least 6 characters long");
       return;
     }
 
-    if (newPassword !== confirmPassword) {
+    if (passwordResetData.newPassword !== passwordResetData.confirmPassword) {
       toast.error("🛺 Passwords do not match");
       return;
     }
 
-    setOtpLoading(true);
+    setPasswordResetLoading(true);
     try {
       const response = await fetch(
         `${
-          import.meta.env.VITE_API_BASE_URL || "https://sawaari.onrender.com"
+          import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"
         }/forgot-password/reset`,
         {
           method: "POST",
@@ -191,7 +220,7 @@ const UserProfile = () => {
           },
           body: JSON.stringify({
             resetToken: otpData.resetToken,
-            newPassword,
+            newPassword: passwordResetData.newPassword,
           }),
         }
       );
@@ -199,32 +228,67 @@ const UserProfile = () => {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        setShowPasswordReset(false);
-        setPasswordResetStep(1);
-        setOtp("");
-        setNewPassword("");
-        setConfirmPassword("");
-        setOtpData({ token: "", resetToken: "" });
+        resetPasswordResetFlow();
         toast.success("🛺 Password reset successfully!");
       } else {
-        throw new Error(data.message || "Failed to reset password");
+        throw new Error(
+          data.error || data.message || "Failed to reset password"
+        );
       }
     } catch (error) {
       console.error("Password reset error:", error);
       toast.error(`🛺 ${error.message || "Failed to reset password"}`);
     } finally {
-      setOtpLoading(false);
+      setPasswordResetLoading(false);
     }
   };
 
-  const resetPasswordFlow = () => {
+  const resetPasswordResetFlow = () => {
     setShowPasswordReset(false);
     setPasswordResetStep(1);
-    setOtp("");
-    setNewPassword("");
-    setConfirmPassword("");
-    setOtpData({ token: "", resetToken: "" });
+    setPasswordResetData({
+      otp: "",
+      newPassword: "",
+      confirmPassword: "",
+    });
+    setOtpData({
+      token: "",
+      resetToken: "",
+      expiresIn: 0,
+      timeRemaining: 0,
+    });
   };
+
+  const formatTime = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+  };
+
+  // Password strength checker
+  const getPasswordStrength = (password) => {
+    if (!password) return { strength: 0, text: "", color: "" };
+
+    let strength = 0;
+    const checks = {
+      length: password.length >= 6,
+      lowercase: /[a-z]/.test(password),
+      uppercase: /[A-Z]/.test(password),
+      numbers: /\d/.test(password),
+      special: /[!@#$%^&*(),.?":{}|<>]/.test(password),
+    };
+
+    strength = Object.values(checks).filter(Boolean).length;
+
+    if (strength <= 2) return { strength, text: "Weak", color: "text-red-400" };
+    if (strength <= 3)
+      return { strength, text: "Fair", color: "text-yellow-400" };
+    if (strength <= 4)
+      return { strength, text: "Good", color: "text-blue-400" };
+    return { strength, text: "Strong", color: "text-green-400" };
+  };
+
+  const passwordStrength = getPasswordStrength(passwordResetData.newPassword);
 
   // Show loading state while checking authentication
   if (isLoading) {
@@ -367,12 +431,15 @@ const UserProfile = () => {
                 <p className="text-gray-300 text-sm mb-4">
                   Keep your account secure by using a strong password
                 </p>
-                <button
-                  onClick={() => setShowPasswordReset(true)}
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                >
-                  Reset Password
-                </button>
+                <div className="space-y-2">
+                  <button
+                    onClick={() => setShowPasswordReset(true)}
+                    className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                  >
+                    Reset Password
+                  </button>
+                  o
+                </div>
               </div>
 
               <div className="p-4 bg-black/30 border border-white/10 rounded-lg">
@@ -393,7 +460,7 @@ const UserProfile = () => {
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-neutral-900 rounded-xl w-full max-w-md border border-neutral-700 relative">
               <button
-                onClick={resetPasswordFlow}
+                onClick={resetPasswordResetFlow}
                 className="absolute top-4 right-4 w-8 h-8 bg-neutral-800 hover:bg-neutral-700 rounded-full flex items-center justify-center text-white transition-colors"
               >
                 <svg
@@ -416,6 +483,35 @@ const UserProfile = () => {
                   Reset Password
                 </h3>
 
+                {/* Step Indicator */}
+                <div className="flex items-center justify-center mb-6">
+                  <div className="flex items-center space-x-2">
+                    {[1, 2, 3].map((stepNumber) => (
+                      <div key={stepNumber} className="flex items-center">
+                        <div
+                          className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
+                            passwordResetStep >= stepNumber
+                              ? "bg-sawaari-yellow text-black"
+                              : "bg-white/20 text-gray-400"
+                          }`}
+                        >
+                          {stepNumber}
+                        </div>
+                        {stepNumber < 3 && (
+                          <div
+                            className={`w-6 h-0.5 mx-1 transition-all duration-300 ${
+                              passwordResetStep > stepNumber
+                                ? "bg-sawaari-yellow"
+                                : "bg-white/20"
+                            }`}
+                          ></div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Step 1: Send OTP */}
                 {passwordResetStep === 1 && (
                   <div className="space-y-4">
                     <p className="text-gray-300 text-sm">
@@ -424,67 +520,211 @@ const UserProfile = () => {
                     </p>
                     <button
                       onClick={handlePasswordResetRequest}
-                      disabled={otpLoading}
+                      disabled={passwordResetLoading}
                       className="w-full btn-primary"
                     >
-                      {otpLoading ? "Sending OTP..." : "Send OTP"}
+                      {passwordResetLoading ? "Sending OTP..." : "Send OTP"}
                     </button>
                   </div>
                 )}
 
+                {/* Step 2: Verify OTP */}
                 {passwordResetStep === 2 && (
                   <form onSubmit={handleOtpVerification} className="space-y-4">
-                    <p className="text-gray-300 text-sm">
-                      Enter the 6-digit OTP sent to your email
-                    </p>
-                    <input
-                      type="text"
-                      value={otp}
-                      onChange={(e) =>
-                        setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
-                      }
-                      placeholder="Enter OTP"
-                      className="w-full p-3 bg-black/30 border border-white/20 rounded-lg text-white focus:border-sawaari-yellow focus:ring-2 focus:ring-sawaari-yellow/20"
-                      maxLength={6}
-                    />
-                    <button
-                      type="submit"
-                      disabled={otpLoading}
-                      className="w-full btn-primary"
-                    >
-                      {otpLoading ? "Verifying..." : "Verify OTP"}
-                    </button>
+                    {/* OTP Info */}
+                    <div className="bg-black/40 rounded-lg p-3 space-y-1">
+                      <div className="flex items-center gap-2 text-sawaari-yellow text-sm">
+                        <span>📧</span>
+                        <span>OTP sent to {user?.email}</span>
+                      </div>
+                      {otpData.timeRemaining > 0 && (
+                        <div className="flex items-center gap-2 text-gray-200 text-sm">
+                          <span>⏰</span>
+                          <span>
+                            Expires in {formatTime(otpData.timeRemaining)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-sawaari-yellow mb-2">
+                        Enter OTP
+                      </label>
+                      <input
+                        type="text"
+                        value={passwordResetData.otp}
+                        onChange={(e) =>
+                          setPasswordResetData((prev) => ({
+                            ...prev,
+                            otp: e.target.value.replace(/\D/g, "").slice(0, 6),
+                          }))
+                        }
+                        placeholder="Enter 6-digit OTP"
+                        className="w-full p-3 bg-black/30 border border-white/20 rounded-lg text-white focus:border-sawaari-yellow focus:ring-2 focus:ring-sawaari-yellow/20 text-center text-lg tracking-widest"
+                        maxLength={6}
+                        disabled={
+                          passwordResetLoading || otpData.timeRemaining === 0
+                        }
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <button
+                        type="submit"
+                        disabled={
+                          passwordResetLoading || otpData.timeRemaining === 0
+                        }
+                        className={`w-full btn-primary ${
+                          passwordResetLoading || otpData.timeRemaining === 0
+                            ? "opacity-50 cursor-not-allowed"
+                            : ""
+                        }`}
+                      >
+                        {passwordResetLoading ? "Verifying..." : "Verify OTP"}
+                      </button>
+
+                      {otpData.timeRemaining === 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setPasswordResetStep(1)}
+                          className="w-full px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                        >
+                          Send New OTP
+                        </button>
+                      )}
+                    </div>
                   </form>
                 )}
 
+                {/* Step 3: Set New Password */}
                 {passwordResetStep === 3 && (
                   <form onSubmit={handlePasswordReset} className="space-y-4">
-                    <p className="text-gray-300 text-sm">
-                      Enter your new password
-                    </p>
-                    <input
-                      type="password"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="New Password"
-                      className="w-full p-3 bg-black/30 border border-white/20 rounded-lg text-white focus:border-sawaari-yellow focus:ring-2 focus:ring-sawaari-yellow/20"
-                    />
-                    <input
-                      type="password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="Confirm New Password"
-                      className="w-full p-3 bg-black/30 border border-white/20 rounded-lg text-white focus:border-sawaari-yellow focus:ring-2 focus:ring-sawaari-yellow/20"
-                    />
-                    <button
-                      type="submit"
-                      disabled={otpLoading}
-                      className="w-full btn-primary"
-                    >
-                      {otpLoading ? "Resetting..." : "Reset Password"}
-                    </button>
+                    <div>
+                      <label className="block text-sm font-semibold text-sawaari-yellow mb-2">
+                        New Password
+                      </label>
+                      <input
+                        type="password"
+                        value={passwordResetData.newPassword}
+                        onChange={(e) =>
+                          setPasswordResetData((prev) => ({
+                            ...prev,
+                            newPassword: e.target.value,
+                          }))
+                        }
+                        placeholder="Enter new password (min 6 characters)"
+                        className="w-full p-3 bg-black/30 border border-white/20 rounded-lg text-white focus:border-sawaari-yellow focus:ring-2 focus:ring-sawaari-yellow/20"
+                        minLength={6}
+                        required
+                      />
+                      {passwordResetData.newPassword && (
+                        <div className="mt-2">
+                          <div className="flex items-center justify-between text-xs mb-1">
+                            <span className="text-gray-400">
+                              Password Strength:
+                            </span>
+                            <span className={passwordStrength.color}>
+                              {passwordStrength.text}
+                            </span>
+                          </div>
+                          <div className="w-full bg-gray-700 rounded-full h-1.5">
+                            <div
+                              className={`h-1.5 rounded-full transition-all duration-300 ${
+                                passwordStrength.strength <= 2
+                                  ? "bg-red-500"
+                                  : passwordStrength.strength <= 3
+                                  ? "bg-yellow-500"
+                                  : passwordStrength.strength <= 4
+                                  ? "bg-blue-500"
+                                  : "bg-green-500"
+                              }`}
+                              style={{
+                                width: `${
+                                  (passwordStrength.strength / 5) * 100
+                                }%`,
+                              }}
+                            ></div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-sawaari-yellow mb-2">
+                        Confirm New Password
+                      </label>
+                      <input
+                        type="password"
+                        value={passwordResetData.confirmPassword}
+                        onChange={(e) =>
+                          setPasswordResetData((prev) => ({
+                            ...prev,
+                            confirmPassword: e.target.value,
+                          }))
+                        }
+                        placeholder="Confirm new password"
+                        className={`w-full p-3 bg-black/30 border rounded-lg text-white focus:ring-2 transition-all duration-300 ${
+                          passwordResetData.confirmPassword &&
+                          passwordResetData.newPassword !==
+                            passwordResetData.confirmPassword
+                            ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                            : passwordResetData.confirmPassword &&
+                              passwordResetData.newPassword ===
+                                passwordResetData.confirmPassword
+                            ? "border-green-500 focus:border-green-500 focus:ring-green-500/20"
+                            : "border-white/20 focus:border-sawaari-yellow focus:ring-sawaari-yellow/20"
+                        }`}
+                        required
+                      />
+                      {passwordResetData.confirmPassword && (
+                        <div className="mt-1 text-xs">
+                          {passwordResetData.newPassword ===
+                          passwordResetData.confirmPassword ? (
+                            <span className="text-green-400">
+                              ✓ Passwords match
+                            </span>
+                          ) : (
+                            <span className="text-red-400">
+                              ✗ Passwords don&apos;t match
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex gap-3 pt-4">
+                      <button
+                        type="button"
+                        onClick={resetPasswordResetFlow}
+                        className="flex-1 px-4 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={passwordResetLoading}
+                        className="flex-1 btn-primary"
+                      >
+                        {passwordResetLoading
+                          ? "Resetting..."
+                          : "Reset Password"}
+                      </button>
+                    </div>
                   </form>
                 )}
+
+                <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                  <p className="text-xs text-blue-400">
+                    💡 <strong>Security Tips:</strong>
+                  </p>
+                  <ul className="text-xs text-gray-300 mt-1 space-y-1">
+                    <li>• Use at least 6 characters</li>
+                    <li>• Include numbers and special characters</li>
+                    <li>• Don&apos;t reuse old passwords</li>
+                  </ul>
+                </div>
               </div>
             </div>
           </div>

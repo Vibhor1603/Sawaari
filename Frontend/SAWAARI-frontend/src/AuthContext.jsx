@@ -5,7 +5,7 @@ import authService from "./services/authService";
 
 export const AuthContext = createContext("");
 
-const Authstate = (props) => {
+function Authstate(props) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -283,6 +283,6 @@ const Authstate = (props) => {
       {props.children}
     </AuthContext.Provider>
   );
-};
+}
 
 export default Authstate;

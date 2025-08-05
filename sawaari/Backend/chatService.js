@@ -128,6 +128,11 @@ class ChatService {
       console.log(`👤 User connected: ${socket.id} (${socket.userEmail})`);
 
       // Store active connection
+      console.log(
+        `🔗 Storing socket connection for user: ${
+          socket.userId
+        } (type: ${typeof socket.userId})`
+      );
       this.activeConnections.set(socket.userId, socket);
 
       // Initialize user rooms if not exists
@@ -824,9 +829,24 @@ class ChatService {
         `🔔 Attempting to notify user ${receiverId} about new request`
       );
       console.log(`Active connections: ${this.activeConnections.size}`);
-      console.log(`User connected: ${this.activeConnections.has(receiverId)}`);
+      console.log(
+        `Active connection keys:`,
+        Array.from(this.activeConnections.keys())
+      );
+      console.log(
+        `User connected (string): ${this.activeConnections.has(receiverId)}`
+      );
+      console.log(
+        `User connected (ObjectId): ${this.activeConnections.has(
+          receiverId.toString()
+        )}`
+      );
 
-      const userSocket = this.activeConnections.get(receiverId);
+      // Try both string and ObjectId formats
+      let userSocket =
+        this.activeConnections.get(receiverId) ||
+        this.activeConnections.get(receiverId.toString());
+
       if (userSocket) {
         console.log(`✅ Sending real-time notification to user ${receiverId}`);
         // Send real-time notification with complete data

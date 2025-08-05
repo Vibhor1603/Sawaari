@@ -1,7 +1,7 @@
 // Frontend service for geolocation-based hotspot loading
 class GeoHotspotService {
   constructor() {
-    this.baseURL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+    this.baseURL = import.meta.env.VITE_API_BASE_URL;
     this.cache = new Map();
     this.cacheTimeout = 15 * 60 * 1000; // 15 minutes cache (increased)
     this.pendingRequests = new Map(); // Track pending requests to prevent duplicates

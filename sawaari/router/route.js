@@ -235,6 +235,7 @@ const {
   getActiveChats,
   debugUserData,
   cleanupExpiredRequestsAPI,
+  cleanupDuplicateRequestsAPI,
 } = require("../Backend/rideBuddyController");
 
 // Import ride buddy validation schemas
@@ -296,6 +297,11 @@ router.route("/api/ride-buddy/chats").get(authenticateToken, getActiveChats);
 router
   .route("/api/ride-buddy/cleanup-expired")
   .post(authenticateToken, cleanupExpiredRequestsAPI);
+
+// Cleanup duplicate requests endpoint (protected)
+router
+  .route("/api/ride-buddy/cleanup-duplicates")
+  .post(authenticateToken, cleanupDuplicateRequestsAPI);
 
 // ===== SECURITY API ENDPOINTS =====
 

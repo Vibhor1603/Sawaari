@@ -46,8 +46,7 @@ class SocketService {
     const connectStartTime = Date.now();
 
     return new Promise((resolve, reject) => {
-      const serverUrl =
-        import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+      const serverUrl = import.meta.env.VITE_API_BASE_URL;
 
       // Get authentication token - handle both string token and userData object
       let token;

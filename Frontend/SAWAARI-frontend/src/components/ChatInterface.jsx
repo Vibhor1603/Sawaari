@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import PropTypes from "prop-types";
 import socketService from "../services/socketService";
 import rideBuddyService from "../services/rideBuddyService";
-import toast from "../utils/toast";
+import toast from "react-hot-toast";
 
 const ChatInterface = ({
   matchId,

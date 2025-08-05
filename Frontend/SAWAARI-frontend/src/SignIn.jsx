@@ -2,7 +2,7 @@ import SigninForm from "./SigninForm";
 import { useContext, useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { AuthContext } from "./AuthContext";
-import toast from "./utils/toast";
+import toast from "react-hot-toast";
 import FloatingRickshaws from "./components/FloatingRickshaws";
 
 export default function SignIn() {
