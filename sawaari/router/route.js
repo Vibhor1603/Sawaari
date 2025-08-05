@@ -236,6 +236,8 @@ const {
   debugUserData,
   cleanupExpiredRequestsAPI,
   cleanupDuplicateRequestsAPI,
+  cancelActiveSearch,
+  getActiveSearchStatus,
 } = require("../Backend/rideBuddyController");
 
 // Import ride buddy validation schemas
@@ -248,7 +250,7 @@ const {
   chatMessageSchema,
 } = require("../Backend/validation");
 
-// Ride buddy search endpoint (protected with rate limiting)
+// Ride buddy search endpoints (protected with rate limiting)
 router
   .route("/api/ride-buddy/search")
   .post(
@@ -257,6 +259,16 @@ router
     validateInput(rideBuddySearchSchema),
     searchRideBuddies
   );
+
+// Cancel active search
+router
+  .route("/api/ride-buddy/search/active")
+  .delete(authenticateToken, rideBuddyLimiter, cancelActiveSearch);
+
+// Get active search status
+router
+  .route("/api/ride-buddy/search/status")
+  .get(authenticateToken, getActiveSearchStatus);
 
 // Ride buddy request endpoints (protected with rate limiting)
 router

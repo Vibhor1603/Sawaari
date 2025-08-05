@@ -561,6 +561,73 @@ const validateSearchData = (searchData) => {
   }
 };
 
+// Cancel active search
+const cancelActiveSearch = async () => {
+  try {
+    console.log("🚀 cancelActiveSearch called");
+
+    const response = await apiRequest("/api/ride-buddy/search/active", {
+      method: "DELETE",
+    });
+
+    console.log("🔧 Cancel search API Response:", response);
+
+    if (response.success) {
+      // Clear search-related caches
+      cache.delete("search_results");
+      cache.delete("active_search_status");
+
+      return {
+        success: true,
+        message: response.message || "Search cancelled successfully",
+      };
+    } else {
+      throw new Error(response.message || "Failed to cancel search");
+    }
+  } catch (error) {
+    console.error("Failed to cancel search:", error);
+    return {
+      success: false,
+      error: error.message || "Network error while cancelling search",
+    };
+  }
+};
+
+// Get active search status
+const getActiveSearchStatus = async () => {
+  try {
+    console.log("🚀 getActiveSearchStatus called");
+
+    const cacheKey = "active_search_status";
+    const cached = getCachedData(cacheKey, 5000); // 5 seconds cache
+
+    if (cached) {
+      return { success: true, data: cached, cached: true };
+    }
+
+    const response = await apiRequest("/api/ride-buddy/search/status");
+
+    console.log("🔧 Search status API Response:", response);
+
+    if (response.success) {
+      setCachedData(cacheKey, response.data);
+      return {
+        success: true,
+        data: response.data,
+        message: response.message || "Search status retrieved successfully",
+      };
+    } else {
+      throw new Error(response.message || "Failed to get search status");
+    }
+  } catch (error) {
+    console.error("Failed to get search status:", error);
+    return {
+      success: false,
+      error: error.message || "Network error while getting search status",
+    };
+  }
+};
+
 // Export all functions
 const rideBuddyService = {
   // Core functionality
@@ -574,6 +641,8 @@ const rideBuddyService = {
   endMatch,
   cancelSearch,
   getSearchHistory,
+  cancelActiveSearch,
+  getActiveSearchStatus,
 
   // Safety features
   blockUser,

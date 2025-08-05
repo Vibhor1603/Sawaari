@@ -236,6 +236,17 @@ const RideBuddy = () => {
   const [sentRequestIds, setSentRequestIds] = useState(new Set());
   const [sentRequestTimes, setSentRequestTimes] = useState(new Map()); // Track when requests were sent
 
+  // Enhanced search state for 5-minute active searches
+  const [searchState, setSearchState] = useState({
+    isActive: false,
+    searchId: null,
+    expiresAt: null,
+    source: "",
+    destination: "",
+    matchCount: 0,
+    timeRemaining: 0,
+  });
+
   // Requests and connections
   const [incomingRequests, setIncomingRequests] = useState([]);
   const [outgoingRequests, setOutgoingRequests] = useState([]);
@@ -286,6 +297,46 @@ const RideBuddy = () => {
     clearExpiredConnections();
   }, []); // Run only once on mount
 
+  // Define handleSearchExpiry before it's used in useEffect
+  const handleSearchExpiry = useCallback(() => {
+    setSearchState({
+      isActive: false,
+      searchId: null,
+      expiresAt: null,
+      source: "",
+      destination: "",
+      matchCount: 0,
+      timeRemaining: 0,
+    });
+    setSearchResults([]);
+    showDebouncedToast(
+      "info",
+      "Your search has expired. You can start a new search now."
+    );
+  }, [showDebouncedToast]);
+
+  // Timer for search state countdown
+  useEffect(() => {
+    if (searchState.isActive && searchState.expiresAt) {
+      const interval = setInterval(() => {
+        const remaining = new Date(searchState.expiresAt) - new Date();
+        const remainingMs = Math.max(0, remaining);
+
+        setSearchState((prev) => ({
+          ...prev,
+          timeRemaining: remainingMs,
+        }));
+
+        if (remainingMs <= 0) {
+          clearInterval(interval);
+          handleSearchExpiry();
+        }
+      }, 1000);
+
+      return () => clearInterval(interval);
+    }
+  }, [searchState.isActive, searchState.expiresAt, handleSearchExpiry]);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -296,6 +347,52 @@ const RideBuddy = () => {
       }
     };
   }, []);
+
+  // Enhanced search status management
+  const checkActiveSearchStatus = useCallback(async () => {
+    try {
+      const result = await rideBuddyService.getActiveSearchStatus();
+      if (result.success && result.data.hasActiveSearch) {
+        setSearchState({
+          isActive: true,
+          searchId: result.data.searchId,
+          expiresAt: result.data.expiresAt,
+          source: result.data.source.name,
+          destination: result.data.destination.name,
+          timeRemaining: result.data.timeRemaining,
+          matchCount: 0,
+        });
+      } else {
+        setSearchState((prev) => ({ ...prev, isActive: false }));
+      }
+    } catch (error) {
+      console.error("Error checking search status:", error);
+    }
+  }, []);
+
+  const cancelActiveSearch = useCallback(async () => {
+    try {
+      const result = await rideBuddyService.cancelActiveSearch();
+      if (result.success) {
+        setSearchState({
+          isActive: false,
+          searchId: null,
+          expiresAt: null,
+          source: "",
+          destination: "",
+          matchCount: 0,
+          timeRemaining: 0,
+        });
+        setSearchResults([]);
+        showDebouncedToast("success", "Search cancelled successfully");
+      } else {
+        showDebouncedToast("error", result.error || "Failed to cancel search");
+      }
+    } catch (error) {
+      console.error("Error cancelling search:", error);
+      showDebouncedToast("error", "Failed to cancel search");
+    }
+  }, [showDebouncedToast]);
 
   // Define functions using useCallback to avoid hoisting issues
   const loadRequests = useCallback(async () => {
@@ -400,7 +497,7 @@ const RideBuddy = () => {
       }
       console.log(`✅ loadRequests #${callNumber} completed`);
     }
-  }, []);
+  }, [requestsLoading]);
 
   // Debounced version of loadRequests for socket events
   const debouncedLoadRequests = useCallback(
@@ -655,6 +752,12 @@ const RideBuddy = () => {
     // Set up socket event handlers
     const handleNewRequest = (data) => {
       console.log("🔔 New ride request received:", data);
+      console.log(
+        "🔔 Current incoming requests count:",
+        incomingRequests.length
+      );
+      console.log("🔔 Current active tab:", activeTab);
+
       showDebouncedToast(
         "success",
         `New ride request from ${data.senderName}!`
@@ -662,6 +765,7 @@ const RideBuddy = () => {
 
       // Check if request already exists to prevent duplicates
       setIncomingRequests((prevRequests) => {
+        console.log("🔔 Previous incoming requests:", prevRequests.length);
         const requestExists = prevRequests.some(
           (req) => req._id === data.requestId
         );
@@ -677,7 +781,16 @@ const RideBuddy = () => {
             type: "incoming",
             createdAt: new Date().toISOString(),
           };
-          return [newRequest, ...prevRequests];
+          console.log(
+            "✅ Adding new request to incoming requests:",
+            newRequest
+          );
+          const updatedRequests = [newRequest, ...prevRequests];
+          console.log(
+            "✅ Updated incoming requests count:",
+            updatedRequests.length
+          );
+          return updatedRequests;
         } else {
           console.log("🔄 Request already exists in UI, skipping duplicate");
           return prevRequests;
@@ -685,9 +798,12 @@ const RideBuddy = () => {
       });
 
       // Switch to connections tab to show the new request
-      setActiveTab((currentTab) =>
-        currentTab === "search" ? "connections" : currentTab
-      );
+      setActiveTab((currentTab) => {
+        console.log("🔔 Current tab:", currentTab);
+        const newTab = currentTab === "search" ? "connections" : currentTab;
+        console.log("🔔 Switching to tab:", newTab);
+        return newTab;
+      });
 
       // Refresh from server after a delay to ensure consistency
       // REMOVED: This was causing infinite loops on Render deployment
@@ -785,6 +901,68 @@ const RideBuddy = () => {
       }
     };
 
+    // Handle new potential match (real-time search updates)
+    const handleNewPotentialMatch = (data) => {
+      console.log("🔔 New potential match received:", data);
+
+      if (data.newMatch) {
+        const newMatch = data.newMatch;
+
+        // Add to search results if not already present
+        setSearchResults((prev) => {
+          const exists = prev.some((match) => match.userId === newMatch.userId);
+          if (!exists) {
+            showDebouncedToast(
+              "success",
+              `New potential match found: ${newMatch.userName}!`
+            );
+            return [newMatch, ...prev];
+          }
+          return prev;
+        });
+
+        // Update search state match count
+        setSearchState((prev) => ({
+          ...prev,
+          matchCount: prev.matchCount + 1,
+        }));
+      }
+    };
+
+    // Handle auto-connection (mutual requests)
+    const handleAutoConnection = (data) => {
+      console.log("🤝 Auto-connection received:", data);
+
+      showDebouncedToast(
+        "success",
+        `🎉 Automatically connected with ${data.partnerName}!`
+      );
+
+      if (data.matchId && data.chatId) {
+        const connection = {
+          matchId: data.matchId,
+          chatId: data.chatId,
+          partner: {
+            id: data.partnerId,
+            name: data.partnerName,
+            phone: data.partnerPhone,
+          },
+          routeDetails: data.routeDetails,
+          createdAt: new Date().toISOString(),
+          chatTimeRemaining: 10 * 60 * 1000,
+        };
+
+        setActiveConnections((prev) => [connection, ...prev]);
+        setActiveTab("connections");
+      }
+    };
+
+    // Handle search expiration
+    const handleSearchExpired = () => {
+      console.log("⏰ Search expired notification received");
+      handleSearchExpiry();
+    };
+
     const handleConnectionEnded = () => {
       toast("A ride connection has ended");
       if (isMountedRef.current) {
@@ -806,6 +984,11 @@ const RideBuddy = () => {
     socketService.on("ride_buddy_new_match", handleNewMatch);
     socketService.on("ride_buddy_connection_ended", handleConnectionEnded);
     socketService.on("new_notification", handleGeneralNotification);
+
+    // New enhanced search event listeners
+    socketService.on("ride_buddy_new_potential_match", handleNewPotentialMatch);
+    socketService.on("ride_buddy_auto_connection", handleAutoConnection);
+    socketService.on("ride_buddy_search_expired", handleSearchExpired);
 
     // Connect to socket
     socketService.connect(token).catch(async (error) => {
@@ -837,6 +1020,7 @@ const RideBuddy = () => {
     // Load initial data ONLY ONCE
     console.log("📥 Loading initial requests and connections...");
     loadRequests();
+    checkActiveSearchStatus(); // Check for active search on mount
     setTimeout(() => {
       if (isMountedRef.current) {
         loadConnections(true);
@@ -853,6 +1037,14 @@ const RideBuddy = () => {
       socketService.off("ride_buddy_connection_ended", handleConnectionEnded);
       socketService.off("new_notification", handleGeneralNotification);
 
+      // Clean up enhanced search listeners
+      socketService.off(
+        "ride_buddy_new_potential_match",
+        handleNewPotentialMatch
+      );
+      socketService.off("ride_buddy_auto_connection", handleAutoConnection);
+      socketService.off("ride_buddy_search_expired", handleSearchExpired);
+
       if (activeChatId) {
         socketService.leaveChatRoom(activeChatId);
       }
@@ -860,7 +1052,19 @@ const RideBuddy = () => {
       // Reset initialization flag for next mount
       componentInitializedRef.current = false;
     };
-  }, [isAuthenticated, user?.id]); // Only depend on authentication state and user ID
+  }, [
+    activeChatId,
+    activeTab,
+    checkActiveSearchStatus,
+    handleSearchExpiry,
+    incomingRequests.length,
+    isAuthenticated,
+    loadConnections,
+    loadRequests,
+    navigate,
+    showDebouncedToast,
+    user,
+  ]); // Only depend on authentication state and user object
 
   // Request expiration checker - runs every minute
   useEffect(() => {
@@ -875,7 +1079,7 @@ const RideBuddy = () => {
     }, 60000); // 1 minute
 
     return () => clearInterval(interval);
-  }, [isAuthenticated]); // Remove checkExpiredRequests from dependencies to prevent re-runs
+  }, [checkExpiredRequests, isAuthenticated]); // Remove checkExpiredRequests from dependencies to prevent re-runs
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -889,9 +1093,16 @@ const RideBuddy = () => {
       return;
     }
 
+    // Check if user already has an active search
+    if (searchState.isActive) {
+      toast.error(
+        "You already have an active search. Cancel it to start a new one."
+      );
+      return;
+    }
+
     setSearchLoading(true);
     try {
-      // Use the correct method signature from the old version
       const result = await rideBuddyService.searchRideBuddies({
         source: searchForm.source,
         destination: searchForm.destination,
@@ -907,18 +1118,13 @@ const RideBuddy = () => {
           matches
         );
 
-        const now = Date.now();
-        const EXPIRATION_TIME = 10 * 60 * 1000; // 10 minutes
-
-        // Filter out current user, users we've already sent requests to, and expired searches
+        // Filter out current user and users we've already sent requests to
         const filteredMatches = matches.filter((match) => {
-          // Exclude current user
           if (match.userId === user?.id) {
             console.log(`🚫 Filtering out current user: ${match.userId}`);
             return false;
           }
 
-          // Exclude users we've already sent requests to
           if (sentRequestIds.has(match.userId)) {
             console.log(
               `🚫 Filtering out user with sent request: ${match.userId}`
@@ -926,7 +1132,6 @@ const RideBuddy = () => {
             return false;
           }
 
-          // Note: Backend already filters expired searches, so we don't need to do it here
           console.log(
             `✅ Including match: ${match.userId} (${match.userName})`
           );
@@ -938,21 +1143,49 @@ const RideBuddy = () => {
         );
         setSearchResults(filteredMatches);
 
+        // Set active search state with 5-minute duration
+        setSearchState({
+          isActive: true,
+          searchId: result.data.searchId,
+          expiresAt: result.data.expiresAt,
+          source: searchForm.source.name,
+          destination: searchForm.destination.name,
+          matchCount: filteredMatches.length,
+          timeRemaining: result.data.timeRemaining || 5 * 60 * 1000,
+        });
+
         if (filteredMatches.length === 0) {
-          toast("No ride buddies found for your route. Your search is active!");
+          showDebouncedToast(
+            "info",
+            "No matches found yet, but your search is active for 5 minutes"
+          );
         } else {
-          toast.success(
+          showDebouncedToast(
+            "success",
             `Found ${filteredMatches.length} potential ride buddies`
           );
         }
       } else {
         console.error("❌ Search failed:", result.error);
-        toast.error(result.error || "Failed to search for ride buddies");
+
+        // Handle specific error for existing active search
+        if (result.error === "Active search exists") {
+          await checkActiveSearchStatus(); // Refresh search status
+          showDebouncedToast(
+            "error",
+            "You already have an active search. Cancel it to start a new one."
+          );
+        } else {
+          showDebouncedToast(
+            "error",
+            result.error || "Failed to search for ride buddies"
+          );
+        }
         setSearchResults([]);
       }
     } catch (error) {
       console.error("Search failed:", error);
-      toast.error("Failed to search for ride buddies");
+      showDebouncedToast("error", "Failed to search for ride buddies");
       setSearchResults([]);
     } finally {
       setSearchLoading(false);
@@ -1309,8 +1542,8 @@ const RideBuddy = () => {
     );
   }
 
-  // Don't render if not authenticated (auth guard will handle modal)
-  if (!isAuthenticated) {
+  // Don't render if not authenticated or user not loaded (auth guard will handle modal)
+  if (!isAuthenticated || !user) {
     return null;
   }
 
@@ -1396,6 +1629,63 @@ const RideBuddy = () => {
                 <h2 className="text-2xl font-bold text-white mb-6 text-readable">
                   Search for Ride Buddies
                 </h2>
+                {/* Search Status Display */}
+                {searchState.isActive && (
+                  <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg p-4 mb-6 shadow-lg">
+                    <div className="flex justify-between items-center mb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                        <span className="font-semibold">Search Active</span>
+                      </div>
+                      <button
+                        onClick={cancelActiveSearch}
+                        className="bg-white/20 hover:bg-white/30 px-3 py-1 rounded text-sm transition-colors"
+                        title="Cancel current search"
+                      >
+                        Cancel Search
+                      </button>
+                    </div>
+
+                    <div className="mb-3">
+                      <div className="text-sm opacity-90 mb-1">
+                        <strong>{searchState.source}</strong> →{" "}
+                        <strong>{searchState.destination}</strong>
+                      </div>
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="opacity-80">Time Remaining:</span>
+                        <span className="font-mono text-lg">
+                          {Math.floor(searchState.timeRemaining / 60000)}:
+                          {String(
+                            Math.floor(
+                              (searchState.timeRemaining % 60000) / 1000
+                            )
+                          ).padStart(2, "0")}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="w-full bg-white/20 rounded-full h-2 mb-3">
+                      <div
+                        className="bg-white/80 h-2 rounded-full transition-all duration-1000"
+                        style={{
+                          width: `${Math.max(
+                            0,
+                            (searchState.timeRemaining / (5 * 60 * 1000)) * 100
+                          )}%`,
+                        }}
+                      ></div>
+                    </div>
+
+                    <div className="text-center text-sm opacity-90">
+                      {searchState.matchCount === 0
+                        ? "No matches found yet, but your search is active"
+                        : `${searchState.matchCount} potential match${
+                            searchState.matchCount !== 1 ? "es" : ""
+                          } found`}
+                    </div>
+                  </div>
+                )}
+
                 <form onSubmit={handleSearch} className="space-y-6">
                   <div className="grid md:grid-cols-2 gap-6">
                     <div>
@@ -1503,21 +1793,76 @@ const RideBuddy = () => {
                   </div>
                   <button
                     type="submit"
-                    disabled={searchLoading}
-                    className="btn-primary w-full md:w-auto"
+                    disabled={
+                      searchLoading ||
+                      searchState.isActive ||
+                      !searchForm.source.name ||
+                      !searchForm.destination.name
+                    }
+                    className={`w-full md:w-auto px-6 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${
+                      searchState.isActive
+                        ? "bg-green-500 text-white cursor-not-allowed"
+                        : searchLoading
+                        ? "bg-gray-400 text-white cursor-not-allowed"
+                        : "btn-primary"
+                    } disabled:opacity-50`}
+                    title={
+                      searchState.isActive
+                        ? "You have an active search running"
+                        : searchLoading
+                        ? "Search in progress..."
+                        : "Start searching for ride buddies"
+                    }
                   >
-                    {searchLoading ? "Searching..." : "Search Ride Buddies"}
+                    {searchLoading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                        Searching...
+                      </>
+                    ) : searchState.isActive ? (
+                      <>
+                        <div className="w-3 h-3 bg-white rounded-full animate-pulse"></div>
+                        Search Active
+                      </>
+                    ) : (
+                      <>
+                        <span>🔍</span>
+                        Search Ride Buddies
+                      </>
+                    )}
                   </button>
                 </form>
               </div>
 
               {/* Search Results */}
-              {searchResults.length > 0 && (
+              {(searchResults.length > 0 || searchState.isActive) && (
                 <div className="card">
                   <h3 className="text-xl font-bold text-white mb-6 text-readable">
-                    Available Ride Buddies ({searchResults.length})
+                    {searchResults.length > 0
+                      ? `Available Ride Buddies (${searchResults.length})`
+                      : searchState.isActive
+                      ? "Searching for Ride Buddies..."
+                      : "No Results"}
                   </h3>
                   <div className="grid gap-4">
+                    {searchResults.length === 0 && searchState.isActive && (
+                      <div className="text-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-sawaari-yellow mx-auto mb-4"></div>
+                        <p className="text-gray-300 mb-2">
+                          Your search is active! We'll notify you when potential
+                          matches are found.
+                        </p>
+                        <p className="text-sm text-gray-400">
+                          Search expires in{" "}
+                          {Math.floor(searchState.timeRemaining / 60000)}:
+                          {String(
+                            Math.floor(
+                              (searchState.timeRemaining % 60000) / 1000
+                            )
+                          ).padStart(2, "0")}
+                        </p>
+                      </div>
+                    )}
                     {searchResults.map((match) => (
                       <div
                         key={match.userId}

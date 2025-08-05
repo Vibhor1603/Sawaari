@@ -1,5 +1,5 @@
 const { ObjectId } = require("mongodb");
-const RouteMatchingService = require("./RouteMatchingService");
+const routeMatchingService = require("./RouteMatchingService");
 const chatService = require("./chatService");
 const securityService = require("./securityService");
 // Proxy service removed - users will see actual phone numbers after connection
@@ -20,8 +20,8 @@ const {
   findUserByEmail,
 } = require("./database");
 
-// Initialize route matching service
-const routeMatchingService = new RouteMatchingService({
+// Update route matching service configuration
+routeMatchingService.updateConfig({
   defaultRadius: 2, // 2km default search radius for nearby connections
   minOverlapPercentage: 25, // 25% minimum route overlap
   maxResults: 20, // Maximum 20 matches per search
@@ -44,6 +44,162 @@ const cleanupUserSearches = async (userId) => {
   } catch (error) {
     console.error("Error cleaning up user searches:", error);
     // Don't throw error, just log it
+  }
+};
+
+/**
+ * Clean up expired searches (5 minutes instead of 10)
+ */
+const cleanupExpiredSearches = async () => {
+  try {
+    const now = new Date();
+
+    // Find expired searches
+    const expiredSearches = await findRideBuddySearches({
+      status: "active",
+      expiresAt: { $lt: now },
+    });
+
+    console.log(
+      `🧹 Found ${expiredSearches.length} expired searches to clean up`
+    );
+
+    // Update expired searches
+    for (const search of expiredSearches) {
+      await updateRideBuddySearch(search._id, {
+        status: "expired",
+        expiredAt: now,
+      });
+
+      // Notify user if they're online
+      try {
+        await chatService.notifySearchExpired(search.userId.toString());
+      } catch (notifyError) {
+        console.error("Error notifying search expiry:", notifyError);
+      }
+    }
+
+    return expiredSearches.length;
+  } catch (error) {
+    console.error("Error cleaning up expired searches:", error);
+    return 0;
+  }
+};
+
+/**
+ * Check for mutual requests and create auto-connection
+ * @param {String} senderId - ID of user sending request
+ * @param {String} receiverId - ID of user receiving request
+ * @returns {Object|null} - Existing mutual request or null
+ */
+const checkForMutualRequests = async (senderId, receiverId) => {
+  try {
+    // Check if receiver has already sent a request to sender
+    const existingRequests = await findRideBuddyRequests({
+      senderId: new ObjectId(receiverId),
+      receiverId: new ObjectId(senderId),
+      status: "pending",
+    });
+
+    return existingRequests.length > 0 ? existingRequests[0] : null;
+  } catch (error) {
+    console.error("Error checking for mutual requests:", error);
+    return null;
+  }
+};
+
+/**
+ * Create automatic connection when mutual requests are detected
+ * @param {Object} request1 - First request
+ * @param {Object} request2 - Second request (new one being created)
+ * @returns {Object} - Match and chat results
+ */
+const createAutoConnection = async (request1, request2) => {
+  try {
+    console.log("🤝 Creating auto-connection for mutual requests");
+
+    // Mark both requests as auto-accepted
+    await updateRideBuddyRequest(request1._id, {
+      status: "auto-accepted",
+      autoConnectedAt: new Date(),
+    });
+
+    await updateRideBuddyRequest(request2._id, {
+      status: "auto-accepted",
+      autoConnectedAt: new Date(),
+    });
+
+    // Create match immediately
+    const matchData = {
+      user1Id: request1.senderId,
+      user1Email: request1.senderEmail,
+      user1Name: request1.senderName,
+      user1Phone: request1.senderPhone,
+      user2Id: request2.senderId,
+      user2Email: request2.senderEmail,
+      user2Name: request2.senderName,
+      user2Phone: request2.senderPhone,
+      routeDetails: request1.routeDetails,
+      connectionType: "auto-mutual",
+    };
+
+    const matchResult = await createRideBuddyMatch(matchData);
+
+    // Create chat room
+    const chatData = {
+      matchId: matchResult.insertedId,
+      participants: [
+        {
+          userId: request1.senderId,
+          email: request1.senderEmail,
+          name: request1.senderName,
+          joinedAt: new Date(),
+        },
+        {
+          userId: request2.senderId,
+          email: request2.senderEmail,
+          name: request2.senderName,
+          joinedAt: new Date(),
+        },
+      ],
+    };
+
+    const chatResult = await createRideBuddyChat(chatData);
+
+    // Update match with chat ID
+    await updateRideBuddyMatch(matchResult.insertedId, {
+      chatId: chatResult.insertedId,
+    });
+
+    // Clean up both users' active searches
+    await cleanupUserSearches(request1.senderId.toString());
+    await cleanupUserSearches(request2.senderId.toString());
+
+    // Notify both users about auto-connection
+    await Promise.all([
+      chatService.notifyAutoConnection(request1.senderId.toString(), {
+        matchId: matchResult.insertedId,
+        chatId: chatResult.insertedId,
+        partnerName: request2.senderName,
+        partnerPhone: request2.senderPhone,
+        partnerId: request2.senderId.toString(),
+        routeDetails: request1.routeDetails,
+      }),
+      chatService.notifyAutoConnection(request2.senderId.toString(), {
+        matchId: matchResult.insertedId,
+        chatId: chatResult.insertedId,
+        partnerName: request1.senderName,
+        partnerPhone: request1.senderPhone,
+        partnerId: request1.senderId.toString(),
+        routeDetails: request1.routeDetails,
+      }),
+    ]);
+
+    console.log("✅ Auto-connection created successfully");
+    return { matchResult, chatResult };
+  } catch (error) {
+    console.error("Error creating auto-connection:", error);
+    throw error;
   }
 };
 
@@ -116,7 +272,7 @@ const cleanupExpiredPendingRequests = async () => {
   }
 };
 
-// Start periodic cleanup
+// Start periodic cleanup - enhanced with search cleanup
 setInterval(async () => {
   const cleanedUpExpired = await cleanupExpiredRequests();
   const cleanedUpSearches = await cleanupExpiredSearches();
@@ -128,10 +284,11 @@ setInterval(async () => {
     cleanedUpExpired > 0 ||
     cleanedUpPending > 0 ||
     cleanedUpMatches > 0 ||
-    cleanedUpDuplicates > 0
+    cleanedUpDuplicates > 0 ||
+    cleanedUpSearches > 0
   ) {
     console.log(
-      `🧹 Cleaned up ${cleanedUpExpired} expired requests, ${cleanedUpDuplicates} duplicates, ${cleanedUpPending} expired pending requests, and ${cleanedUpMatches} expired matches`
+      `🧹 Cleaned up ${cleanedUpExpired} expired requests, ${cleanedUpDuplicates} duplicates, ${cleanedUpPending} expired pending requests, ${cleanedUpMatches} expired matches, and ${cleanedUpSearches} expired searches`
     );
   }
 }, 60000); // Run every minute
@@ -152,7 +309,7 @@ const filterMatchesByPreferences = (matches, preferences) => {
 
 /**
  * POST /api/ride-buddy/search
- * Create a ride buddy search and find potential matches
+ * Create a ride buddy search and find potential matches with enhanced real-time matching
  */
 const searchRideBuddies = async (req, res) => {
   try {
@@ -179,6 +336,30 @@ const searchRideBuddies = async (req, res) => {
       });
     }
 
+    // Check for existing active search
+    const existingSearch = await findRideBuddySearches({
+      userId: new ObjectId(userId),
+      status: "active",
+      expiresAt: { $gt: new Date() },
+    });
+
+    if (existingSearch.length > 0) {
+      return res.status(409).json({
+        success: false,
+        error: "Active search exists",
+        message:
+          "You already have an active search. Cancel it to start a new one.",
+        data: {
+          activeSearch: existingSearch[0],
+          expiresAt: existingSearch[0].expiresAt,
+          timeRemaining: Math.max(
+            0,
+            new Date(existingSearch[0].expiresAt) - new Date()
+          ),
+        },
+      });
+    }
+
     // Get user phone number
     const userPhone = req.user.phone;
     console.log(`🔍 User data in search:`, {
@@ -189,7 +370,8 @@ const searchRideBuddies = async (req, res) => {
       hasPhone: !!req.user.phone,
     });
 
-    // Create search data structure
+    // Create search data structure with 5-minute expiry
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes from now
     const searchData = {
       userId: new ObjectId(userId),
       userEmail,
@@ -209,13 +391,18 @@ const searchRideBuddies = async (req, res) => {
         waypoints: source.waypoints || [],
       },
       searchRadius:
-        preferences.searchRadius || routeMatchingService.defaultRadius,
+        preferences.searchRadius ||
+        routeMatchingService.DEFAULT_CONFIG.defaultRadius,
       preferences: {
         maxPassengers: preferences.maxPassengers || 4,
         gender: preferences.gender || "any",
         smokingAllowed: preferences.smokingAllowed || false,
         maxWaitTime: preferences.maxWaitTime || 15,
       },
+      status: "active",
+      expiresAt,
+      lastActive: new Date(),
+      searchKey: `${userId}-${Date.now()}`,
     };
 
     // Remove any existing active searches for this user
@@ -223,27 +410,40 @@ const searchRideBuddies = async (req, res) => {
 
     // Store the search in database
     const searchResult = await createRideBuddySearch(searchData);
+    console.log(`✅ Search stored for user ${userName}:`, {
+      searchId: searchResult.insertedId,
+      source: searchData.source.name,
+      destination: searchData.destination.name,
+      expiresAt: searchData.expiresAt,
+    });
 
-    // Find potential matches using RouteMatchingService
+    // Find existing active matches using enhanced matching
     let matches = [];
     try {
       const userRoute = {
         userId,
+        userEmail,
+        userName,
+        userPhone,
         source: searchData.source,
         destination: searchData.destination,
         route: searchData.route,
       };
 
-      matches = await routeMatchingService.findPotentialMatches(userRoute, {
-        radius: searchData.searchRadius,
-        minOverlapPercentage: routeMatchingService.minOverlapPercentage,
-      });
+      // Use the new findActiveMatches method for real-time bidirectional matching
+      matches = await routeMatchingService.findActiveMatches(userRoute, userId);
 
       // Filter matches based on user preferences
       matches = filterMatchesByPreferences(matches, searchData.preferences);
 
       // Filter out blocked users
       matches = await securityService.filterBlockedUsers(userId, matches);
+
+      // Notify existing searchers about this new search
+      await routeMatchingService.notifyExistingSearchers(
+        userRoute,
+        chatService
+      );
     } catch (matchError) {
       console.error("Error finding matches:", matchError);
       // Continue without matches if matching fails
@@ -263,16 +463,14 @@ const searchRideBuddies = async (req, res) => {
           sharedDistance: match.overlap.sharedDistance,
           estimatedSharedFare: match.fareSharing.sharedFare,
           savings: match.fareSharing.savings1,
-          proximity: {
-            sourceDistance:
-              Math.round(match.proximity.sourceDistance * 100) / 100,
-            destinationDistance:
-              Math.round(match.proximity.destinationDistance * 100) / 100,
-          },
           searchTimestamp: match.searchTimestamp,
+          searchId: match.searchId,
         })),
         matchCount: matches.length,
         searchRadius: searchData.searchRadius,
+        expiresAt,
+        isActive: true,
+        timeRemaining: 5 * 60 * 1000, // 5 minutes in milliseconds
       },
       timestamp: new Date().toISOString(),
     });
@@ -351,6 +549,54 @@ const sendRequest = async (req, res) => {
       console.log(
         `🧹 Cleaned up ${cleanedUp} expired connections between users`
       );
+    }
+
+    // Check for mutual requests (receiver has already sent request to sender)
+    const mutualRequest = await checkForMutualRequests(senderId, receiverId);
+    if (mutualRequest) {
+      console.log("🤝 Mutual request detected, creating auto-connection");
+
+      // Create the new request first
+      const newRequestData = {
+        senderId: new ObjectId(senderId),
+        senderEmail,
+        senderName,
+        senderPhone: req.user.phone,
+        receiverId: new ObjectId(receiverId),
+        receiverEmail: mutualRequest.senderEmail,
+        receiverName: mutualRequest.senderName,
+        receiverPhone: mutualRequest.senderPhone,
+        routeDetails,
+        message: message.trim(),
+        status: "pending", // Will be updated to auto-accepted
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+        requestKey: `${senderId}-${receiverId}-${Date.now()}`,
+      };
+
+      const newRequestResult = await createRideBuddyRequest(newRequestData);
+      newRequestData._id = newRequestResult.insertedId;
+
+      // Create auto-connection
+      const { matchResult, chatResult } = await createAutoConnection(
+        mutualRequest,
+        newRequestData
+      );
+
+      return res.status(201).json({
+        success: true,
+        message:
+          "Automatically connected! You both sent requests to each other.",
+        data: {
+          requestId: newRequestResult.insertedId,
+          matchId: matchResult.insertedId,
+          chatId: chatResult.insertedId,
+          partnerName: mutualRequest.senderName,
+          partnerPhone: mutualRequest.senderPhone,
+          connectionType: "auto-mutual",
+          estimatedSharedFare: routeDetails.estimatedSharedFare,
+        },
+        timestamp: new Date().toISOString(),
+      });
     }
 
     // Validate required fields
@@ -1515,40 +1761,6 @@ const cleanupDuplicateRequests = async () => {
 };
 
 /**
- * Clean up expired searches (older than 10 minutes)
- */
-const cleanupExpiredSearches = async () => {
-  try {
-    const now = new Date();
-    console.log("🧹 Cleaning up expired searches at:", now);
-
-    // Find and remove expired searches
-    const expiredSearches = await findRideBuddySearches({
-      status: "active",
-      expiresAt: { $lt: now },
-    });
-
-    if (expiredSearches.length > 0) {
-      // Update expired searches to inactive status
-      for (const search of expiredSearches) {
-        await updateRideBuddySearch(search._id, {
-          status: "expired",
-          expiredAt: now,
-        });
-      }
-
-      console.log(`✅ Cleaned up ${expiredSearches.length} expired searches`);
-      return expiredSearches.length;
-    }
-
-    return 0;
-  } catch (error) {
-    console.error("❌ Error cleaning up expired searches:", error);
-    return 0;
-  }
-};
-
-/**
  * Clean up duplicate requests API endpoint
  */
 const cleanupDuplicateRequestsAPI = async (req, res) => {
@@ -1641,6 +1853,100 @@ const cleanupExpiredRequestsAPI = async (req, res) => {
   }
 };
 
+/**
+ * DELETE /api/ride-buddy/search/active
+ * Cancel user's active search
+ */
+const cancelActiveSearch = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+
+    const result = await updateRideBuddySearch(
+      { userId: new ObjectId(userId), status: "active" },
+      { status: "cancelled", cancelledAt: new Date() }
+    );
+
+    if (result.modifiedCount === 0) {
+      return res.status(404).json({
+        success: false,
+        error: "No active search found",
+        message: "You do not have an active search to cancel",
+      });
+    }
+
+    // Invalidate cache
+    rideBuddyCacheService.invalidateUserCaches(userId);
+
+    res.json({
+      success: true,
+      message: "Search cancelled successfully",
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("Cancel search error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Cancel failed",
+      message: "Unable to cancel search",
+    });
+  }
+};
+
+/**
+ * GET /api/ride-buddy/search/status
+ * Get user's active search status
+ */
+const getActiveSearchStatus = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+
+    const activeSearches = await findRideBuddySearches({
+      userId: new ObjectId(userId),
+      status: "active",
+      expiresAt: { $gt: new Date() },
+    });
+
+    if (activeSearches.length === 0) {
+      return res.json({
+        success: true,
+        data: {
+          hasActiveSearch: false,
+          canSearch: true,
+        },
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    const activeSearch = activeSearches[0];
+    const timeRemaining = Math.max(
+      0,
+      new Date(activeSearch.expiresAt) - new Date()
+    );
+
+    res.json({
+      success: true,
+      data: {
+        hasActiveSearch: true,
+        canSearch: false,
+        searchId: activeSearch._id,
+        source: activeSearch.source,
+        destination: activeSearch.destination,
+        createdAt: activeSearch.createdAt,
+        expiresAt: activeSearch.expiresAt,
+        timeRemaining,
+      },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("Get search status error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Status check failed",
+      message: "Unable to check search status",
+    });
+  }
+};
+
 module.exports = {
   searchRideBuddies,
   sendRequest,
@@ -1652,4 +1958,6 @@ module.exports = {
   debugUserData,
   cleanupExpiredRequestsAPI,
   cleanupDuplicateRequestsAPI,
+  cancelActiveSearch,
+  getActiveSearchStatus,
 };

@@ -971,6 +971,79 @@ class ChatService {
     }
   }
 
+  // Notify user about new potential match (real-time search updates)
+  async notifyNewPotentialMatch(userId, matchData) {
+    console.log(`🔔 Notifying user ${userId} about new potential match`);
+
+    try {
+      const userSocket = this.activeConnections.get(userId);
+      if (userSocket) {
+        userSocket.emit("ride_buddy_new_potential_match", matchData);
+        console.log(
+          `✅ New potential match notification sent to user ${userId}`
+        );
+      } else {
+        console.log(`📱 User ${userId} not connected, storing notification`);
+        // Store notification for when user comes online
+        if (!this.rideBuddyNotifications.has(userId)) {
+          this.rideBuddyNotifications.set(userId, []);
+        }
+        this.rideBuddyNotifications.get(userId).push({
+          event: "ride_buddy_new_potential_match",
+          data: matchData,
+          timestamp: new Date().toISOString(),
+        });
+      }
+    } catch (error) {
+      console.error("Error notifying about new potential match:", error);
+    }
+  }
+
+  // Notify user about auto-connection (mutual requests)
+  async notifyAutoConnection(userId, connectionData) {
+    console.log(`🤝 Notifying user ${userId} about auto-connection`);
+
+    try {
+      const userSocket = this.activeConnections.get(userId);
+      if (userSocket) {
+        userSocket.emit("ride_buddy_auto_connection", connectionData);
+        console.log(`✅ Auto-connection notification sent to user ${userId}`);
+      } else {
+        console.log(`📱 User ${userId} not connected, storing notification`);
+        // Store notification for when user comes online
+        if (!this.rideBuddyNotifications.has(userId)) {
+          this.rideBuddyNotifications.set(userId, []);
+        }
+        this.rideBuddyNotifications.get(userId).push({
+          event: "ride_buddy_auto_connection",
+          data: connectionData,
+          timestamp: new Date().toISOString(),
+        });
+      }
+    } catch (error) {
+      console.error("Error notifying about auto-connection:", error);
+    }
+  }
+
+  // Notify user about search expiration
+  async notifySearchExpired(userId) {
+    console.log(`⏰ Notifying user ${userId} about search expiration`);
+
+    try {
+      const userSocket = this.activeConnections.get(userId);
+      if (userSocket) {
+        userSocket.emit("ride_buddy_search_expired", {
+          message: "Your search has expired. You can start a new search now.",
+          timestamp: new Date().toISOString(),
+        });
+        console.log(`✅ Search expiration notification sent to user ${userId}`);
+      }
+      // Don't store this notification as it's time-sensitive
+    } catch (error) {
+      console.error("Error notifying about search expiration:", error);
+    }
+  }
+
   // NEW LIVE CHAT HANDLER METHODS
 
   // Handle joining a chat room (new live chat system)
