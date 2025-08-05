@@ -26,7 +26,6 @@ const RideBuddy = () => {
 
     // If same message within delay period, skip
     if (lastToast.message === message && now - lastToast.timestamp < delay) {
-      console.log(`🚫 Skipping duplicate toast: ${message}`);
       return;
     }
 
@@ -65,7 +64,6 @@ const RideBuddy = () => {
 
       // Show toast for expired requests
       if (expired.length > 0) {
-        console.log(`⏰ ${expired.length} incoming requests expired`);
         showDebouncedToast(
           "default",
           `${expired.length} request(s) expired and were removed`
@@ -91,7 +89,6 @@ const RideBuddy = () => {
 
       // Show toast for expired outgoing requests
       if (expired.length > 0) {
-        console.log(`⏰ ${expired.length} outgoing requests expired`);
         showDebouncedToast(
           "error",
           `Your request has expired. Try making a new request.`
@@ -118,19 +115,10 @@ const RideBuddy = () => {
               "lastRequestCleanup",
               now_timestamp.toString()
             );
-            console.log(
-              `✅ Backend cleanup successful: ${
-                result.data?.cleanedCount || 0
-              } requests cleaned`
-            );
-          } else {
-            console.warn("⚠️ Backend cleanup failed:", result.error);
           }
         })
         .catch((error) => {
-          console.error("❌ Error calling backend cleanup:", error);
           // Don't prevent the app from working if cleanup fails
-          // Just log the error and continue
         });
     }
   }, [showDebouncedToast]);
@@ -189,11 +177,6 @@ const RideBuddy = () => {
             "rideBuddy_activeConnections",
             JSON.stringify(validConnections)
           );
-          console.log(
-            `🧹 Cleared ${
-              connections.length - validConnections.length
-            } expired connections from localStorage`
-          );
         }
       }
     } catch (error) {
@@ -207,18 +190,15 @@ const RideBuddy = () => {
   // Get hotspot data for dropdowns
   const [hotspotData] = useHotspotData();
 
-  // Extract location names from hotspot data with debugging
+  // Extract location names from hotspot data
   const locationNames = React.useMemo(() => {
-    console.log("Hotspot data in RideBuddy:", hotspotData);
     if (hotspotData && Array.isArray(hotspotData)) {
       const names = hotspotData
         .map((spot) => spot.name)
         .filter(Boolean)
         .sort();
-      console.log("Extracted location names:", names);
       return names;
     }
-    console.log("No hotspot data available");
     return [];
   }, [hotspotData]);
 
@@ -295,7 +275,7 @@ const RideBuddy = () => {
   // Clear expired connections on component mount
   useEffect(() => {
     clearExpiredConnections();
-  }, []); // Run only once on mount
+  }, [clearExpiredConnections]); // Run only once on mount
 
   // Define handleSearchExpiry before it's used in useEffect
   const handleSearchExpiry = useCallback(() => {
@@ -405,24 +385,15 @@ const RideBuddy = () => {
 
     // Prevent multiple simultaneous calls and rate limiting
     if (requestsLoading || !isMountedRef.current) {
-      console.log(
-        `🔄 loadRequests #${callNumber} already in progress or component unmounted, skipping...`
-      );
       return;
     }
 
     // Rate limiting - prevent calls too close together
     if (now - lastLoadRequestsCallRef.current < MIN_CALL_INTERVAL) {
-      console.log(
-        `⏱️ loadRequests #${callNumber} called too soon (${
-          now - lastLoadRequestsCallRef.current
-        }ms ago), skipping...`
-      );
       return;
     }
 
     lastLoadRequestsCallRef.current = now;
-    console.log(`📥 loadRequests #${callNumber} starting...`);
 
     try {
       setRequestsLoading(true);
@@ -431,9 +402,6 @@ const RideBuddy = () => {
       const result = await rideBuddyService.getRequests();
 
       if (!isMountedRef.current) {
-        console.log(
-          `🔄 Component unmounted during loadRequests #${callNumber}, aborting...`
-        );
         return;
       }
 
@@ -477,13 +445,9 @@ const RideBuddy = () => {
           setSentRequestTimes(sentTimes);
           setRequestsLoaded(true);
         } else {
-          console.log(
-            `⚠️ loadRequests #${callNumber} no data returned, keeping existing requests`
-          );
           setRequestsLoaded(true);
         }
       } else {
-        console.log(`⚠️ loadRequests #${callNumber} failed:`, result.error);
         setRequestsLoaded(true);
       }
     } catch (error) {
@@ -495,7 +459,6 @@ const RideBuddy = () => {
       if (isMountedRef.current) {
         setRequestsLoading(false);
       }
-      console.log(`✅ loadRequests #${callNumber} completed`);
     }
   }, [requestsLoading]);
 
@@ -521,13 +484,11 @@ const RideBuddy = () => {
     async (forceRefresh = false) => {
       // Check if component is still mounted
       if (!isMountedRef.current) {
-        console.log("🔄 Component unmounted, skipping loadConnections");
         return;
       }
 
       // Prevent multiple simultaneous calls
       if (connectionsLoading && !forceRefresh) {
-        console.log("🔄 loadConnections already in progress, skipping...");
         return;
       }
 
@@ -542,24 +503,10 @@ const RideBuddy = () => {
         // Use the correct method name from the old version
         const result = await rideBuddyService.getMatches();
         if (result.success) {
-          console.log("Loaded connections:", result.data);
-          console.log(
-            "Connection details:",
-            result.data.map((conn) => ({
-              matchId: conn.matchId,
-              partnerName: conn.partner?.name,
-              partnerPhone: conn.partner?.phone,
-              hasPhone: !!conn.partner?.phone,
-            }))
-          );
-
           // Filter out expired connections and update time remaining
           const validConnections = (result.data || [])
             .filter((connection) => {
               if (isConnectionExpired(connection)) {
-                console.log(
-                  `Filtering out expired connection: ${connection.matchId} (15 minutes elapsed)`
-                );
                 return false;
               }
               return true;
@@ -584,7 +531,6 @@ const RideBuddy = () => {
             toast(`${expiredCount} expired connection(s) removed`);
           }
         } else {
-          console.log("⚠️ Failed to load connections:", result.error);
           // Don't clear existing connections on error, just mark as loaded
           setConnectionsLoaded(true);
         }
@@ -736,12 +682,12 @@ const RideBuddy = () => {
             console.error("Retry connection failed:", retryError);
             toast.error("Session expired. Please sign in again.");
             authService.clearTokens();
-            navigate("/signin");
+            navigate("/");
           });
         } else {
           toast.error("Session expired. Please sign in again.");
           authService.clearTokens();
-          navigate("/signin");
+          navigate("/");
         }
       } else {
         toast.error("Authentication failed. Please sign in again.");
@@ -798,12 +744,9 @@ const RideBuddy = () => {
       });
 
       // Switch to connections tab to show the new request
-      setActiveTab((currentTab) => {
-        console.log("🔔 Current tab:", currentTab);
-        const newTab = currentTab === "search" ? "connections" : currentTab;
-        console.log("🔔 Switching to tab:", newTab);
-        return newTab;
-      });
+      setActiveTab((currentTab) =>
+        currentTab === "search" ? "connections" : currentTab
+      );
 
       // Refresh from server after a delay to ensure consistency
       // REMOVED: This was causing infinite loops on Render deployment
@@ -1005,12 +948,12 @@ const RideBuddy = () => {
             console.error("Retry connection failed:", retryError);
             toast.error("Session expired. Please sign in again.");
             authService.clearTokens();
-            navigate("/signin");
+            navigate("/");
           });
         } else {
           toast.error("Session expired. Please sign in again.");
           authService.clearTokens();
-          navigate("/signin");
+          navigate("/");
         }
       } else {
         toast.error("Connection failed. Please try again.");
@@ -1686,14 +1629,14 @@ const RideBuddy = () => {
                   </div>
                 )}
 
-                <form onSubmit={handleSearch} className="space-y-6">
-                  <div className="grid md:grid-cols-2 gap-6">
+                <form onSubmit={handleSearch} className="space-y-4">
+                  <div className="grid md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-semibold text-sawaari-yellow mb-2 text-readable">
+                      <label className="block text-xs font-semibold text-sawaari-yellow mb-1 text-readable">
                         📍 Source Location
                       </label>
                       <select
-                        className="w-full p-3 bg-black/30 border border-white/20 rounded-lg text-white focus:border-sawaari-yellow focus:ring-2 focus:ring-sawaari-yellow/20 focus:outline-none transition-all duration-300 text-sm"
+                        className="w-full p-2 bg-black/30 border border-white/20 rounded-lg text-white focus:border-sawaari-yellow focus:ring-2 focus:ring-sawaari-yellow/20 focus:outline-none transition-all duration-300 text-sm"
                         value={searchForm.source.name}
                         onChange={(e) => {
                           const selectedHotspot = hotspotData.find(
@@ -1727,11 +1670,11 @@ const RideBuddy = () => {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-sawaari-yellow mb-2 text-readable">
+                      <label className="block text-xs font-semibold text-sawaari-yellow mb-1 text-readable">
                         🎯 Destination Location
                       </label>
                       <select
-                        className="w-full p-3 bg-black/30 border border-white/20 rounded-lg text-white focus:border-sawaari-yellow focus:ring-2 focus:ring-sawaari-yellow/20 focus:outline-none transition-all duration-300 text-sm"
+                        className="w-full p-2 bg-black/30 border border-white/20 rounded-lg text-white focus:border-sawaari-yellow focus:ring-2 focus:ring-sawaari-yellow/20 focus:outline-none transition-all duration-300 text-sm"
                         value={searchForm.destination.name}
                         onChange={(e) => {
                           const selectedHotspot = hotspotData.find(
@@ -1766,8 +1709,8 @@ const RideBuddy = () => {
                     </div>
 
                     {/* Search Radius Selector */}
-                    <div>
-                      <label className="block text-sm font-semibold text-sawaari-yellow mb-2 text-readable">
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-semibold text-sawaari-yellow mb-1 text-readable">
                         📏 Search Radius
                       </label>
                       <select
@@ -1778,7 +1721,7 @@ const RideBuddy = () => {
                             searchRadius: parseInt(e.target.value),
                           }))
                         }
-                        className="form-input"
+                        className="w-full p-2 bg-black/30 border border-white/20 rounded-lg text-white focus:border-sawaari-yellow focus:ring-2 focus:ring-sawaari-yellow/20 focus:outline-none transition-all duration-300 text-sm"
                       >
                         <option value={1}>1 km</option>
                         <option value={2}>2 km (Default)</option>
@@ -1790,6 +1733,19 @@ const RideBuddy = () => {
                         Find ride buddies within this distance from your route
                       </p>
                     </div>
+                  </div>
+
+                  {/* Disclaimer */}
+                  <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                    <p className="text-xs text-gray-200">
+                      <span className="text-blue-400 font-semibold">
+                        👥 Important:
+                      </span>{" "}
+                      To test this feature, ensure at least one other user is
+                      searching for a similar or same route from a different
+                      account. Matches occur when users have compatible routes
+                      and timing.
+                    </p>
                   </div>
                   <button
                     type="submit"
@@ -1849,8 +1805,8 @@ const RideBuddy = () => {
                       <div className="text-center py-8">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-sawaari-yellow mx-auto mb-4"></div>
                         <p className="text-gray-300 mb-2">
-                          Your search is active! We'll notify you when potential
-                          matches are found.
+                          Your search is active! We&apos;ll notify you when
+                          potential matches are found.
                         </p>
                         <p className="text-sm text-gray-400">
                           Search expires in{" "}

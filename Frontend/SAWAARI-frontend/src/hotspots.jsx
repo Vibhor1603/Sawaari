@@ -120,6 +120,14 @@ function Hotspots() {
                   Click on hotspots to see destinations and fares
                 </p>
               </div>
+
+              <div className="mt-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                <p className="text-xs text-gray-200">
+                  <span className="text-blue-400 font-semibold">📍 Note:</span>{" "}
+                  Currently showing sample locations for testing purposes. More
+                  hotspots will be added soon!
+                </p>
+              </div>
             </div>
           </div>
 

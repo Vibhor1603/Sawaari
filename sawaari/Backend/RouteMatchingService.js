@@ -638,7 +638,6 @@ const findActiveMatches = async (userRoute, excludeUserId) => {
       }
     }
 
-    console.log(`✅ Found ${matches.length} matching active searches`);
     return rankMatches(matches);
   } catch (error) {
     console.error("Error finding active matches:", error);
@@ -656,10 +655,6 @@ const notifyExistingSearchers = async (newUserRoute, socketService) => {
     const potentialMatches = await findActiveMatches(
       newUserRoute,
       newUserRoute.userId
-    );
-
-    console.log(
-      `📡 Notifying ${potentialMatches.length} existing searchers about new match`
     );
 
     for (const match of potentialMatches) {
@@ -680,11 +675,7 @@ const notifyExistingSearchers = async (newUserRoute, socketService) => {
             searchTimestamp: new Date().toISOString(),
           },
         });
-        console.log(
-          `✅ Notified user ${match.userId} about new potential match`
-        );
       } catch (notifyError) {
-        console.error(`❌ Failed to notify user ${match.userId}:`, notifyError);
         // Continue with other notifications even if one fails
       }
     }

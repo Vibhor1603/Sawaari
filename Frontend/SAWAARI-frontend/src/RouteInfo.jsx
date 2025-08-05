@@ -194,6 +194,16 @@ export default function RouteInfo({ hotspot }) {
                     <p className="text-sm text-red-200">{error}</p>
                   </div>
                 )}
+
+                <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                  <p className="text-xs text-gray-200">
+                    <span className="text-blue-400 font-semibold">
+                      📍 Note:
+                    </span>{" "}
+                    Currently showing sample routes for testing purposes. More
+                    locations and routes will be added soon!
+                  </p>
+                </div>
               </div>
             ) : (
               /* Route Results */

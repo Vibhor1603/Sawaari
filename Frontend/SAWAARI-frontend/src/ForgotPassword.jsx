@@ -184,7 +184,7 @@ const ForgotPassword = () => {
 
       if (data.success) {
         toast.success(data.message);
-        navigate("/signin");
+        navigate("/");
       } else {
         toast.error(data.error || "Failed to reset password");
       }
@@ -463,7 +463,7 @@ const ForgotPassword = () => {
           {/* Back to Sign In */}
           <div className="text-center mt-6 pt-4 border-t border-white/20">
             <Link
-              to="/signin"
+              to="/"
               className="inline-flex items-center gap-2 text-sawaari-yellow hover:text-white font-medium transition-colors duration-300 text-sm"
             >
               <span>←</span>

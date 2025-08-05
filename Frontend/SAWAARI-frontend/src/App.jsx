@@ -16,6 +16,7 @@ import ForgotPassword from "./ForgotPassword";
 import Contact from "./Contact";
 import UserProfile from "./UserProfile";
 import FloatingRickshaws from "./components/FloatingRickshaws";
+import NotFound from "./NotFound";
 import { Toaster } from "react-hot-toast";
 
 export default function App() {
@@ -36,6 +37,7 @@ export default function App() {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/logout" element={<Logout />} />
           <Route path="/feedbacks" element={<Contact />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
         <Footer />
         <AuthModalContainer />
