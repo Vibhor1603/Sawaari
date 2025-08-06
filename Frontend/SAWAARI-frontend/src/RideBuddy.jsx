@@ -1090,6 +1090,65 @@ const RideBuddy = () => {
     return () => clearInterval(interval);
   }, [checkExpiredRequests, isAuthenticated]); // Only depend on authentication state
 
+  // Periodic data refresh - separate from initialization
+  useEffect(() => {
+    if (!isAuthenticated || !componentInitializedRef.current) return;
+
+    console.log("🚨 DEBUG: Setting up periodic data refresh");
+
+    // Set up interval to refresh data every 30 seconds
+    const dataRefreshInterval = setInterval(() => {
+      if (isMountedRef.current && componentInitializedRef.current) {
+        console.log("🔄 Periodic data refresh triggered");
+
+        // Only refresh if not currently loading to avoid conflicts
+        if (!requestsLoading) {
+          loadRequests();
+        }
+
+        // Check for active search status updates
+        if (searchState.isActive) {
+          checkActiveSearchStatus();
+        }
+
+        // Refresh connections periodically
+        if (!connectionsLoading) {
+          loadConnections(false); // Don't force refresh, just update
+        }
+      }
+    }, 30000); // 30 seconds
+
+    return () => {
+      console.log("🧹 Cleaning up periodic data refresh interval");
+      clearInterval(dataRefreshInterval);
+    };
+  }, [isAuthenticated, searchState.isActive]); // Depend on auth and search state
+
+  // Enhanced search monitoring - more frequent checks when search is active
+  useEffect(() => {
+    if (
+      !isAuthenticated ||
+      !searchState.isActive ||
+      !componentInitializedRef.current
+    )
+      return;
+
+    console.log("🚨 DEBUG: Setting up enhanced search monitoring");
+
+    // Check for new matches every 10 seconds when search is active
+    const searchMonitorInterval = setInterval(() => {
+      if (isMountedRef.current && searchState.isActive) {
+        console.log("🔍 Enhanced search monitoring - checking for new matches");
+        checkActiveSearchStatus();
+      }
+    }, 10000); // 10 seconds
+
+    return () => {
+      console.log("🧹 Cleaning up enhanced search monitoring interval");
+      clearInterval(searchMonitorInterval);
+    };
+  }, [isAuthenticated, searchState.isActive]); // Only depend on auth and active search state
+
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!searchForm.source.name || !searchForm.destination.name) {
