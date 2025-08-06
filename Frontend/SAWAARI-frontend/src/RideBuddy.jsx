@@ -332,8 +332,12 @@ const RideBuddy = () => {
   // Enhanced search status management
   const checkActiveSearchStatus = useCallback(async () => {
     try {
+      console.log("🔍 Checking active search status...");
       const result = await rideBuddyService.getActiveSearchStatus();
+      console.log("📡 Active search status result:", result);
+
       if (result.success && result.data.hasActiveSearch) {
+        console.log("✅ Found active search, setting state:", result.data);
         setSearchState({
           isActive: true,
           searchId: result.data.searchId,
@@ -344,6 +348,7 @@ const RideBuddy = () => {
           matchCount: 0,
         });
       } else {
+        console.log("❌ No active search found");
         setSearchState((prev) => ({ ...prev, isActive: false }));
       }
     } catch (error) {
@@ -353,7 +358,10 @@ const RideBuddy = () => {
 
   const cancelActiveSearch = useCallback(async () => {
     try {
+      console.log("🚀 Attempting to cancel active search...");
       const result = await rideBuddyService.cancelActiveSearch();
+      console.log("📡 Cancel search result:", result);
+
       if (result.success) {
         setSearchState({
           isActive: false,
@@ -367,7 +375,30 @@ const RideBuddy = () => {
         setSearchResults([]);
         showDebouncedToast("success", "Search cancelled successfully");
       } else {
-        showDebouncedToast("error", result.error || "Failed to cancel search");
+        console.error("❌ Cancel search failed:", result.error);
+        // Handle specific error cases
+        if (
+          result.error?.includes("404") ||
+          result.error?.includes("not found")
+        ) {
+          showDebouncedToast("info", "No active search to cancel");
+          // Reset search state anyway
+          setSearchState({
+            isActive: false,
+            searchId: null,
+            expiresAt: null,
+            source: "",
+            destination: "",
+            matchCount: 0,
+            timeRemaining: 0,
+          });
+          setSearchResults([]);
+        } else {
+          showDebouncedToast(
+            "error",
+            result.error || "Failed to cancel search"
+          );
+        }
       }
     } catch (error) {
       console.error("Error cancelling search:", error);
@@ -883,10 +914,11 @@ const RideBuddy = () => {
       }
     };
 
-    // Handle search expiration
-    const handleSearchExpired = () => {
-      console.log("⏰ Search expired notification received");
-      handleSearchExpiry();
+    // Handle search expiration - disabled socket event, using only client timer
+    const handleSearchExpired = (data) => {
+      console.log("⏰ Search expired notification received (ignoring):", data);
+      // Ignore socket events for search expiry - use only client-side timer
+      // This prevents premature expiry notifications
     };
 
     const handleConnectionEnded = () => {
@@ -978,7 +1010,18 @@ const RideBuddy = () => {
       // Reset initialization flag for next mount
       componentInitializedRef.current = false;
     };
-  }, [isAuthenticated, user]); // Only depend on authentication state and user object
+  }, [
+    activeChatId,
+    activeTab,
+    checkActiveSearchStatus,
+    incomingRequests.length,
+    isAuthenticated,
+    loadConnections,
+    loadRequests,
+    navigate,
+    showDebouncedToast,
+    user,
+  ]); // Only depend on authentication state and user object
 
   // Request expiration checker - runs every minute
   useEffect(() => {
@@ -1031,6 +1074,7 @@ const RideBuddy = () => {
           `🔍 Search API returned ${matches.length} matches:`,
           matches
         );
+        console.log("🔍 Search result data:", result.data);
 
         // Filter out current user and users we've already sent requests to
         const filteredMatches = matches.filter((match) => {
@@ -1058,7 +1102,7 @@ const RideBuddy = () => {
         setSearchResults(filteredMatches);
 
         // Set active search state with 5-minute duration
-        setSearchState({
+        const newSearchState = {
           isActive: true,
           searchId: result.data.searchId,
           expiresAt: result.data.expiresAt,
@@ -1066,7 +1110,9 @@ const RideBuddy = () => {
           destination: searchForm.destination.name,
           matchCount: filteredMatches.length,
           timeRemaining: result.data.timeRemaining || 5 * 60 * 1000,
-        });
+        };
+        console.log("🔍 Setting new search state:", newSearchState);
+        setSearchState(newSearchState);
 
         if (filteredMatches.length === 0) {
           showDebouncedToast(
