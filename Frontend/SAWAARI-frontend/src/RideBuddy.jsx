@@ -287,7 +287,6 @@ const RideBuddy = () => {
   const loadRequestsCallCountRef = useRef(0);
   const loadRequestsTimeoutRef = useRef(null);
   const componentInitializedRef = useRef(false);
-  const loadingTimeoutRef = useRef(null);
 
   // Save connections to localStorage whenever they change
   useEffect(() => {
@@ -354,42 +353,8 @@ const RideBuddy = () => {
       if (loadRequestsTimeoutRef.current) {
         clearTimeout(loadRequestsTimeoutRef.current);
       }
-      if (loadingTimeoutRef.current) {
-        clearTimeout(loadingTimeoutRef.current);
-      }
     };
   }, []);
-
-  // Prevent infinite loading states with timeout
-  useEffect(() => {
-    if (requestsLoading || connectionsLoading) {
-      // Clear any existing timeout
-      if (loadingTimeoutRef.current) {
-        clearTimeout(loadingTimeoutRef.current);
-      }
-
-      // Set timeout to force loading to stop after 10 seconds
-      loadingTimeoutRef.current = setTimeout(() => {
-        if (isMountedRef.current) {
-          console.log("⏰ Loading timeout reached, forcing loaded state");
-          if (requestsLoading) {
-            setRequestsLoading(false);
-            setRequestsLoaded(true);
-          }
-          if (connectionsLoading) {
-            setConnectionsLoading(false);
-            setConnectionsLoaded(true);
-          }
-        }
-      }, 10000); // 10 second timeout
-    } else {
-      // Clear timeout when loading stops
-      if (loadingTimeoutRef.current) {
-        clearTimeout(loadingTimeoutRef.current);
-        loadingTimeoutRef.current = null;
-      }
-    }
-  }, [requestsLoading, connectionsLoading]);
 
   // Enhanced search status management
   const checkActiveSearchStatus = useCallback(async () => {
