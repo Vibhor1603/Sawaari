@@ -353,6 +353,10 @@ const RideBuddy = () => {
   // Enhanced search status management
   const checkActiveSearchStatus = useCallback(async () => {
     try {
+      // 🚨 DEBUG: Log who called this function
+      console.log("🚨 DEBUG: checkActiveSearchStatus called");
+      console.log("�  DEBUG: Call stack:", new Error().stack);
+
       console.log("🔍 Checking active search status...");
       const result = await rideBuddyService.getActiveSearchStatus();
       console.log("📡 Active search status result:", result);
@@ -436,13 +440,26 @@ const RideBuddy = () => {
     loadRequestsCallCountRef.current += 1;
     const callNumber = loadRequestsCallCountRef.current;
 
+    // 🚨 DEBUG: Log who called this function
+    console.log(`🚨 DEBUG: loadRequests called #${callNumber}`);
+    console.log(`🚨 DEBUG: Call stack:`, new Error().stack);
+    console.log(
+      `🚨 DEBUG: Time since last call:`,
+      now - lastLoadRequestsCallRef.current,
+      "ms"
+    );
+
     // Prevent multiple simultaneous calls and rate limiting
     if (requestsLoading || !isMountedRef.current) {
+      console.log(
+        `🚨 DEBUG: loadRequests #${callNumber} blocked - loading:${requestsLoading}, mounted:${isMountedRef.current}`
+      );
       return;
     }
 
     // Rate limiting - prevent calls too close together
     if (now - lastLoadRequestsCallRef.current < MIN_CALL_INTERVAL) {
+      console.log(`🚨 DEBUG: loadRequests #${callNumber} rate limited`);
       return;
     }
 
@@ -517,13 +534,21 @@ const RideBuddy = () => {
 
   const loadConnections = useCallback(
     async (forceRefresh = false) => {
+      // 🚨 DEBUG: Log who called this function
+      console.log(
+        `🚨 DEBUG: loadConnections called with forceRefresh:${forceRefresh}`
+      );
+      console.log(`🚨 DEBUG: Call stack:`, new Error().stack);
+
       // Check if component is still mounted
       if (!isMountedRef.current) {
+        console.log(`🚨 DEBUG: loadConnections blocked - not mounted`);
         return;
       }
 
       // Prevent multiple simultaneous calls
       if (connectionsLoading && !forceRefresh) {
+        console.log(`🚨 DEBUG: loadConnections blocked - already loading`);
         return;
       }
 

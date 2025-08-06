@@ -149,13 +149,19 @@ const searchRideBuddies = async (searchData) => {
 // Get user's active matches
 const getMatches = async () => {
   try {
+    // 🚨 DEBUG: Log who called this API
+    console.log("🚨 DEBUG: getMatches API called");
+    console.log("🚨 DEBUG: Call stack:", new Error().stack);
+
     const cacheKey = "user_matches";
     const cached = getCachedData(cacheKey, 5000); // 5 seconds cache for real-time updates
 
     if (cached) {
+      console.log("🚨 DEBUG: getMatches returning cached data");
       return { success: true, data: cached, cached: true };
     }
 
+    console.log("🚨 DEBUG: getMatches making actual API call");
     const response = await apiRequest("/api/ride-buddy/matches");
 
     if (response.success) {
@@ -303,13 +309,19 @@ const handleConnectionRequest = async (
 // Get user's pending requests (sent and received)
 const getRequests = async () => {
   try {
+    // 🚨 DEBUG: Log who called this API
+    console.log("🚨 DEBUG: getRequests API called");
+    console.log("🚨 DEBUG: Call stack:", new Error().stack);
+
     const cacheKey = "user_requests";
     const cached = getCachedData(cacheKey, 2000); // 2 seconds cache for real-time updates
 
     if (cached) {
+      console.log("🚨 DEBUG: getRequests returning cached data");
       return { success: true, data: cached, cached: true };
     }
 
+    console.log("🚨 DEBUG: getRequests making actual API call");
     const response = await apiRequest("/api/ride-buddy/requests");
 
     if (response.success) {
@@ -596,15 +608,21 @@ const cancelActiveSearch = async () => {
 // Get active search status
 const getActiveSearchStatus = async () => {
   try {
+    // 🚨 DEBUG: Log who called this API
+    console.log("🚨 DEBUG: getActiveSearchStatus API called");
+    console.log("🚨 DEBUG: Call stack:", new Error().stack);
+
     console.log("🚀 getActiveSearchStatus called");
 
     const cacheKey = "active_search_status";
     const cached = getCachedData(cacheKey, 5000); // 5 seconds cache
 
     if (cached) {
+      console.log("🚨 DEBUG: getActiveSearchStatus returning cached data");
       return { success: true, data: cached, cached: true };
     }
 
+    console.log("🚨 DEBUG: getActiveSearchStatus making actual API call");
     const response = await apiRequest("/api/ride-buddy/search/status");
 
     console.log("🔧 Search status API Response:", response);
