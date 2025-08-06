@@ -287,6 +287,7 @@ const RideBuddy = () => {
   const loadRequestsCallCountRef = useRef(0);
   const loadRequestsTimeoutRef = useRef(null);
   const componentInitializedRef = useRef(false);
+  const loadingTimeoutRef = useRef(null);
 
   // Save connections to localStorage whenever they change
   useEffect(() => {
@@ -349,12 +350,46 @@ const RideBuddy = () => {
   useEffect(() => {
     return () => {
       isMountedRef.current = false;
-      // Clear any pending loadRequests timeout
+      // Clear any pending timeouts
       if (loadRequestsTimeoutRef.current) {
         clearTimeout(loadRequestsTimeoutRef.current);
       }
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+      }
     };
   }, []);
+
+  // Prevent infinite loading states with timeout
+  useEffect(() => {
+    if (requestsLoading || connectionsLoading) {
+      // Clear any existing timeout
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+      }
+
+      // Set timeout to force loading to stop after 10 seconds
+      loadingTimeoutRef.current = setTimeout(() => {
+        if (isMountedRef.current) {
+          console.log("⏰ Loading timeout reached, forcing loaded state");
+          if (requestsLoading) {
+            setRequestsLoading(false);
+            setRequestsLoaded(true);
+          }
+          if (connectionsLoading) {
+            setConnectionsLoading(false);
+            setConnectionsLoaded(true);
+          }
+        }
+      }, 10000); // 10 second timeout
+    } else {
+      // Clear timeout when loading stops
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+        loadingTimeoutRef.current = null;
+      }
+    }
+  }, [requestsLoading, connectionsLoading]);
 
   // Enhanced search status management
   const checkActiveSearchStatus = useCallback(async () => {
@@ -1954,16 +1989,18 @@ const RideBuddy = () => {
                     Connection Requests ({incomingRequests.length})
                   </h3>
                   <div className="grid gap-4">
-                    {requestsLoading && incomingRequests.length === 0 && (
-                      <div className="flex items-center justify-center p-8">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-sawaari-yellow"></div>
-                        <span className="ml-3 text-gray-400">
-                          Loading requests...
-                        </span>
-                      </div>
-                    )}
-                    {!requestsLoading &&
-                      requestsLoaded &&
+                    {requestsLoading &&
+                      incomingRequests.length === 0 &&
+                      !requestsLoaded && (
+                        <div className="flex items-center justify-center p-8">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-sawaari-yellow"></div>
+                          <span className="ml-3 text-gray-400">
+                            Loading requests...
+                          </span>
+                        </div>
+                      )}
+                    {((!requestsLoading && requestsLoaded) ||
+                      (!requestsLoading && incomingRequests.length === 0)) &&
                       incomingRequests.length === 0 && (
                         <div className="text-center p-8 text-gray-400">
                           <div className="text-4xl mb-2">📭</div>
@@ -2228,10 +2265,11 @@ const RideBuddy = () => {
                 </div>
               )}
 
-              {/* Loading State */}
+              {/* Loading State - Only show for initial load */}
               {(requestsLoading || connectionsLoading) &&
                 incomingRequests.length === 0 &&
-                activeConnections.length === 0 && (
+                activeConnections.length === 0 &&
+                (!requestsLoaded || !connectionsLoaded) && (
                   <div className="card text-center">
                     <div className="flex items-center justify-center p-8">
                       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sawaari-yellow"></div>
@@ -2242,13 +2280,11 @@ const RideBuddy = () => {
                   </div>
                 )}
 
-              {/* Empty State - Only show when not loading and data is loaded */}
+              {/* Empty State - Show when no data and either loaded or not loading */}
               {incomingRequests.length === 0 &&
                 activeConnections.length === 0 &&
-                !requestsLoading &&
-                !connectionsLoading &&
-                requestsLoaded &&
-                connectionsLoaded && (
+                ((!requestsLoading && !connectionsLoading) ||
+                  (requestsLoaded && connectionsLoaded)) && (
                   <div className="card text-center">
                     <div className="text-6xl mb-4">👥</div>
                     <h3 className="text-xl font-bold text-white mb-2 text-readable">
@@ -2268,6 +2304,9 @@ const RideBuddy = () => {
                       <button
                         onClick={() => {
                           console.log("🔄 Manual refresh triggered");
+                          // Reset loaded states to show loading
+                          setRequestsLoaded(false);
+                          setConnectionsLoaded(false);
                           loadRequests();
                           loadConnections(true);
                           toast("Refreshing your data...");
