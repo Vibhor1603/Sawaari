@@ -463,24 +463,6 @@ const RideBuddy = () => {
     }
   }, [requestsLoading]);
 
-  // Debounced version of loadRequests for socket events
-  const debouncedLoadRequests = useCallback(
-    (delay = 1000) => {
-      // Clear any existing timeout
-      if (loadRequestsTimeoutRef.current) {
-        clearTimeout(loadRequestsTimeoutRef.current);
-      }
-
-      // Set new timeout
-      loadRequestsTimeoutRef.current = setTimeout(() => {
-        if (isMountedRef.current) {
-          loadRequests();
-        }
-      }, delay);
-    },
-    [loadRequests]
-  );
-
   const loadConnections = useCallback(
     async (forceRefresh = false) => {
       // Check if component is still mounted
