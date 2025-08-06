@@ -26,6 +26,14 @@ export default function RouteInfo({ hotspot }) {
   const [distance, setDistance] = useState(0);
   const [showResults, setShowResults] = useState(false);
 
+  // Set document title
+  useEffect(() => {
+    document.title = "Route Planner - SAWAARI";
+    return () => {
+      document.title = "SAWAARI - Smart Rickshaw Navigation";
+    };
+  }, []);
+
   useEffect(() => {
     let isMounted = true;
 

@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import EnhancedMap from "./components/EnhancedMap";
 
 // Component to display hotspots with enhanced geolocation-based loading
@@ -7,6 +7,14 @@ function Hotspots() {
   const [selectedDestination, setSelectedDestination] = useState([
     28.619155291665052, 77.42591115327116,
   ]);
+
+  // Set document title
+  useEffect(() => {
+    document.title = "Pickup Zones - SAWAARI";
+    return () => {
+      document.title = "SAWAARI - Smart Rickshaw Navigation";
+    };
+  }, []);
 
   // Handle hotspot click
   const handleHotspotClick = (latitude, longitude) => {
@@ -71,10 +79,10 @@ function Hotspots() {
                 </div>
                 <div>
                   <h1 className="text-xl font-bold text-white">
-                    Live <span className="text-sawaari-yellow">Hotspots</span>
+                    Pickup <span className="text-sawaari-yellow">Zones</span>
                   </h1>
                   <p className="text-sm text-gray-200">
-                    Real-time availability
+                    Auto-rickshaw hotspots
                   </p>
                 </div>
               </div>
@@ -117,7 +125,7 @@ function Hotspots() {
                   <span className="text-sawaari-yellow font-semibold">
                     Tip:
                   </span>{" "}
-                  Click on hotspots to see destinations and fares
+                  Click on pickup zones to see destinations and fares
                 </p>
               </div>
 
@@ -125,7 +133,7 @@ function Hotspots() {
                 <p className="text-xs text-gray-200">
                   <span className="text-blue-400 font-semibold">📍 Note:</span>{" "}
                   Currently showing sample locations for testing purposes. More
-                  hotspots will be added soon!
+                  pickup zones will be added soon!
                 </p>
               </div>
             </div>

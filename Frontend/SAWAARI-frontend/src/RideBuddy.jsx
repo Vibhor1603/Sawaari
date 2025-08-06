@@ -8,6 +8,7 @@ import socketService from "./services/socketService";
 import authService from "./services/authService";
 import LiveChat from "./components/LiveChat";
 import LocationSelect from "./components/LocationSelect";
+import SearchStatus from "./components/SearchStatus";
 import toast from "react-hot-toast";
 
 import React from "react"; // Added missing import for React
@@ -16,7 +17,7 @@ const RideBuddy = () => {
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
   const { isAuthenticated, isLoading } = useAuthGuard(
-    "Please sign in to access Ride Buddy"
+    "Please sign in to access Travel Buddy"
   );
 
   // Enhanced toast debouncing to prevent rapid-fire duplicate toasts
@@ -1147,7 +1148,7 @@ const RideBuddy = () => {
       console.log("🧹 Cleaning up enhanced search monitoring interval");
       clearInterval(searchMonitorInterval);
     };
-  }, [isAuthenticated, searchState.isActive]); // Only depend on auth and active search state
+  }, [checkActiveSearchStatus, isAuthenticated, searchState.isActive]); // Only depend on auth and active search state
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -1233,7 +1234,7 @@ const RideBuddy = () => {
         } else {
           showDebouncedToast(
             "success",
-            `Found ${filteredMatches.length} potential ride buddies`
+            `Found ${filteredMatches.length} potential travel buddies`
           );
         }
       } else {
@@ -1249,14 +1250,14 @@ const RideBuddy = () => {
         } else {
           showDebouncedToast(
             "error",
-            result.error || "Failed to search for ride buddies"
+            result.error || "Failed to search for travel buddies"
           );
         }
         setSearchResults([]);
       }
     } catch (error) {
       console.error("Search failed:", error);
-      showDebouncedToast("error", "Failed to search for ride buddies");
+      showDebouncedToast("error", "Failed to search for travel buddies");
       setSearchResults([]);
     } finally {
       setSearchLoading(false);
@@ -1332,9 +1333,15 @@ const RideBuddy = () => {
         toast.success(
           `Connection request sent to ${match.userName || match.userPhone}!`
         );
-        setSearchResults((prev) =>
-          prev.filter((m) => m.userId !== match.userId)
-        );
+        setSearchResults((prev) => {
+          const filtered = prev.filter((m) => m.userId !== match.userId);
+          // Update search state match count
+          setSearchState((prevState) => ({
+            ...prevState,
+            matchCount: filtered.length,
+          }));
+          return filtered;
+        });
         // REMOVED: This was causing infinite loops on Render deployment
         // debouncedLoadRequests(500);
       } else {
@@ -1367,9 +1374,15 @@ const RideBuddy = () => {
           toast.error("Invalid request data. Please try again.");
         } else if (result.error === "Receiver not found") {
           toast.error("User is no longer available for connections");
-          setSearchResults((prev) =>
-            prev.filter((m) => m.userId !== match.userId)
-          );
+          setSearchResults((prev) => {
+            const filtered = prev.filter((m) => m.userId !== match.userId);
+            // Update search state match count
+            setSearchState((prevState) => ({
+              ...prevState,
+              matchCount: filtered.length,
+            }));
+            return filtered;
+          });
         } else {
           toast.error(result.error || "Failed to send request");
           console.error("Request error details:", result);
@@ -1601,13 +1614,21 @@ const RideBuddy = () => {
     }
   }, [activeChatId, closeChat, showHowItWorks]);
 
+  // Set document title
+  useEffect(() => {
+    document.title = "Find Travel Buddy - SAWAARI";
+    return () => {
+      document.title = "SAWAARI - Smart Rickshaw Navigation";
+    };
+  }, []);
+
   // Show loading state while checking authentication
   if (isLoading) {
     return (
       <div className="min-h-screen bg-black pt-20 flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-sawaari-yellow border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-200">Loading Ride Buddy...</p>
+          <p className="text-gray-200">Loading Travel Buddy...</p>
         </div>
       </div>
     );
@@ -1626,7 +1647,7 @@ const RideBuddy = () => {
           <div className="inline-flex items-center gap-2 bg-gradient-to-r from-sawaari-yellow/20 to-sawaari-green/20 border border-sawaari-yellow/30 rounded-lg px-4 py-2 mb-6">
             <span className="text-xl">👥</span>
             <span className="text-sm font-semibold text-sawaari-yellow">
-              Ride Buddy
+              Travel Buddy
             </span>
           </div>
           <h1 className="text-4xl lg:text-5xl font-bold text-white mb-4 text-readable">
@@ -1698,64 +1719,12 @@ const RideBuddy = () => {
               {/* Search Form */}
               <div className="card">
                 <h2 className="text-2xl font-bold text-white mb-6 text-readable">
-                  Search for Ride Buddies
+                  Search for Travel Buddies
                 </h2>
-                {/* Search Status Display */}
-                {searchState.isActive && (
-                  <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg p-4 mb-6 shadow-lg">
-                    <div className="flex justify-between items-center mb-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-                        <span className="font-semibold">Search Active</span>
-                      </div>
-                      <button
-                        onClick={cancelActiveSearch}
-                        className="bg-white/20 hover:bg-white/30 px-3 py-1 rounded text-sm transition-colors"
-                        title="Cancel current search"
-                      >
-                        Cancel Search
-                      </button>
-                    </div>
-
-                    <div className="mb-3">
-                      <div className="text-sm opacity-90 mb-1">
-                        <strong>{searchState.source}</strong> →{" "}
-                        <strong>{searchState.destination}</strong>
-                      </div>
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="opacity-80">Time Remaining:</span>
-                        <span className="font-mono text-lg">
-                          {Math.floor(searchState.timeRemaining / 60000)}:
-                          {String(
-                            Math.floor(
-                              (searchState.timeRemaining % 60000) / 1000
-                            )
-                          ).padStart(2, "0")}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="w-full bg-white/20 rounded-full h-2 mb-3">
-                      <div
-                        className="bg-white/80 h-2 rounded-full transition-all duration-1000"
-                        style={{
-                          width: `${Math.max(
-                            0,
-                            (searchState.timeRemaining / (5 * 60 * 1000)) * 100
-                          )}%`,
-                        }}
-                      ></div>
-                    </div>
-
-                    <div className="text-center text-sm opacity-90">
-                      {searchState.matchCount === 0
-                        ? "No matches found yet, but your search is active"
-                        : `${searchState.matchCount} potential match${
-                            searchState.matchCount !== 1 ? "es" : ""
-                          } found`}
-                    </div>
-                  </div>
-                )}
+                <SearchStatus
+                  searchState={searchState}
+                  onCancel={cancelActiveSearch}
+                />
 
                 <form onSubmit={handleSearch} className="space-y-4">
                   <div className="grid md:grid-cols-2 gap-4">
@@ -2011,7 +1980,7 @@ const RideBuddy = () => {
                       No matches found
                     </h3>
                     <p className="text-gray-300 text-readable-secondary">
-                      We couldn&apos;t find any ride buddies for your route
+                      We couldn&apos;t find any travel buddies for your route
                       right now.
                     </p>
                     <p className="text-gray-300 text-readable-secondary">
@@ -2037,10 +2006,10 @@ const RideBuddy = () => {
                     {requestsLoading &&
                       incomingRequests.length === 0 &&
                       !requestsLoaded && (
-                        <div className="flex items-center justify-center p-8">
-                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-sawaari-yellow"></div>
-                          <span className="ml-3 text-gray-400">
-                            Loading requests...
+                        <div className="flex items-center justify-center p-6">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-sawaari-yellow"></div>
+                          <span className="ml-2 text-gray-400 text-sm">
+                            Loading...
                           </span>
                         </div>
                       )}
@@ -2257,7 +2226,7 @@ const RideBuddy = () => {
                               href={`https://wa.me/${connection.partner.phone.replace(
                                 /[^0-9]/g,
                                 ""
-                              )}?text=Hi! I&apos;m your ride buddy from SAWAARI. Let&apos;s coordinate our trip!`}
+                              )}?text=Hi! I&apos;m your travel buddy from SAWAARI. Let&apos;s coordinate our trip!`}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
@@ -2317,9 +2286,9 @@ const RideBuddy = () => {
                 (!requestsLoaded || !connectionsLoaded) && (
                   <div className="card text-center">
                     <div className="flex items-center justify-center p-8">
-                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sawaari-yellow"></div>
-                      <span className="ml-4 text-gray-400 text-lg">
-                        Loading your connections...
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-sawaari-yellow"></div>
+                      <span className="ml-3 text-gray-400">
+                        Loading connections...
                       </span>
                     </div>
                   </div>
@@ -2336,75 +2305,51 @@ const RideBuddy = () => {
                       No Connections Yet
                     </h3>
                     <p className="text-gray-300 text-readable-secondary mb-4">
-                      Start by searching for ride buddies or wait for incoming
+                      Start by searching for travel buddies or wait for incoming
                       requests.
                     </p>
-                    <div className="space-y-3">
+                    <div className="space-y-3 flex flex-col items-center">
                       <button
                         onClick={() => setActiveTab("search")}
-                        className="w-full px-6 py-3 bg-gradient-to-r from-sawaari-yellow to-sawaari-green text-black rounded-lg hover:shadow-lg transition-all duration-300 font-semibold"
+                        className="px-6 py-3 bg-gradient-to-r from-sawaari-yellow to-sawaari-green text-black rounded-lg hover:shadow-lg transition-all duration-300 font-semibold w-fit"
                       >
-                        🔍 Search for Ride Buddies
+                        🔍 Search for Travel Buddies
                       </button>
                       <button
                         onClick={() => {
                           console.log("🔄 Manual refresh triggered");
-                          // Reset loaded states to show loading
                           setRequestsLoaded(false);
                           setConnectionsLoaded(false);
                           loadRequests();
                           loadConnections(true);
-                          toast("Refreshing your data...");
+                          toast("Refreshing connections...");
                         }}
-                        className="w-full px-6 py-2 bg-neutral-700 text-white rounded-lg hover:bg-neutral-600 transition-colors"
+                        className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-sawaari-yellow text-black rounded-lg hover:bg-sawaari-yellow/80 transition-colors font-medium"
                         disabled={requestsLoading || connectionsLoading}
                       >
                         {requestsLoading || connectionsLoading ? (
                           <>
-                            <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                            Refreshing...
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-black"></div>
+                            <span>Refreshing...</span>
                           </>
                         ) : (
-                          "🔄 Refresh Data"
+                          <>
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                              />
+                            </svg>
+                            <span>Refresh</span>
+                          </>
                         )}
-                      </button>
-                      <button
-                        onClick={async () => {
-                          console.log("🧹 Manual cleanup triggered");
-                          const result =
-                            await rideBuddyService.cleanupExpiredRequests();
-                          if (result.success) {
-                            toast.success(
-                              `Cleaned up ${result.data.cleanedCount} expired requests`
-                            );
-                            loadRequests();
-                            loadConnections(true);
-                          } else {
-                            toast.error("Failed to cleanup expired requests");
-                          }
-                        }}
-                        className="w-full px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                      >
-                        🧹 Cleanup Expired
-                      </button>
-                      <button
-                        onClick={async () => {
-                          console.log("🧹 Manual duplicate cleanup triggered");
-                          const result =
-                            await rideBuddyService.cleanupDuplicateRequests();
-                          if (result.success) {
-                            toast.success(
-                              `Cleaned up ${result.data.duplicatesRemoved} duplicate requests`
-                            );
-                            loadRequests();
-                            loadConnections(true);
-                          } else {
-                            toast.error("Failed to cleanup duplicate requests");
-                          }
-                        }}
-                        className="w-full px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
-                      >
-                        🗑️ Remove Duplicates
                       </button>
                     </div>
                   </div>
@@ -2457,7 +2402,7 @@ const RideBuddy = () => {
                 </div>
                 <div>
                   <h2 className="text-xl font-bold text-white">
-                    How Ride Buddy Works
+                    How Travel Buddy Works
                   </h2>
                   <p className="text-sm text-neutral-400">
                     Connect with nearby travelers in 3 simple steps
@@ -2471,10 +2416,10 @@ const RideBuddy = () => {
               {/* What is Ride Buddy */}
               <div className="bg-gradient-to-r from-sawaari-yellow/10 to-sawaari-green/10 border border-sawaari-yellow/20 rounded-lg p-4">
                 <h3 className="text-lg font-semibold text-sawaari-yellow mb-2">
-                  🚗 What is Ride Buddy?
+                  🚗 What is Travel Buddy?
                 </h3>
                 <p className="text-gray-300 text-sm">
-                  Ride Buddy helps you find fellow travelers going on similar
+                  Travel Buddy helps you find fellow travelers going on similar
                   routes within a 2km radius. Share rides, split costs, and make
                   your journey more enjoyable and affordable.
                 </p>
@@ -2492,7 +2437,7 @@ const RideBuddy = () => {
                     </div>
                     <div>
                       <h4 className="font-semibold text-white">
-                        Search for Ride Buddies
+                        Search for Travel Buddies
                       </h4>
                       <p className="text-gray-300 text-sm">
                         Select your source and destination locations, then click
@@ -2645,7 +2590,7 @@ const RideBuddy = () => {
                   <h3 className="font-semibold text-white text-sm">
                     {chatPartner.name || chatPartner.phone}
                   </h3>
-                  <p className="text-xs text-neutral-400">Ride Buddy Chat</p>
+                  <p className="text-xs text-neutral-400">Travel Buddy Chat</p>
                 </div>
               </div>
             </div>

@@ -86,27 +86,29 @@ export default function Signinform({
         </div>
 
         {/* Submit Button */}
-        <button
-          type="submit"
-          disabled={isSubmitting || !userinfo.email || !userinfo.password}
-          className={`btn-primary w-full h-11 ${
-            isSubmitting || !userinfo.email || !userinfo.password
-              ? "opacity-50 cursor-not-allowed"
-              : ""
-          }`}
-        >
-          {isSubmitting ? (
-            <div className="flex items-center justify-center gap-2">
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              <span>Signing In...</span>
-            </div>
-          ) : (
-            <div className="flex items-center justify-center gap-2">
-              <span>🔐</span>
-              <span>Sign In to SAWAARI</span>
-            </div>
-          )}
-        </button>
+        <div className="flex justify-center">
+          <button
+            type="submit"
+            disabled={isSubmitting || !userinfo.email || !userinfo.password}
+            className={`btn-primary w-full max-w-[200px] sm:max-w-[240px] h-11 ${
+              isSubmitting || !userinfo.email || !userinfo.password
+                ? "opacity-50 cursor-not-allowed"
+                : ""
+            }`}
+          >
+            {isSubmitting ? (
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <span>Signing In...</span>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center gap-2">
+                <span>🔐</span>
+                <span>Sign In</span>
+              </div>
+            )}
+          </button>
+        </div>
 
         {/* Links */}
         <div className="flex justify-center items-center text-sm pt-2">

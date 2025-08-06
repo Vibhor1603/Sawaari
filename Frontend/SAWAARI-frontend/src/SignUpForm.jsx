@@ -248,43 +248,45 @@ export default function SignUpForm({
         </div>
 
         {/* Submit Button */}
-        <button
-          type="submit"
-          disabled={
-            isSubmitting ||
-            !userinfo.name ||
-            !userinfo.email ||
-            !userinfo.phone ||
-            !userinfo.password ||
-            !userinfo.confirmPassword ||
-            !userinfo.agreeTerms ||
-            userinfo.password !== userinfo.confirmPassword
-          }
-          className={`btn-primary w-full h-11 ${
-            isSubmitting ||
-            !userinfo.name ||
-            !userinfo.email ||
-            !userinfo.phone ||
-            !userinfo.password ||
-            !userinfo.confirmPassword ||
-            !userinfo.agreeTerms ||
-            userinfo.password !== userinfo.confirmPassword
-              ? "opacity-50 cursor-not-allowed"
-              : ""
-          }`}
-        >
-          {isSubmitting ? (
-            <div className="flex items-center justify-center gap-2">
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              <span>Creating Account...</span>
-            </div>
-          ) : (
-            <div className="flex items-center justify-center gap-2">
-              <span>👤</span>
-              <span>Create SAWAARI Account</span>
-            </div>
-          )}
-        </button>
+        <div className="flex justify-center">
+          <button
+            type="submit"
+            disabled={
+              isSubmitting ||
+              !userinfo.name ||
+              !userinfo.email ||
+              !userinfo.phone ||
+              !userinfo.password ||
+              !userinfo.confirmPassword ||
+              !userinfo.agreeTerms ||
+              userinfo.password !== userinfo.confirmPassword
+            }
+            className={`btn-primary w-full max-w-[200px] sm:max-w-[240px] h-11 ${
+              isSubmitting ||
+              !userinfo.name ||
+              !userinfo.email ||
+              !userinfo.phone ||
+              !userinfo.password ||
+              !userinfo.confirmPassword ||
+              !userinfo.agreeTerms ||
+              userinfo.password !== userinfo.confirmPassword
+                ? "opacity-50 cursor-not-allowed"
+                : ""
+            }`}
+          >
+            {isSubmitting ? (
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <span>Creating Account...</span>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center gap-2">
+                <span>👤</span>
+                <span>Sign Up</span>
+              </div>
+            )}
+          </button>
+        </div>
       </form>
     </div>
   );

@@ -79,7 +79,7 @@ export default function Navbar() {
                   }`
                 }
               >
-                Hotspots
+                Pickup Zones
               </NavLink>
               <NavLink
                 to="/routes"
@@ -91,7 +91,7 @@ export default function Navbar() {
                   }`
                 }
               >
-                Routes
+                Route Planner
               </NavLink>
               <NavLink
                 to="/ridebuddy"
@@ -103,7 +103,7 @@ export default function Navbar() {
                   }`
                 }
               >
-                Ride Buddy
+                Find Travel Buddy
               </NavLink>
             </div>
 
@@ -212,7 +212,7 @@ export default function Navbar() {
                   }`
                 }
               >
-                Hotspots
+                Pickup Zones
               </NavLink>
               <NavLink
                 to="/routes"
@@ -225,7 +225,7 @@ export default function Navbar() {
                   }`
                 }
               >
-                Routes
+                Route Planner
               </NavLink>
               <NavLink
                 to="/ridebuddy"
@@ -238,7 +238,7 @@ export default function Navbar() {
                   }`
                 }
               >
-                Ride Buddy
+                Find Travel Buddy
               </NavLink>
 
               {/* Enhanced Mobile User Menu */}
@@ -286,7 +286,7 @@ export default function Navbar() {
                         openSignupModal();
                         closeNav();
                       }}
-                      className="btn-primary px-4 py-3 text-sm w-full text-center"
+                      className="btn-primary px-4 py-3 text-sm text-left"
                     >
                       Sign Up
                     </button>

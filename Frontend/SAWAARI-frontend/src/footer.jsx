@@ -97,7 +97,7 @@ export default function Footer() {
                   href="/hotspots"
                   className="text-gray-300 hover:text-sawaari-yellow transition-colors duration-300 text-readable-secondary"
                 >
-                  Find Hotspots
+                  Pickup Zones
                 </a>
               </li>
               <li>
@@ -105,7 +105,7 @@ export default function Footer() {
                   href="/routes"
                   className="text-gray-300 hover:text-sawaari-yellow transition-colors duration-300 text-readable-secondary"
                 >
-                  Plan Routes
+                  Route Planner
                 </a>
               </li>
               <li>
@@ -113,7 +113,7 @@ export default function Footer() {
                   href="/ridebuddy"
                   className="text-gray-300 hover:text-sawaari-yellow transition-colors duration-300 text-readable-secondary"
                 >
-                  Ride Buddy
+                  Find Travel Buddy
                 </a>
               </li>
             </ul>
