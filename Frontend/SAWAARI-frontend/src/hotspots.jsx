@@ -10,7 +10,7 @@ function Hotspots() {
 
   // Set document title
   useEffect(() => {
-    document.title = "Pickup Zones - SAWAARI";
+    document.title = "Hotspots - SAWAARI";
     return () => {
       document.title = "SAWAARI - Smart Rickshaw Navigation";
     };
@@ -125,7 +125,7 @@ function Hotspots() {
                   <span className="text-sawaari-yellow font-semibold">
                     Tip:
                   </span>{" "}
-                  Click on pickup zones to see destinations and fares
+                  Click on Hotspots to see destinations and fares
                 </p>
               </div>
 
@@ -133,7 +133,7 @@ function Hotspots() {
                 <p className="text-xs text-gray-200">
                   <span className="text-blue-400 font-semibold">📍 Note:</span>{" "}
                   Currently showing sample locations for testing purposes. More
-                  pickup zones will be added soon!
+                  Hotspots will be added soon!
                 </p>
               </div>
             </div>

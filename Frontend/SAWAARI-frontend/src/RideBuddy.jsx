@@ -356,7 +356,7 @@ const RideBuddy = () => {
     try {
       // 🚨 DEBUG: Log who called this function
       console.log("🚨 DEBUG: checkActiveSearchStatus called");
-      console.log("�  DEBUG: Call stack:", new Error().stack);
+      console.log("  DEBUG: Call stack:", new Error().stack);
 
       console.log("🔍 Checking active search status...");
       const result = await rideBuddyService.getActiveSearchStatus();
@@ -1325,7 +1325,7 @@ const RideBuddy = () => {
           sharedDistance: match.sharedDistance || 0,
           estimatedSharedFare: match.estimatedSharedFare || 0,
         },
-        message: `Hi! I&apos;d like to share a ride from ${searchForm.source.name} to ${searchForm.destination.name}. Let&apos;s coordinate!`,
+        message: `Hi! I'd like to share a ride from ${searchForm.source.name} to ${searchForm.destination.name}. Let's coordinate!`,
       });
 
       if (result.success) {
@@ -1525,7 +1525,10 @@ const RideBuddy = () => {
       console.error(`💥 Error responding to request ${requestId}:`, error);
 
       // Dismiss loading toast
-      toast.dismiss(loadingToast);
+      // toast.dismiss(loadingToast); // loadingToast might not be defined here. Safest to just check.
+      if (typeof loadingToast !== "undefined") {
+        toast.dismiss(loadingToast);
+      }
 
       // Show specific error messages
       if (error.message.includes("Network")) {
@@ -1594,7 +1597,7 @@ const RideBuddy = () => {
     }
     setActiveChatId(null);
     setChatPartner(null);
-  });
+  }, [activeChatId]);
 
   // Handle keyboard shortcuts for chat and popups
   useEffect(() => {
@@ -1640,32 +1643,26 @@ const RideBuddy = () => {
   }
 
   return (
-    <div className="min-h-screen bg-black pt-20 overflow-x-hidden">
-      <div className="container-sawaari px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-sawaari-yellow/20 to-sawaari-green/20 border border-sawaari-yellow/30 rounded-lg px-4 py-2 mb-6">
-            <span className="text-xl">👥</span>
-            <span className="text-sm font-semibold text-sawaari-yellow">
-              Travel Buddy
-            </span>
-          </div>
-          <h1 className="text-4xl lg:text-5xl font-bold text-white mb-4 text-readable">
-            Find Your Travel Companion
-          </h1>
-          <p className="text-xl text-gray-200 max-w-3xl mx-auto text-readable-secondary">
-            Connect with fellow travelers, share rides, and make your journey
-            more affordable and enjoyable.
-          </p>
+    <div className="min-h-screen bg-black overflow-x-hidden">
+      {/* Compact Header Section */}
+      <div className="pt-24 pb-6">
+        <div className="container-sawaari px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-4xl mx-auto">
+            <h1 className="text-2xl lg:text-3xl font-bold text-white mb-3 text-readable">
+              Find Your Travel Companion
+            </h1>
+            <p className="text-lg text-gray-300 max-w-2xl mx-auto text-readable-secondary mb-4">
+              Connect with fellow travelers, share rides, and make your journey
+              more affordable.
+            </p>
 
-          {/* How It Works Button */}
-          <div className="mt-6">
+            {/* How It Works Button - Smaller and inline */}
             <button
               onClick={() => setShowHowItWorks(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-black/40 backdrop-blur-sm border border-white/20 rounded-lg text-white hover:bg-white/10 transition-all duration-300"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-black/30 backdrop-blur-sm border border-white/20 rounded-lg text-white hover:bg-white/10 transition-all duration-300 text-sm"
             >
               <svg
-                className="w-4 h-4"
+                className="w-3.5 h-3.5"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -1677,14 +1674,17 @@ const RideBuddy = () => {
                   d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-              <span className="text-sm">How It Works</span>
+              <span>How It Works</span>
             </button>
           </div>
         </div>
+      </div>
 
-        {/* Tab Navigation */}
-        <div className="flex justify-center mb-8">
-          <div className="flex bg-black/40 backdrop-blur-sm border border-white/10 rounded-xl p-1">
+      {/* Main Content Area */}
+      <div className="container-sawaari px-4 sm:px-6 lg:px-8 pb-8">
+        {/* Tab Navigation - More prominent and centered */}
+        <div className="flex justify-center mb-6">
+          <div className="inline-flex bg-black/50 backdrop-blur-md border border-white/20 rounded-2xl p-1.5 shadow-2xl h-16">
             {[
               { id: "search", label: "Search", icon: "🔍" },
               { id: "connections", label: "Connections", icon: "👥" },
@@ -1692,9 +1692,9 @@ const RideBuddy = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-6 py-3 rounded-lg transition-all duration-300 ${
+                className={`relative flex items-center gap-2 px-8 py-3 rounded-xl transition-all duration-300 font-medium ${
                   activeTab === tab.id
-                    ? "bg-sawaari-yellow text-black font-semibold"
+                    ? "bg-gradient-to-r from-sawaari-yellow to-sawaari-green text-black shadow-lg transform scale-105"
                     : "text-gray-300 hover:text-white hover:bg-white/10"
                 }`}
               >
@@ -1703,7 +1703,7 @@ const RideBuddy = () => {
                 {tab.id === "connections" &&
                   (incomingRequests.length > 0 ||
                     activeConnections.length > 0) && (
-                    <span className="bg-red-500 text-white text-xs rounded-full px-2 py-1 ml-1">
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center">
                       {incomingRequests.length + activeConnections.length}
                     </span>
                   )}
@@ -1712,259 +1712,278 @@ const RideBuddy = () => {
           </div>
         </div>
 
-        {/* Content */}
-        <div className="max-w-6xl mx-auto w-full">
+        {/* Content Container - Centered and properly spaced */}
+        <div className="max-w-5xl mx-auto">
           {activeTab === "search" && (
-            <div className="space-y-8">
-              {/* Search Form */}
-              <div className="card">
-                <h2 className="text-2xl font-bold text-white mb-6 text-readable">
-                  Search for Travel Buddies
-                </h2>
-                <SearchStatus
-                  searchState={searchState}
-                  onCancel={cancelActiveSearch}
-                />
-
-                <form onSubmit={handleSearch} className="space-y-4">
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <LocationSelect
-                      value={searchForm.source.name}
-                      onChange={(selectedName) => {
-                        const selectedHotspot = hotspotData.find(
-                          (h) => h.name === selectedName
-                        );
-                        setSearchForm((prev) => ({
-                          ...prev,
-                          source: {
-                            name: selectedName,
-                            coordinates: selectedHotspot
-                              ? [
-                                  selectedHotspot.latitude,
-                                  selectedHotspot.longitude,
-                                ]
-                              : null,
-                          },
-                        }));
-                      }}
-                      options={locationNames}
-                      placeholder="Type to search source location..."
-                      label="Source Location"
-                      icon="📍"
-                      required={true}
-                    />
-
-                    <LocationSelect
-                      value={searchForm.destination.name}
-                      onChange={(selectedName) => {
-                        const selectedHotspot = hotspotData.find(
-                          (h) => h.name === selectedName
-                        );
-                        setSearchForm((prev) => ({
-                          ...prev,
-                          destination: {
-                            name: selectedName,
-                            coordinates: selectedHotspot
-                              ? [
-                                  selectedHotspot.latitude,
-                                  selectedHotspot.longitude,
-                                ]
-                              : null,
-                          },
-                        }));
-                      }}
-                      options={locationNames}
-                      placeholder="Type to search destination location..."
-                      label="Destination Location"
-                      icon="🎯"
-                      required={true}
-                    />
-
-                    {/* Search Radius Selector */}
-                    <div className="md:col-span-2">
-                      <label className="block text-xs font-semibold text-sawaari-yellow mb-1 text-readable">
-                        📏 Search Radius
-                      </label>
-                      <select
-                        value={searchForm.searchRadius}
-                        onChange={(e) =>
-                          setSearchForm((prev) => ({
-                            ...prev,
-                            searchRadius: parseInt(e.target.value),
-                          }))
-                        }
-                        className="w-full p-2 bg-black/30 border border-white/20 rounded-lg text-white focus:border-sawaari-yellow focus:ring-2 focus:ring-sawaari-yellow/20 focus:outline-none transition-all duration-300 text-sm"
-                      >
-                        <option value={1}>1 km</option>
-                        <option value={2}>2 km (Default)</option>
-                        <option value={3}>3 km</option>
-                        <option value={4}>4 km</option>
-                        <option value={5}>5 km</option>
-                      </select>
-                      <p className="text-xs text-gray-400 mt-1">
-                        Find ride buddies within this distance from your route
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Disclaimer */}
-                  <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                    <p className="text-xs text-gray-200">
-                      <span className="text-blue-400 font-semibold">
-                        👥 Important:
-                      </span>{" "}
-                      To test this feature, ensure at least one other user is
-                      searching for a similar or same route from a different
-                      account. Matches occur when users have compatible routes
-                      and timing.
+            <div className="space-y-6">
+              {/* Search Form - Centered and Modern */}
+              <div className="max-w-3xl mx-auto">
+                <div className="glass-strong rounded-3xl p-8 border border-white/10 shadow-2xl">
+                  <div className="text-center mb-6">
+                    <h2 className="text-2xl font-bold text-white mb-2 text-readable">
+                      Search for Travel Buddies
+                    </h2>
+                    <p className="text-gray-400 text-sm">
+                      Find people traveling on similar routes
                     </p>
                   </div>
-                  <button
-                    type="submit"
-                    disabled={
-                      searchLoading ||
-                      searchState.isActive ||
-                      !searchForm.source.name ||
-                      !searchForm.destination.name
-                    }
-                    className={`w-full md:w-auto px-6 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${
-                      searchState.isActive
-                        ? "bg-green-500 text-white cursor-not-allowed"
-                        : searchLoading
-                        ? "bg-gray-400 text-white cursor-not-allowed"
-                        : "btn-primary"
-                    } disabled:opacity-50`}
-                    title={
-                      searchState.isActive
-                        ? "You have an active search running"
-                        : searchLoading
-                        ? "Search in progress..."
-                        : "Start searching for ride buddies"
-                    }
-                  >
-                    {searchLoading ? (
-                      <>
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                        Searching...
-                      </>
-                    ) : searchState.isActive ? (
-                      <>
-                        <div className="w-3 h-3 bg-white rounded-full animate-pulse"></div>
-                        Search Active
-                      </>
-                    ) : (
-                      <>
-                        <span>🔍</span>
-                        Search Ride Buddies
-                      </>
-                    )}
-                  </button>
-                </form>
+
+                  <SearchStatus
+                    searchState={searchState}
+                    onCancel={cancelActiveSearch}
+                  />
+
+                  <form onSubmit={handleSearch} className="space-y-6">
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <LocationSelect
+                        value={searchForm.source.name}
+                        onChange={(selectedName) => {
+                          const selectedHotspot = hotspotData.find(
+                            (h) => h.name === selectedName
+                          );
+                          setSearchForm((prev) => ({
+                            ...prev,
+                            source: {
+                              name: selectedName,
+                              coordinates: selectedHotspot
+                                ? [
+                                    selectedHotspot.latitude,
+                                    selectedHotspot.longitude,
+                                  ]
+                                : null,
+                            },
+                          }));
+                        }}
+                        options={locationNames}
+                        placeholder="Type to search source location..."
+                        label="Source Location"
+                        icon="📍"
+                        required={true}
+                      />
+
+                      <LocationSelect
+                        value={searchForm.destination.name}
+                        onChange={(selectedName) => {
+                          const selectedHotspot = hotspotData.find(
+                            (h) => h.name === selectedName
+                          );
+                          setSearchForm((prev) => ({
+                            ...prev,
+                            destination: {
+                              name: selectedName,
+                              coordinates: selectedHotspot
+                                ? [
+                                    selectedHotspot.latitude,
+                                    selectedHotspot.longitude,
+                                  ]
+                                : null,
+                            },
+                          }));
+                        }}
+                        options={locationNames}
+                        placeholder="Type to search destination location..."
+                        label="Destination Location"
+                        icon="🎯"
+                        required={true}
+                      />
+
+                      {/* Search Radius Selector */}
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-semibold text-sawaari-yellow mb-1 text-readable">
+                          📏 Search Radius
+                        </label>
+                        <select
+                          value={searchForm.searchRadius}
+                          onChange={(e) =>
+                            setSearchForm((prev) => ({
+                              ...prev,
+                              searchRadius: parseInt(e.target.value),
+                            }))
+                          }
+                          className="w-full p-2 bg-black/30 border border-white/20 rounded-lg text-white focus:border-sawaari-yellow focus:ring-2 focus:ring-sawaari-yellow/20 focus:outline-none transition-all duration-300 text-sm"
+                        >
+                          <option value={1}>1 km</option>
+                          <option value={2}>2 km (Default)</option>
+                          <option value={3}>3 km</option>
+                          <option value={4}>4 km</option>
+                          <option value={5}>5 km</option>
+                        </select>
+                        <p className="text-xs text-gray-400 mt-1">
+                          Find ride buddies within this distance from your route
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Disclaimer */}
+                    <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                      <p className="text-xs text-gray-200">
+                        <span className="text-blue-400 font-semibold">
+                          👥 Important:
+                        </span>{" "}
+                        To test this feature, ensure at least one other user is
+                        searching for a similar or same route from a different
+                        account. Matches occur when users have compatible routes
+                        and timing.
+                      </p>
+                    </div>
+                    <div className="flex justify-center pt-2">
+                      <button
+                        type="submit"
+                        disabled={
+                          searchLoading ||
+                          searchState.isActive ||
+                          !searchForm.source.name ||
+                          !searchForm.destination.name
+                        }
+                        className={`px-8 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:scale-105 ${
+                          searchState.isActive
+                            ? "bg-green-500 text-white cursor-not-allowed"
+                            : searchLoading
+                            ? "bg-gray-400 text-white cursor-not-allowed"
+                            : "btn-primary"
+                        } disabled:opacity-50 disabled:transform-none disabled:hover:scale-100`}
+                        title={
+                          searchState.isActive
+                            ? "You have an active search running"
+                            : searchLoading
+                            ? "Search in progress..."
+                            : "Start searching for ride buddies"
+                        }
+                      >
+                        {searchLoading ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-5 border-b-2 border-white"></div>
+                            Searching...
+                          </>
+                        ) : searchState.isActive ? (
+                          <>
+                            <div className="w-3 h-3 bg-white rounded-full animate-pulse"></div>
+                            Search Active
+                          </>
+                        ) : (
+                          <>
+                            <span>🔍</span>
+                            Search Ride Buddies
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </form>
+                </div>
               </div>
 
               {/* Search Results */}
               {(searchResults.length > 0 || searchState.isActive) && (
-                <div className="card">
-                  <h3 className="text-xl font-bold text-white mb-6 text-readable">
-                    {searchResults.length > 0
-                      ? `Available Ride Buddies (${searchResults.length})`
-                      : searchState.isActive
-                      ? "Searching for Ride Buddies..."
-                      : "No Results"}
-                  </h3>
-                  <div className="grid gap-4">
-                    {searchResults.length === 0 && searchState.isActive && (
-                      <div className="text-center py-8">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-sawaari-yellow mx-auto mb-4"></div>
-                        <p className="text-gray-300 mb-2">
-                          Your search is active! We&apos;ll notify you when
-                          potential matches are found.
+                <div className="max-w-4xl mx-auto">
+                  <div className="glass-strong rounded-3xl p-6 border border-white/10 shadow-2xl">
+                    <div className="text-center mb-6">
+                      <h3 className="text-xl font-bold text-white mb-2 text-readable">
+                        {searchResults.length > 0
+                          ? `Available Travel Buddies (${searchResults.length})`
+                          : searchState.isActive
+                          ? "Searching for Travel Buddies..."
+                          : "No Results"}
+                      </h3>
+                      {searchResults.length > 0 && (
+                        <p className="text-gray-400 text-sm">
+                          Connect with these potential travel companions
                         </p>
-                        <p className="text-sm text-gray-400">
-                          Search expires in{" "}
-                          {Math.floor(searchState.timeRemaining / 60000)}:
-                          {String(
-                            Math.floor(
-                              (searchState.timeRemaining % 60000) / 1000
-                            )
-                          ).padStart(2, "0")}
-                        </p>
-                      </div>
-                    )}
-                    {searchResults.map((match) => (
-                      <div
-                        key={match.userId}
-                        className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-black/30 border border-white/10 rounded-lg gap-4"
-                      >
-                        <div className="flex items-center gap-4 min-w-0 flex-1">
-                          <div className="w-12 h-12 bg-sawaari-yellow-muted border border-sawaari-yellow-border rounded-full flex items-center justify-center flex-shrink-0">
-                            <span className="text-sawaari-yellow font-semibold">
-                              {(
-                                match.userName ||
-                                `User ${match.userId?.slice(-4)}`
+                      )}
+                    </div>
+                    <div className="grid gap-4">
+                      {searchResults.length === 0 && searchState.isActive && (
+                        <div className="text-center py-8">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-sawaari-yellow mx-auto mb-4"></div>
+                          <p className="text-gray-300 mb-2">
+                            Your search is active! We&apos;ll notify you when
+                            potential matches are found.
+                          </p>
+                          <p className="text-sm text-gray-400">
+                            Search expires in{" "}
+                            {Math.floor(searchState.timeRemaining / 60000)}:
+                            {String(
+                              Math.floor(
+                                (searchState.timeRemaining % 60000) / 1000
                               )
-                                ?.charAt(0)
-                                ?.toUpperCase() || "U"}
-                            </span>
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <h4 className="font-semibold text-white text-readable truncate">
-                              {match.userName ||
-                                `User ${match.userId?.slice(-4)}`}
-                            </h4>
-                            <p className="text-sm text-gray-300 text-readable-secondary truncate">
-                              {getLocationName(
-                                match.route?.source || match.source
-                              )}{" "}
-                              →{" "}
-                              {getLocationName(
-                                match.route?.destination || match.destination
-                              )}
-                            </p>
-                            <div className="flex flex-wrap gap-2 mt-1">
-                              {match.overlapPercentage && (
-                                <p className="text-xs text-sawaari-yellow">
-                                  {Math.round(match.overlapPercentage)}% route
-                                  match
-                                </p>
-                              )}
-                              {match.estimatedSharedFare && (
-                                <p className="text-xs text-green-400">
-                                  ₹{Math.round(match.estimatedSharedFare)}{" "}
-                                  shared fare
-                                </p>
-                              )}
+                            ).padStart(2, "0")}
+                          </p>
+                        </div>
+                      )}
+                      {searchResults.map((match) => (
+                        <div
+                          key={match.userId}
+                          className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-black/30 border border-white/10 rounded-lg gap-4"
+                        >
+                          <div className="flex items-center gap-4 min-w-0 flex-1">
+                            <div className="w-12 h-12 bg-sawaari-yellow-muted border border-sawaari-yellow-border rounded-full flex items-center justify-center flex-shrink-0">
+                              <span className="text-sawaari-yellow font-semibold">
+                                {(
+                                  match.userName ||
+                                  `User ${match.userId?.slice(-4)}`
+                                )
+                                  ?.charAt(0)
+                                  ?.toUpperCase() || "U"}
+                              </span>
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <h4 className="font-semibold text-white text-readable truncate">
+                                {match.userName ||
+                                  `User ${match.userId?.slice(-4)}`}
+                              </h4>
+                              <p className="text-sm text-gray-300 text-readable-secondary truncate">
+                                {getLocationName(
+                                  match.route?.source || match.source
+                                )}{" "}
+                                →{" "}
+                                {getLocationName(
+                                  match.route?.destination || match.destination
+                                )}
+                              </p>
+                              <div className="flex flex-wrap gap-2 mt-1">
+                                {match.overlapPercentage && (
+                                  <p className="text-xs text-sawaari-yellow">
+                                    {Math.round(match.overlapPercentage)}% route
+                                    match
+                                  </p>
+                                )}
+                                {match.estimatedSharedFare && (
+                                  <p className="text-xs text-green-400">
+                                    ₹{Math.round(match.estimatedSharedFare)}{" "}
+                                    shared fare
+                                  </p>
+                                )}
+                              </div>
                             </div>
                           </div>
+                          <button
+                            onClick={() => sendRideRequest(match)}
+                            disabled={sentRequestIds.has(match.userId)}
+                            className={`px-4 py-2 rounded-lg transition-all duration-300 text-sm font-medium whitespace-nowrap flex-shrink-0 ${
+                              sentRequestIds.has(match.userId)
+                                ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                                : "bg-sawaari-yellow text-black hover:bg-sawaari-yellow/80"
+                            }`}
+                          >
+                            {sentRequestIds.has(match.userId)
+                              ? (() => {
+                                  const sentTime = sentRequestTimes.get(
+                                    match.userId
+                                  );
+                                  const timeSince = sentTime
+                                    ? Date.now() - sentTime
+                                    : 0;
+                                  const minutesAgo = Math.floor(
+                                    timeSince / 60000
+                                  );
+                                  return minutesAgo < 1
+                                    ? "Request Sent"
+                                    : `Sent ${minutesAgo}m ago`;
+                                })()
+                              : "Send Request"}
+                          </button>
                         </div>
-                        <button
-                          onClick={() => sendRideRequest(match)}
-                          disabled={sentRequestIds.has(match.userId)}
-                          className={`px-4 py-2 rounded-lg transition-all duration-300 text-sm font-medium whitespace-nowrap flex-shrink-0 ${
-                            sentRequestIds.has(match.userId)
-                              ? "bg-gray-600 text-gray-400 cursor-not-allowed"
-                              : "bg-sawaari-yellow text-black hover:bg-sawaari-yellow/80"
-                          }`}
-                        >
-                          {sentRequestIds.has(match.userId)
-                            ? (() => {
-                                const sentTime = sentRequestTimes.get(
-                                  match.userId
-                                );
-                                const timeSince = sentTime
-                                  ? Date.now() - sentTime
-                                  : 0;
-                                const minutesAgo = Math.floor(
-                                  timeSince / 60000
-                                );
-                                return minutesAgo < 1
-                                  ? "Request Sent"
-                                  : `Sent ${minutesAgo}m ago`;
-                              })()
-                            : "Send Request"}
-                        </button>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}
@@ -1993,144 +2012,51 @@ const RideBuddy = () => {
           )}
 
           {activeTab === "connections" && (
-            <div className="space-y-8">
+            <div className="space-y-6">
               {/* Incoming Requests */}
               {(incomingRequests.length > 0 ||
                 requestsLoading ||
                 activeConnections.length > 0) && (
-                <div className="card">
-                  <h3 className="text-xl font-bold text-white mb-6 text-readable">
-                    Connection Requests ({incomingRequests.length})
-                  </h3>
-                  <div className="grid gap-4">
-                    {requestsLoading &&
-                      incomingRequests.length === 0 &&
-                      !requestsLoaded && (
-                        <div className="flex items-center justify-center p-6">
-                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-sawaari-yellow"></div>
-                          <span className="ml-2 text-gray-400 text-sm">
-                            Loading...
-                          </span>
-                        </div>
-                      )}
-                    {((!requestsLoading && requestsLoaded) ||
-                      (!requestsLoading && incomingRequests.length === 0)) &&
-                      incomingRequests.length === 0 && (
-                        <div className="text-center p-8 text-gray-400">
-                          <div className="text-4xl mb-2">📭</div>
-                          <p>No incoming requests at the moment</p>
-                        </div>
-                      )}
-                    {incomingRequests.map((request) => (
-                      <div
-                        key={request._id}
-                        className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-black/30 border border-white/10 rounded-lg gap-4"
-                      >
-                        <div className="flex items-center gap-4 min-w-0 flex-1">
-                          <div className="w-12 h-12 bg-sawaari-yellow-muted border border-sawaari-yellow-border rounded-full flex items-center justify-center flex-shrink-0">
-                            <span className="text-sawaari-yellow font-semibold">
-                              {(
-                                request.senderName ||
-                                `User ${request.senderId?.slice(-4)}`
-                              )
-                                ?.charAt(0)
-                                ?.toUpperCase() || "U"}
+                <div className="max-w-4xl mx-auto">
+                  <div className="glass-strong rounded-3xl p-6 border border-white/10 shadow-2xl">
+                    <div className="text-center mb-6">
+                      <h3 className="text-xl font-bold text-white mb-2 text-readable">
+                        Connection Requests ({incomingRequests.length})
+                      </h3>
+                      <p className="text-gray-400 text-sm">
+                        Manage your incoming travel buddy requests
+                      </p>
+                    </div>
+                    <div className="grid gap-4">
+                      {requestsLoading &&
+                        incomingRequests.length === 0 &&
+                        !requestsLoaded && (
+                          <div className="flex items-center justify-center p-6">
+                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-sawaari-yellow"></div>
+                            <span className="ml-2 text-gray-400 text-sm">
+                              Loading...
                             </span>
                           </div>
-                          <div className="min-w-0 flex-1">
-                            <h4 className="font-semibold text-white text-readable truncate">
-                              {request.senderName ||
-                                `User ${request.senderId?.slice(-4)}`}
-                            </h4>
-                            <p className="text-sm text-gray-300 text-readable-secondary truncate">
-                              {request.routeDetails?.senderRoute?.source ||
-                                "Unknown"}{" "}
-                              →{" "}
-                              {request.routeDetails?.senderRoute?.destination ||
-                                "Unknown"}
-                            </p>
-                            <div className="flex flex-wrap gap-2 mt-1">
-                              {request.routeDetails?.estimatedSharedFare && (
-                                <p className="text-xs text-green-400">
-                                  Shared Fare: ₹
-                                  {Math.round(
-                                    request.routeDetails.estimatedSharedFare
-                                  )}
-                                </p>
-                              )}
-                            </div>
-                            {request.message && (
-                              <p className="text-xs text-gray-400 italic mt-1 line-clamp-2">
-                                &quot;{request.message}&quot;
-                              </p>
-                            )}
+                        )}
+                      {((!requestsLoading && requestsLoaded) ||
+                        (!requestsLoading && incomingRequests.length === 0)) &&
+                        incomingRequests.length === 0 && (
+                          <div className="text-center p-8 text-gray-400">
+                            <div className="text-4xl mb-2">📭</div>
+                            <p>No incoming requests at the moment</p>
                           </div>
-                        </div>
-                        <div className="flex gap-2 flex-shrink-0">
-                          <button
-                            onClick={() =>
-                              respondToRequest(request._id, "accepted")
-                            }
-                            disabled={processingRequests.has(request._id)}
-                            className={`px-3 py-2 rounded-lg transition-colors text-sm font-medium whitespace-nowrap ${
-                              processingRequests.has(request._id)
-                                ? "bg-gray-600 text-gray-400 cursor-not-allowed"
-                                : "bg-green-600 text-white hover:bg-green-700"
-                            }`}
-                          >
-                            {processingRequests.has(request._id)
-                              ? "Processing..."
-                              : "Accept"}
-                          </button>
-                          <button
-                            onClick={() =>
-                              respondToRequest(request._id, "declined")
-                            }
-                            disabled={processingRequests.has(request._id)}
-                            className={`px-3 py-2 rounded-lg transition-colors text-sm font-medium whitespace-nowrap ${
-                              processingRequests.has(request._id)
-                                ? "bg-gray-600 text-gray-400 cursor-not-allowed"
-                                : "bg-red-600 text-white hover:bg-red-700"
-                            }`}
-                          >
-                            {processingRequests.has(request._id)
-                              ? "Processing..."
-                              : "Decline"}
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Active Connections */}
-              {(activeConnections.length > 0 || connectionsLoading) && (
-                <div className="card">
-                  <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-xl font-bold text-white text-readable">
-                      Your Connections ({activeConnections.length})
-                    </h3>
-                    {connectionsLoading && (
-                      <div className="flex items-center text-sm text-gray-400">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-sawaari-yellow mr-2"></div>
-                        Updating...
-                      </div>
-                    )}
-                  </div>
-                  <div className="grid gap-4">
-                    {activeConnections.map((connection) => (
-                      <div
-                        key={connection.matchId}
-                        className="p-4 bg-black/30 border border-white/10 rounded-lg"
-                      >
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-4">
+                        )}
+                      {incomingRequests.map((request) => (
+                        <div
+                          key={request._id}
+                          className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-black/30 border border-white/10 rounded-lg gap-4"
+                        >
                           <div className="flex items-center gap-4 min-w-0 flex-1">
-                            <div className="w-12 h-12 bg-green-600 border border-green-500 rounded-full flex items-center justify-center flex-shrink-0">
-                              <span className="text-white font-semibold">
+                            <div className="w-12 h-12 bg-sawaari-yellow-muted border border-sawaari-yellow-border rounded-full flex items-center justify-center flex-shrink-0">
+                              <span className="text-sawaari-yellow font-semibold">
                                 {(
-                                  connection.partner?.name ||
-                                  connection.partner?.phone
+                                  request.senderName ||
+                                  `User ${request.senderId?.slice(-4)}`
                                 )
                                   ?.charAt(0)
                                   ?.toUpperCase() || "U"}
@@ -2138,143 +2064,253 @@ const RideBuddy = () => {
                             </div>
                             <div className="min-w-0 flex-1">
                               <h4 className="font-semibold text-white text-readable truncate">
-                                {connection.partner?.name || "Anonymous"}
+                                {request.senderName ||
+                                  `User ${request.senderId?.slice(-4)}`}
                               </h4>
                               <p className="text-sm text-gray-300 text-readable-secondary truncate">
-                                📱{" "}
-                                {connection.partner?.phone ||
-                                  "Phone number available"}
-                              </p>
-                              <p className="text-sm text-gray-300 text-readable-secondary truncate">
-                                {connection.routeDetails?.senderRoute?.source ||
+                                {request.routeDetails?.senderRoute?.source ||
                                   "Unknown"}{" "}
                                 →{" "}
-                                {connection.routeDetails?.senderRoute
+                                {request.routeDetails?.senderRoute
                                   ?.destination || "Unknown"}
                               </p>
-                              {connection.routeDetails?.estimatedSharedFare && (
-                                <p className="text-xs text-green-400">
-                                  Shared Fare: ₹
-                                  {Math.round(
-                                    connection.routeDetails.estimatedSharedFare
-                                  )}
+                              <div className="flex flex-wrap gap-2 mt-1">
+                                {request.routeDetails?.estimatedSharedFare && (
+                                  <p className="text-xs text-green-400">
+                                    Shared Fare: ₹
+                                    {Math.round(
+                                      request.routeDetails.estimatedSharedFare
+                                    )}
+                                  </p>
+                                )}
+                              </div>
+                              {request.message && (
+                                <p className="text-xs text-gray-400 italic mt-1 line-clamp-2">
+                                  &quot;{request.message}&quot;
                                 </p>
                               )}
                             </div>
                           </div>
+                          <div className="flex gap-2 flex-shrink-0">
+                            <button
+                              onClick={() =>
+                                respondToRequest(request._id, "accepted")
+                              }
+                              disabled={processingRequests.has(request._id)}
+                              className={`px-3 py-2 rounded-lg transition-colors text-sm font-medium whitespace-nowrap ${
+                                processingRequests.has(request._id)
+                                  ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                                  : "bg-green-600 text-white hover:bg-green-700"
+                              }`}
+                            >
+                              {processingRequests.has(request._id)
+                                ? "Processing..."
+                                : "Accept"}
+                            </button>
+                            <button
+                              onClick={() =>
+                                respondToRequest(request._id, "declined")
+                              }
+                              disabled={processingRequests.has(request._id)}
+                              className={`px-3 py-2 rounded-lg transition-colors text-sm font-medium whitespace-nowrap ${
+                                processingRequests.has(request._id)
+                                  ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                                  : "bg-red-600 text-white hover:bg-red-700"
+                              }`}
+                            >
+                              {processingRequests.has(request._id)
+                                ? "Processing..."
+                                : "Decline"}
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
 
-                          {/* Chat Button */}
-                          <div className="flex-shrink-0 w-full sm:w-auto">
-                            {connection.chatTimeRemaining > 0 ? (
-                              <button
-                                onClick={() => startChat(connection)}
-                                className="w-full sm:w-auto px-4 py-2 bg-sawaari-yellow text-black rounded-lg hover:bg-sawaari-yellow/80 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
-                              >
-                                <svg
-                                  className="w-4 h-4 flex-shrink-0"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-3.582 8-8 8a8.959 8.959 0 01-4.906-1.524A11.956 11.956 0 012.69 18.186c.423-.95.893-1.902 1.405-2.852A8.002 8.002 0 0121 12z"
-                                  />
-                                </svg>
-                                <span className="truncate">
-                                  Open Chat (
-                                  {Math.ceil(
-                                    connection.chatTimeRemaining / 60000
-                                  )}{" "}
-                                  min left)
+              {/* Active Connections */}
+              {(activeConnections.length > 0 || connectionsLoading) && (
+                <div className="max-w-4xl mx-auto">
+                  <div className="glass-strong rounded-3xl p-6 border border-white/10 shadow-2xl">
+                    <div className="text-center mb-6">
+                      <div className="flex items-center justify-center gap-3 mb-2">
+                        <h3 className="text-xl font-bold text-white text-readable">
+                          Your Connections ({activeConnections.length})
+                        </h3>
+                        {connectionsLoading && (
+                          <div className="flex items-center text-sm text-gray-400">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-sawaari-yellow"></div>
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-gray-400 text-sm">
+                        Your active travel buddy connections
+                      </p>
+                    </div>
+                    <div className="grid gap-4">
+                      {activeConnections.map((connection) => (
+                        <div
+                          key={connection.matchId}
+                          className="p-4 bg-black/30 border border-white/10 rounded-lg"
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-4">
+                            <div className="flex items-center gap-4 min-w-0 flex-1">
+                              <div className="w-12 h-12 bg-green-600 border border-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                                <span className="text-white font-semibold">
+                                  {(
+                                    connection.partner?.name ||
+                                    connection.partner?.phone
+                                  )
+                                    ?.charAt(0)
+                                    ?.toUpperCase() || "U"}
                                 </span>
-                              </button>
-                            ) : connection.chatTimeRemaining === -1 ? (
-                              <div className="w-full sm:w-auto px-4 py-2 bg-orange-600 text-white rounded-lg text-center">
-                                <div className="text-sm font-medium">
-                                  Chat Expired
-                                </div>
-                                <div className="text-xs">
-                                  Contact details available
-                                </div>
                               </div>
-                            ) : (
-                              <button
-                                disabled
-                                className="w-full sm:w-auto px-4 py-2 bg-gray-600 text-gray-400 rounded-lg cursor-not-allowed text-sm"
-                                title="Connection has completely expired"
+                              <div className="min-w-0 flex-1">
+                                <h4 className="font-semibold text-white text-readable truncate">
+                                  {connection.partner?.name || "Anonymous"}
+                                </h4>
+                                <p className="text-sm text-gray-300 text-readable-secondary truncate">
+                                  📱{" "}
+                                  {connection.partner?.phone ||
+                                    "Phone number available"}
+                                </p>
+                                <p className="text-sm text-gray-300 text-readable-secondary truncate">
+                                  {connection.routeDetails?.senderRoute
+                                    ?.source || "Unknown"}{" "}
+                                  →{" "}
+                                  {connection.routeDetails?.senderRoute
+                                    ?.destination || "Unknown"}
+                                </p>
+                                {connection.routeDetails
+                                  ?.estimatedSharedFare && (
+                                  <p className="text-xs text-green-400">
+                                    Shared Fare: ₹
+                                    {Math.round(
+                                      connection.routeDetails
+                                        .estimatedSharedFare
+                                    )}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Chat Button */}
+                            <div className="flex-shrink-0 w-full sm:w-auto">
+                              {connection.chatTimeRemaining > 0 ? (
+                                <button
+                                  onClick={() => startChat(connection)}
+                                  className="w-full sm:w-auto px-4 py-2 bg-sawaari-yellow text-black rounded-lg hover:bg-sawaari-yellow/80 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
+                                >
+                                  <svg
+                                    className="w-4 h-4 flex-shrink-0"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-3.582 8-8 8a8.959 8.959 0 01-4.906-1.524A11.956 11.956 0 012.69 18.186c.423-.95.893-1.902 1.405-2.852A8.002 8.002 0 0121 12z"
+                                    />
+                                  </svg>
+                                  <span className="truncate">
+                                    Open Chat (
+                                    {Math.ceil(
+                                      connection.chatTimeRemaining / 60000
+                                    )}{" "}
+                                    min left)
+                                  </span>
+                                </button>
+                              ) : connection.chatTimeRemaining === -1 ? (
+                                <div className="w-full sm:w-auto px-4 py-2 bg-orange-600 text-white rounded-lg text-center">
+                                  <div className="text-sm font-medium">
+                                    Chat Expired
+                                  </div>
+                                  <div className="text-xs">
+                                    Contact details available
+                                  </div>
+                                </div>
+                              ) : (
+                                <button
+                                  disabled
+                                  className="w-full sm:w-auto px-4 py-2 bg-gray-600 text-gray-400 rounded-lg cursor-not-allowed text-sm"
+                                  title="Connection has completely expired"
+                                >
+                                  Connection Expired
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Contact Actions */}
+                          {connection.partner?.phone && (
+                            <div className="flex flex-col sm:flex-row gap-2 mt-4 pt-4 border-t border-white/10">
+                              <a
+                                href={`tel:${connection.partner.phone}`}
+                                className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                               >
-                                Connection Expired
+                                <span>📞</span>
+                                Call Direct
+                              </a>
+                              <a
+                                href={`https://wa.me/${connection.partner.phone.replace(
+                                  /[^0-9]/g,
+                                  ""
+                                )}?text=Hi! I'm your travel buddy from SAWAARI. Let's coordinate our trip!`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+                              >
+                                <span>💬</span>
+                                WhatsApp
+                              </a>
+                              <button
+                                onClick={() => {
+                                  const phoneNum = connection.partner?.phone;
+                                  if (phoneNum) {
+                                    navigator.clipboard.writeText(phoneNum);
+                                    toast.success("Phone number copied!");
+                                  }
+                                }}
+                                className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm font-medium"
+                              >
+                                <span>📋</span>
+                                Copy Number
                               </button>
+                            </div>
+                          )}
+
+                          <div className="mt-2 flex items-center justify-between text-xs text-gray-400">
+                            <span>
+                              Connected:{" "}
+                              {new Date(
+                                connection.createdAt
+                              ).toLocaleDateString()}
+                            </span>
+                            {connection.chatTimeRemaining > 0 ? (
+                              <span className="text-green-400 font-medium">
+                                💬 Chat:{" "}
+                                {Math.ceil(
+                                  connection.chatTimeRemaining / 60000
+                                )}{" "}
+                                min left
+                              </span>
+                            ) : connection.chatTimeRemaining === -1 ? (
+                              <span className="text-orange-400 font-medium">
+                                📞 Contact details available
+                              </span>
+                            ) : (
+                              <span className="text-red-400 font-medium">
+                                ⏰ Connection expired
+                              </span>
                             )}
                           </div>
                         </div>
-
-                        {/* Contact Actions */}
-                        {connection.partner?.phone && (
-                          <div className="flex flex-col sm:flex-row gap-2 mt-4 pt-4 border-t border-white/10">
-                            <a
-                              href={`tel:${connection.partner.phone}`}
-                              className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-                            >
-                              <span>📞</span>
-                              Call Direct
-                            </a>
-                            <a
-                              href={`https://wa.me/${connection.partner.phone.replace(
-                                /[^0-9]/g,
-                                ""
-                              )}?text=Hi! I&apos;m your travel buddy from SAWAARI. Let&apos;s coordinate our trip!`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
-                            >
-                              <span>💬</span>
-                              WhatsApp
-                            </a>
-                            <button
-                              onClick={() => {
-                                const phoneNum = connection.partner?.phone;
-                                if (phoneNum) {
-                                  navigator.clipboard.writeText(phoneNum);
-                                  toast.success("Phone number copied!");
-                                }
-                              }}
-                              className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm font-medium"
-                            >
-                              <span>📋</span>
-                              Copy Number
-                            </button>
-                          </div>
-                        )}
-
-                        <div className="mt-2 flex items-center justify-between text-xs text-gray-400">
-                          <span>
-                            Connected:{" "}
-                            {new Date(
-                              connection.createdAt
-                            ).toLocaleDateString()}
-                          </span>
-                          {connection.chatTimeRemaining > 0 ? (
-                            <span className="text-green-400 font-medium">
-                              💬 Chat:{" "}
-                              {Math.ceil(connection.chatTimeRemaining / 60000)}{" "}
-                              min left
-                            </span>
-                          ) : connection.chatTimeRemaining === -1 ? (
-                            <span className="text-orange-400 font-medium">
-                              📞 Contact details available
-                            </span>
-                          ) : (
-                            <span className="text-red-400 font-medium">
-                              ⏰ Connection expired
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}
@@ -2299,58 +2335,60 @@ const RideBuddy = () => {
                 activeConnections.length === 0 &&
                 ((!requestsLoading && !connectionsLoading) ||
                   (requestsLoaded && connectionsLoaded)) && (
-                  <div className="card text-center">
-                    <div className="text-6xl mb-4">👥</div>
-                    <h3 className="text-xl font-bold text-white mb-2 text-readable">
-                      No Connections Yet
-                    </h3>
-                    <p className="text-gray-300 text-readable-secondary mb-4">
-                      Start by searching for travel buddies or wait for incoming
-                      requests.
-                    </p>
-                    <div className="space-y-3 flex flex-col items-center">
-                      <button
-                        onClick={() => setActiveTab("search")}
-                        className="px-6 py-3 bg-gradient-to-r from-sawaari-yellow to-sawaari-green text-black rounded-lg hover:shadow-lg transition-all duration-300 font-semibold w-fit"
-                      >
-                        🔍 Search for Travel Buddies
-                      </button>
-                      <button
-                        onClick={() => {
-                          console.log("🔄 Manual refresh triggered");
-                          setRequestsLoaded(false);
-                          setConnectionsLoaded(false);
-                          loadRequests();
-                          loadConnections(true);
-                          toast("Refreshing connections...");
-                        }}
-                        className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-sawaari-yellow text-black rounded-lg hover:bg-sawaari-yellow/80 transition-colors font-medium"
-                        disabled={requestsLoading || connectionsLoading}
-                      >
-                        {requestsLoading || connectionsLoading ? (
-                          <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-black"></div>
-                            <span>Refreshing...</span>
-                          </>
-                        ) : (
-                          <>
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                              />
-                            </svg>
-                            <span>Refresh</span>
-                          </>
-                        )}
-                      </button>
+                  <div className="max-w-2xl mx-auto">
+                    <div className="glass-strong rounded-3xl p-8 border border-white/10 shadow-2xl text-center">
+                      <div className="text-6xl mb-4">👥</div>
+                      <h3 className="text-xl font-bold text-white mb-2 text-readable">
+                        No Connections Yet
+                      </h3>
+                      <p className="text-gray-300 text-readable-secondary mb-6">
+                        Start by searching for travel buddies or wait for
+                        incoming requests.
+                      </p>
+                      <div className="space-y-4 flex flex-col items-center">
+                        <button
+                          onClick={() => setActiveTab("search")}
+                          className="px-8 py-3 bg-gradient-to-r from-sawaari-yellow to-sawaari-green text-black rounded-xl hover:shadow-lg transition-all duration-300 font-semibold transform hover:scale-105"
+                        >
+                          🔍 Search for Travel Buddies
+                        </button>
+                        <button
+                          onClick={() => {
+                            console.log("🔄 Manual refresh triggered");
+                            setRequestsLoaded(false);
+                            setConnectionsLoaded(false);
+                            loadRequests();
+                            loadConnections(true);
+                            toast("Refreshing connections...");
+                          }}
+                          className="inline-flex items-center justify-center gap-2 px-6 py-2 bg-black/30 border border-white/20 text-white rounded-xl hover:bg-white/10 transition-all duration-300 font-medium"
+                          disabled={requestsLoading || connectionsLoading}
+                        >
+                          {requestsLoading || connectionsLoading ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                              <span>Refreshing...</span>
+                            </>
+                          ) : (
+                            <>
+                              <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                                />
+                              </svg>
+                              <span>Refresh</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}

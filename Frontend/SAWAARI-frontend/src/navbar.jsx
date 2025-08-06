@@ -79,7 +79,7 @@ export default function Navbar() {
                   }`
                 }
               >
-                Pickup Zones
+                Hotspots
               </NavLink>
               <NavLink
                 to="/routes"
@@ -212,7 +212,7 @@ export default function Navbar() {
                   }`
                 }
               >
-                Pickup Zones
+                Hotspots
               </NavLink>
               <NavLink
                 to="/routes"
