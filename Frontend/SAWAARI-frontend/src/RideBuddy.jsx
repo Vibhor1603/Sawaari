@@ -689,6 +689,18 @@ const RideBuddy = () => {
 
   // Initialize socket connection and load data - ONLY RUN ONCE
   useEffect(() => {
+    console.log("🚨 DEBUG: Main useEffect running");
+    console.log(
+      "🚨 DEBUG: isAuthenticated:",
+      isAuthenticated,
+      "user?.id:",
+      user?.id
+    );
+    console.log(
+      "🚨 DEBUG: componentInitializedRef.current:",
+      componentInitializedRef.current
+    );
+
     if (!isAuthenticated || !user) {
       // Clear saved connections when user is not authenticated
       try {
@@ -708,6 +720,7 @@ const RideBuddy = () => {
       return;
     }
 
+    console.log("🚨 DEBUG: Initializing RideBuddy for the first time");
     componentInitializedRef.current = true;
 
     // Connect to socket with proper token from authService
@@ -1060,18 +1073,7 @@ const RideBuddy = () => {
       // Reset initialization flag for next mount
       componentInitializedRef.current = false;
     };
-  }, [
-    activeChatId,
-    activeTab,
-    checkActiveSearchStatus,
-    incomingRequests.length,
-    isAuthenticated,
-    loadConnections,
-    loadRequests,
-    navigate,
-    showDebouncedToast,
-    user,
-  ]); // Only depend on authentication state and user object
+  }, [isAuthenticated, user?.id]); // Only depend on authentication state and user ID
 
   // Request expiration checker - runs every minute
   useEffect(() => {
