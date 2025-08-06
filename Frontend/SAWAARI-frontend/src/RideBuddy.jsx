@@ -92,10 +92,7 @@ const RideBuddy = () => {
 
       // Show toast for expired requests
       if (expired.length > 0) {
-        showDebouncedToast(
-          "default",
-          `${expired.length} request(s) expired and were removed`
-        );
+        toast(`${expired.length} request(s) expired and were removed`);
       }
 
       return valid;
@@ -117,10 +114,7 @@ const RideBuddy = () => {
 
       // Show toast for expired outgoing requests
       if (expired.length > 0) {
-        showDebouncedToast(
-          "error",
-          `Your request has expired. Try making a new request.`
-        );
+        toast.error(`Your request has expired. Try making a new request.`);
       }
 
       return valid;
@@ -149,7 +143,7 @@ const RideBuddy = () => {
           // Don't prevent the app from working if cleanup fails
         });
     }
-  }, [showDebouncedToast]);
+  }, []); // No dependencies - uses only current state
 
   // Helper function to safely extract location name
   const getLocationName = (location) => {
