@@ -23,7 +23,7 @@ const {
 // Update route matching service configuration
 routeMatchingService.updateConfig({
   defaultRadius: 2, // 2km default search radius for nearby connections
-  minOverlapPercentage: 25, // 25% minimum route overlap
+  minOverlapPercentage: 1, // 1% minimum route overlap for testing
   maxResults: 20, // Maximum 20 matches per search
 });
 

@@ -122,7 +122,6 @@ const findCommonWaypoints = (waypoints1, waypoints2) => {
 
   for (let i = 0; i < waypoints1.length; i++) {
     const wp1 = waypoints1[i];
-
     for (let j = 0; j < waypoints2.length; j++) {
       if (used2.has(j)) continue;
 
@@ -161,6 +160,7 @@ const isSimilarLocation = (loc1, loc2) => {
       .toLowerCase()
       .trim()
       .replace(/[^a-z0-9]/g, "");
+
   const norm1 = normalize(loc1);
   const norm2 = normalize(loc2);
 
@@ -254,7 +254,6 @@ const findNearbyUsers = async (
           centerLocation,
           search.source.coordinates
         );
-
         const destinationDistance = calculateDistance(
           centerLocation,
           search.destination.coordinates
@@ -282,12 +281,10 @@ const findNearbyUsers = async (
           calculateDistance(centerLocation, a.source?.coordinates),
           calculateDistance(centerLocation, a.destination?.coordinates)
         );
-
         const distanceB = Math.min(
           calculateDistance(centerLocation, b.source?.coordinates),
           calculateDistance(centerLocation, b.destination?.coordinates)
         );
-
         return distanceA - distanceB;
       });
     }
@@ -476,7 +473,6 @@ const findPotentialMatches = async (userRoute, options = {}) => {
         b.proximity.sourceDistance,
         b.proximity.destinationDistance
       );
-
       return proximityA - proximityB;
     });
 
@@ -510,7 +506,6 @@ const rankMatches = (matches, preferences = {}) => {
   const rankedMatches = matches.map((match) => {
     const overlapScore = match.overlap.overlapPercentage / 100;
     const savingsScore = Math.min(match.fareSharing.savings1 / 100, 1); // Normalize to 0-1
-
     const minProximity = Math.min(
       match.proximity.sourceDistance,
       match.proximity.destinationDistance
@@ -572,6 +567,7 @@ const findActiveMatches = async (userRoute, excludeUserId) => {
     });
 
     const matches = [];
+
     for (const search of activeSearches) {
       console.log(`🔍 Checking search from user ${search.userName}:`, {
         source: search.source?.name,
@@ -638,6 +634,7 @@ const findActiveMatches = async (userRoute, excludeUserId) => {
       }
     }
 
+    console.log(`✅ Found ${matches.length} matching active searches`);
     return rankMatches(matches);
   } catch (error) {
     console.error("Error finding active matches:", error);
@@ -655,6 +652,10 @@ const notifyExistingSearchers = async (newUserRoute, socketService) => {
     const potentialMatches = await findActiveMatches(
       newUserRoute,
       newUserRoute.userId
+    );
+
+    console.log(
+      `📡 Notifying ${potentialMatches.length} existing searchers about new match`
     );
 
     for (const match of potentialMatches) {
@@ -675,7 +676,12 @@ const notifyExistingSearchers = async (newUserRoute, socketService) => {
             searchTimestamp: new Date().toISOString(),
           },
         });
+
+        console.log(
+          `✅ Notified user ${match.userId} about new potential match`
+        );
       } catch (notifyError) {
+        console.error(`❌ Failed to notify user ${match.userId}:`, notifyError);
         // Continue with other notifications even if one fails
       }
     }
@@ -709,12 +715,14 @@ const updateConfig = (newConfig) => {
       Math.min(50, newConfig.defaultRadius)
     ); // 1-50km range
   }
+
   if (newConfig.minOverlapPercentage !== undefined) {
     DEFAULT_CONFIG.minOverlapPercentage = Math.max(
       0,
       Math.min(100, newConfig.minOverlapPercentage)
     );
   }
+
   if (newConfig.maxResults !== undefined) {
     DEFAULT_CONFIG.maxResults = Math.max(
       1,
