@@ -48,8 +48,8 @@ class ConnectionCleanupService {
 
       // Find expired accepted requests
       const expiredRequests = await findRideBuddyRequests({
-        status: "accepted",
-        updatedAt: { $lt: cutoffTime },
+        status: { $in: ["accepted", "auto-accepted"] }, // Include both accepted and auto-accepted
+        expiresAt: { $lt: new Date() }, // Use expiresAt field for consistency
       });
 
       let cleanedRequests = 0;

@@ -122,11 +122,13 @@ const createAutoConnection = async (request1, request2) => {
     await updateRideBuddyRequest(request1._id, {
       status: "auto-accepted",
       autoConnectedAt: new Date(),
+      expiresAt: new Date(Date.now() + 15 * 60 * 1000), // 15 minutes for auto-accepted connections
     });
 
     await updateRideBuddyRequest(request2._id, {
       status: "auto-accepted",
       autoConnectedAt: new Date(),
+      expiresAt: new Date(Date.now() + 15 * 60 * 1000), // 15 minutes for auto-accepted connections
     });
 
     // Create match immediately
@@ -247,7 +249,7 @@ const cleanupExpiredPendingRequests = async () => {
     // Find expired pending requests
     const expiredPendingRequests = await findRideBuddyRequests({
       status: "pending",
-      createdAt: { $lt: new Date(now.getTime() - PENDING_EXPIRY) },
+      expiresAt: { $lt: now }, // Use expiresAt field instead of createdAt
     });
 
     console.log(
@@ -1063,6 +1065,7 @@ const handleRequest = async (req, res) => {
       await updateRideBuddyRequest(new ObjectId(requestId), {
         status: "accepted",
         responseMessage: message.trim(),
+        expiresAt: new Date(Date.now() + 15 * 60 * 1000), // 15 minutes for accepted connections
       });
 
       console.log(`✅ Request ${requestId} accepted successfully`);
@@ -1806,7 +1809,7 @@ const cleanupExpiredRequestsAPI = async (req, res) => {
         { receiverId: new ObjectId(userId) },
       ],
       status: "pending",
-      createdAt: { $lt: tenMinutesAgo },
+      expiresAt: { $lt: new Date() }, // Use expiresAt field instead of createdAt
     });
 
     console.log(`🗑️ Found ${expiredRequests.length} expired requests`);

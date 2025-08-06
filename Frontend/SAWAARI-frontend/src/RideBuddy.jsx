@@ -19,18 +19,45 @@ const RideBuddy = () => {
     "Please sign in to access Ride Buddy"
   );
 
-  // Toast debouncing to prevent rapid-fire duplicate toasts
-  const lastToastRef = useRef({ message: "", timestamp: 0 });
+  // Enhanced toast debouncing to prevent rapid-fire duplicate toasts
+  const lastToastRef = useRef({ message: "", timestamp: 0, type: "" });
+  const connectionToastRef = useRef({ partnerId: "", timestamp: 0 });
+
   const showDebouncedToast = useCallback((type, message, delay = 2000) => {
     const now = Date.now();
     const lastToast = lastToastRef.current;
 
-    // If same message within delay period, skip
+    // Enhanced deduplication for connection-related toasts
+    if (
+      message.includes("Connected with") ||
+      message.includes("connected with")
+    ) {
+      const partnerMatch = message.match(
+        /(?:Connected with|connected with)\s+([^!]+)/
+      );
+      const partnerId = partnerMatch ? partnerMatch[1].trim() : "";
+
+      if (
+        partnerId &&
+        connectionToastRef.current.partnerId === partnerId &&
+        now - connectionToastRef.current.timestamp < 5000
+      ) {
+        // 5 second window for connection toasts
+        console.log("🚫 Skipping duplicate connection toast for:", partnerId);
+        return;
+      }
+
+      if (partnerId) {
+        connectionToastRef.current = { partnerId, timestamp: now };
+      }
+    }
+
+    // Standard message deduplication
     if (lastToast.message === message && now - lastToast.timestamp < delay) {
       return;
     }
 
-    lastToastRef.current = { message, timestamp: now };
+    lastToastRef.current = { message, timestamp: now, type };
 
     switch (type) {
       case "success":
@@ -771,9 +798,10 @@ const RideBuddy = () => {
       console.log("🔔 Request response received:", data);
 
       if (data.action === "accepted") {
+        // Use consistent connection success message
         showDebouncedToast(
           "success",
-          `${data.responderName} accepted your request!`
+          `🛺 Connected with ${data.responderName}! You can now chat.`
         );
         setActiveTab("connections");
 
@@ -851,6 +879,8 @@ const RideBuddy = () => {
 
         setActiveConnections((prev) => [connection, ...prev]);
         setActiveTab("connections");
+
+        // Only show toast if this is the primary connection event (not a duplicate)
         showDebouncedToast(
           "success",
           `🛺 Connected with ${data.partnerName}! You can now chat.`
@@ -890,9 +920,10 @@ const RideBuddy = () => {
     const handleAutoConnection = (data) => {
       console.log("🤝 Auto-connection received:", data);
 
+      // Use consistent connection message
       showDebouncedToast(
         "success",
-        `🎉 Automatically connected with ${data.partnerName}!`
+        `🛺 Connected with ${data.partnerName}! You can now chat.`
       );
 
       if (data.matchId && data.chatId) {
@@ -1508,8 +1539,8 @@ const RideBuddy = () => {
   }
 
   return (
-    <div className="min-h-screen bg-black pt-20">
-      <div className="container-sawaari">
+    <div className="min-h-screen bg-black pt-20 overflow-x-hidden">
+      <div className="container-sawaari px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 bg-gradient-to-r from-sawaari-yellow/20 to-sawaari-green/20 border border-sawaari-yellow/30 rounded-lg px-4 py-2 mb-6">
@@ -1581,7 +1612,7 @@ const RideBuddy = () => {
         </div>
 
         {/* Content */}
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-6xl mx-auto w-full">
           {activeTab === "search" && (
             <div className="space-y-8">
               {/* Search Form */}
@@ -1814,10 +1845,10 @@ const RideBuddy = () => {
                     {searchResults.map((match) => (
                       <div
                         key={match.userId}
-                        className="flex items-center justify-between p-4 bg-black/30 border border-white/10 rounded-lg"
+                        className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-black/30 border border-white/10 rounded-lg gap-4"
                       >
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 bg-sawaari-yellow-muted border border-sawaari-yellow-border rounded-full flex items-center justify-center">
+                        <div className="flex items-center gap-4 min-w-0 flex-1">
+                          <div className="w-12 h-12 bg-sawaari-yellow-muted border border-sawaari-yellow-border rounded-full flex items-center justify-center flex-shrink-0">
                             <span className="text-sawaari-yellow font-semibold">
                               {(
                                 match.userName ||
@@ -1827,12 +1858,12 @@ const RideBuddy = () => {
                                 ?.toUpperCase() || "U"}
                             </span>
                           </div>
-                          <div>
-                            <h4 className="font-semibold text-white text-readable">
+                          <div className="min-w-0 flex-1">
+                            <h4 className="font-semibold text-white text-readable truncate">
                               {match.userName ||
                                 `User ${match.userId?.slice(-4)}`}
                             </h4>
-                            <p className="text-sm text-gray-300 text-readable-secondary">
+                            <p className="text-sm text-gray-300 text-readable-secondary truncate">
                               {getLocationName(
                                 match.route?.source || match.source
                               )}{" "}
@@ -1841,24 +1872,26 @@ const RideBuddy = () => {
                                 match.route?.destination || match.destination
                               )}
                             </p>
-                            {match.overlapPercentage && (
-                              <p className="text-xs text-sawaari-yellow">
-                                {Math.round(match.overlapPercentage)}% route
-                                match
-                              </p>
-                            )}
-                            {match.estimatedSharedFare && (
-                              <p className="text-xs text-green-400">
-                                ₹{Math.round(match.estimatedSharedFare)} shared
-                                fare
-                              </p>
-                            )}
+                            <div className="flex flex-wrap gap-2 mt-1">
+                              {match.overlapPercentage && (
+                                <p className="text-xs text-sawaari-yellow">
+                                  {Math.round(match.overlapPercentage)}% route
+                                  match
+                                </p>
+                              )}
+                              {match.estimatedSharedFare && (
+                                <p className="text-xs text-green-400">
+                                  ₹{Math.round(match.estimatedSharedFare)}{" "}
+                                  shared fare
+                                </p>
+                              )}
+                            </div>
                           </div>
                         </div>
                         <button
                           onClick={() => sendRideRequest(match)}
                           disabled={sentRequestIds.has(match.userId)}
-                          className={`px-4 py-2 rounded-lg transition-all duration-300 ${
+                          className={`px-4 py-2 rounded-lg transition-all duration-300 text-sm font-medium whitespace-nowrap flex-shrink-0 ${
                             sentRequestIds.has(match.userId)
                               ? "bg-gray-600 text-gray-400 cursor-not-allowed"
                               : "bg-sawaari-yellow text-black hover:bg-sawaari-yellow/80"
@@ -1940,10 +1973,10 @@ const RideBuddy = () => {
                     {incomingRequests.map((request) => (
                       <div
                         key={request._id}
-                        className="flex items-center justify-between p-4 bg-black/30 border border-white/10 rounded-lg"
+                        className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-black/30 border border-white/10 rounded-lg gap-4"
                       >
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 bg-sawaari-yellow-muted border border-sawaari-yellow-border rounded-full flex items-center justify-center">
+                        <div className="flex items-center gap-4 min-w-0 flex-1">
+                          <div className="w-12 h-12 bg-sawaari-yellow-muted border border-sawaari-yellow-border rounded-full flex items-center justify-center flex-shrink-0">
                             <span className="text-sawaari-yellow font-semibold">
                               {(
                                 request.senderName ||
@@ -1953,40 +1986,42 @@ const RideBuddy = () => {
                                 ?.toUpperCase() || "U"}
                             </span>
                           </div>
-                          <div>
-                            <h4 className="font-semibold text-white text-readable">
+                          <div className="min-w-0 flex-1">
+                            <h4 className="font-semibold text-white text-readable truncate">
                               {request.senderName ||
                                 `User ${request.senderId?.slice(-4)}`}
                             </h4>
-                            <p className="text-sm text-gray-300 text-readable-secondary">
+                            <p className="text-sm text-gray-300 text-readable-secondary truncate">
                               {request.routeDetails?.senderRoute?.source ||
                                 "Unknown"}{" "}
                               →{" "}
                               {request.routeDetails?.senderRoute?.destination ||
                                 "Unknown"}
                             </p>
-                            {request.routeDetails?.estimatedSharedFare && (
-                              <p className="text-xs text-green-400">
-                                Shared Fare: ₹
-                                {Math.round(
-                                  request.routeDetails.estimatedSharedFare
-                                )}
-                              </p>
-                            )}
+                            <div className="flex flex-wrap gap-2 mt-1">
+                              {request.routeDetails?.estimatedSharedFare && (
+                                <p className="text-xs text-green-400">
+                                  Shared Fare: ₹
+                                  {Math.round(
+                                    request.routeDetails.estimatedSharedFare
+                                  )}
+                                </p>
+                              )}
+                            </div>
                             {request.message && (
-                              <p className="text-xs text-gray-400 italic mt-1">
+                              <p className="text-xs text-gray-400 italic mt-1 line-clamp-2">
                                 &quot;{request.message}&quot;
                               </p>
                             )}
                           </div>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-shrink-0">
                           <button
                             onClick={() =>
                               respondToRequest(request._id, "accepted")
                             }
                             disabled={processingRequests.has(request._id)}
-                            className={`px-4 py-2 rounded-lg transition-colors ${
+                            className={`px-3 py-2 rounded-lg transition-colors text-sm font-medium whitespace-nowrap ${
                               processingRequests.has(request._id)
                                 ? "bg-gray-600 text-gray-400 cursor-not-allowed"
                                 : "bg-green-600 text-white hover:bg-green-700"
@@ -2001,7 +2036,7 @@ const RideBuddy = () => {
                               respondToRequest(request._id, "declined")
                             }
                             disabled={processingRequests.has(request._id)}
-                            className={`px-4 py-2 rounded-lg transition-colors ${
+                            className={`px-3 py-2 rounded-lg transition-colors text-sm font-medium whitespace-nowrap ${
                               processingRequests.has(request._id)
                                 ? "bg-gray-600 text-gray-400 cursor-not-allowed"
                                 : "bg-red-600 text-white hover:bg-red-700"
@@ -2038,9 +2073,9 @@ const RideBuddy = () => {
                         key={connection.matchId}
                         className="p-4 bg-black/30 border border-white/10 rounded-lg"
                       >
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-green-600 border border-green-500 rounded-full flex items-center justify-center">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-4">
+                          <div className="flex items-center gap-4 min-w-0 flex-1">
+                            <div className="w-12 h-12 bg-green-600 border border-green-500 rounded-full flex items-center justify-center flex-shrink-0">
                               <span className="text-white font-semibold">
                                 {(
                                   connection.partner?.name ||
@@ -2050,16 +2085,16 @@ const RideBuddy = () => {
                                   ?.toUpperCase() || "U"}
                               </span>
                             </div>
-                            <div>
-                              <h4 className="font-semibold text-white text-readable">
+                            <div className="min-w-0 flex-1">
+                              <h4 className="font-semibold text-white text-readable truncate">
                                 {connection.partner?.name || "Anonymous"}
                               </h4>
-                              <p className="text-sm text-gray-300 text-readable-secondary">
+                              <p className="text-sm text-gray-300 text-readable-secondary truncate">
                                 📱{" "}
                                 {connection.partner?.phone ||
                                   "Phone number available"}
                               </p>
-                              <p className="text-sm text-gray-300 text-readable-secondary">
+                              <p className="text-sm text-gray-300 text-readable-secondary truncate">
                                 {connection.routeDetails?.senderRoute?.source ||
                                   "Unknown"}{" "}
                                 →{" "}
@@ -2078,54 +2113,60 @@ const RideBuddy = () => {
                           </div>
 
                           {/* Chat Button */}
-                          {connection.chatTimeRemaining > 0 ? (
-                            <button
-                              onClick={() => startChat(connection)}
-                              className="px-4 py-2 bg-sawaari-yellow text-black rounded-lg hover:bg-sawaari-yellow/80 transition-colors flex items-center gap-2"
-                            >
-                              <svg
-                                className="w-4 h-4"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
+                          <div className="flex-shrink-0 w-full sm:w-auto">
+                            {connection.chatTimeRemaining > 0 ? (
+                              <button
+                                onClick={() => startChat(connection)}
+                                className="w-full sm:w-auto px-4 py-2 bg-sawaari-yellow text-black rounded-lg hover:bg-sawaari-yellow/80 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
                               >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-3.582 8-8 8a8.959 8.959 0 01-4.906-1.524A11.956 11.956 0 012.69 18.186c.423-.95.893-1.902 1.405-2.852A8.002 8.002 0 0121 12z"
-                                />
-                              </svg>
-                              Open Chat (
-                              {Math.ceil(connection.chatTimeRemaining / 60000)}{" "}
-                              min left)
-                            </button>
-                          ) : connection.chatTimeRemaining === -1 ? (
-                            <div className="px-4 py-2 bg-orange-600 text-white rounded-lg text-center">
-                              <div className="text-sm font-medium">
-                                Chat Expired
+                                <svg
+                                  className="w-4 h-4 flex-shrink-0"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-3.582 8-8 8a8.959 8.959 0 01-4.906-1.524A11.956 11.956 0 012.69 18.186c.423-.95.893-1.902 1.405-2.852A8.002 8.002 0 0121 12z"
+                                  />
+                                </svg>
+                                <span className="truncate">
+                                  Open Chat (
+                                  {Math.ceil(
+                                    connection.chatTimeRemaining / 60000
+                                  )}{" "}
+                                  min left)
+                                </span>
+                              </button>
+                            ) : connection.chatTimeRemaining === -1 ? (
+                              <div className="w-full sm:w-auto px-4 py-2 bg-orange-600 text-white rounded-lg text-center">
+                                <div className="text-sm font-medium">
+                                  Chat Expired
+                                </div>
+                                <div className="text-xs">
+                                  Contact details available
+                                </div>
                               </div>
-                              <div className="text-xs">
-                                Contact details available
-                              </div>
-                            </div>
-                          ) : (
-                            <button
-                              disabled
-                              className="px-4 py-2 bg-gray-600 text-gray-400 rounded-lg cursor-not-allowed"
-                              title="Connection has completely expired"
-                            >
-                              Connection Expired
-                            </button>
-                          )}
+                            ) : (
+                              <button
+                                disabled
+                                className="w-full sm:w-auto px-4 py-2 bg-gray-600 text-gray-400 rounded-lg cursor-not-allowed text-sm"
+                                title="Connection has completely expired"
+                              >
+                                Connection Expired
+                              </button>
+                            )}
+                          </div>
                         </div>
 
                         {/* Contact Actions */}
                         {connection.partner?.phone && (
-                          <div className="flex gap-2 mt-4 pt-4 border-t border-white/10">
+                          <div className="flex flex-col sm:flex-row gap-2 mt-4 pt-4 border-t border-white/10">
                             <a
                               href={`tel:${connection.partner.phone}`}
-                              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                              className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                             >
                               <span>📞</span>
                               Call Direct
@@ -2137,7 +2178,7 @@ const RideBuddy = () => {
                               )}?text=Hi! I&apos;m your ride buddy from SAWAARI. Let&apos;s coordinate our trip!`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                              className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
                             >
                               <span>💬</span>
                               WhatsApp
@@ -2150,7 +2191,7 @@ const RideBuddy = () => {
                                   toast.success("Phone number copied!");
                                 }
                               }}
-                              className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                              className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm font-medium"
                             >
                               <span>📋</span>
                               Copy Number
