@@ -630,8 +630,8 @@ const sendRequest = async (req, res) => {
     }
 
     // Check for any existing requests between these users (pending, accepted, or declined)
-    // Also check for very recent requests (within last 30 seconds) to prevent race conditions
-    const thirtySecondsAgo = new Date(Date.now() - 30 * 1000);
+    // Also check for very recent requests (within last 10 seconds) to prevent race conditions (reduced for testing)
+    const thirtySecondsAgo = new Date(Date.now() - 10 * 1000);
 
     const existingRequests = await findRideBuddyRequests({
       $or: [

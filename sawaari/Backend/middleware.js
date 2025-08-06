@@ -22,17 +22,17 @@ const createRateLimiter = (windowMs, max, message) => {
   });
 };
 
-// Authentication rate limiter - stricter for auth endpoints
+// Authentication rate limiter - more lenient for testing
 const authLimiter = createRateLimiter(
   15 * 60 * 1000, // 15 minutes
-  5, // 5 attempts
+  50, // 50 attempts (increased from 5 for testing)
   "Too many authentication attempts, please try again later"
 );
 
-// General API rate limiter - more lenient
+// General API rate limiter - very lenient for testing
 const apiLimiter = createRateLimiter(
   15 * 60 * 1000, // 15 minutes
-  500, // 500 requests (increased from 100)
+  1000, // 1000 requests (increased for testing)
   "Too many API requests, please try again later"
 );
 
@@ -43,10 +43,10 @@ const hotspotsLimiter = createRateLimiter(
   "Too many hotspot requests, please slow down"
 );
 
-// Ride buddy specific rate limiter - more restrictive for search/request operations
+// Ride buddy specific rate limiter - more lenient for testing
 const rideBuddyLimiter = createRateLimiter(
   5 * 60 * 1000, // 5 minutes
-  10, // 10 requests
+  100, // 100 requests (increased from 10 for testing)
   "Too many ride buddy requests, please slow down"
 );
 
