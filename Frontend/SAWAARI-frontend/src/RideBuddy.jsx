@@ -978,19 +978,7 @@ const RideBuddy = () => {
       // Reset initialization flag for next mount
       componentInitializedRef.current = false;
     };
-  }, [
-    activeChatId,
-    activeTab,
-    checkActiveSearchStatus,
-    handleSearchExpiry,
-    incomingRequests.length,
-    isAuthenticated,
-    loadConnections,
-    loadRequests,
-    navigate,
-    showDebouncedToast,
-    user,
-  ]); // Only depend on authentication state and user object
+  }, [isAuthenticated, user]); // Only depend on authentication state and user object
 
   // Request expiration checker - runs every minute
   useEffect(() => {
@@ -1005,7 +993,7 @@ const RideBuddy = () => {
     }, 60000); // 1 minute
 
     return () => clearInterval(interval);
-  }, [checkExpiredRequests, isAuthenticated]); // Remove checkExpiredRequests from dependencies to prevent re-runs
+  }, [checkExpiredRequests, isAuthenticated]); // Only depend on authentication state
 
   const handleSearch = async (e) => {
     e.preventDefault();
