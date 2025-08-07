@@ -228,6 +228,21 @@ const RideBuddy = () => {
   // Main state
   const [activeTab, setActiveTab] = useState("search");
 
+  // Safe tab change handler that refreshes data when user switches tabs
+  const handleTabChange = useCallback((newTab) => {
+    setActiveTab(newTab);
+
+    // Refresh data when user switches to connections tab (user-initiated, safe)
+    if (newTab === "connections" && componentInitializedRef.current) {
+      setTimeout(() => {
+        if (isMountedRef.current) {
+          loadRequestsRef.current();
+          loadConnectionsRef.current(false);
+        }
+      }, 100);
+    }
+  }, []);
+
   // Search functionality
   const [searchForm, setSearchForm] = useState({
     source: { name: "", coordinates: null },
@@ -283,6 +298,28 @@ const RideBuddy = () => {
   const loadRequestsTimeoutRef = useRef(null);
   const componentInitializedRef = useRef(false);
 
+  // Production safeguard: Track API call frequency to prevent infinite loops
+  const apiCallTracker = useRef({
+    loadRequests: { count: 0, lastReset: Date.now() },
+    loadConnections: { count: 0, lastReset: Date.now() },
+    checkSearchStatus: { count: 0, lastReset: Date.now() },
+  });
+
+  // Reset API call counters every minute
+  useEffect(() => {
+    const resetInterval = setInterval(() => {
+      const now = Date.now();
+      Object.keys(apiCallTracker.current).forEach((key) => {
+        if (now - apiCallTracker.current[key].lastReset > 60000) {
+          apiCallTracker.current[key].count = 0;
+          apiCallTracker.current[key].lastReset = now;
+        }
+      });
+    }, 60000);
+
+    return () => clearInterval(resetInterval);
+  }, []);
+
   // Save connections to localStorage whenever they change
   useEffect(() => {
     try {
@@ -298,7 +335,7 @@ const RideBuddy = () => {
   // Clear expired connections on component mount
   useEffect(() => {
     clearExpiredConnections();
-  }, [clearExpiredConnections]); // Run only once on mount
+  }, []); // Run only once on mount - removed clearExpiredConnections dependency
 
   // Define handleSearchExpiry before it's used in useEffect
   const handleSearchExpiry = useCallback(() => {
@@ -382,6 +419,49 @@ const RideBuddy = () => {
     }
   }, []);
 
+  // Create ref for checkActiveSearchStatus to prevent infinite loops
+  const checkActiveSearchStatusRef = useRef();
+  checkActiveSearchStatusRef.current = async () => {
+    try {
+      // Production safeguard: Prevent infinite loops
+      const tracker = apiCallTracker.current.checkSearchStatus;
+      if (tracker.count > 10) {
+        // Max 10 calls per minute
+        console.warn(
+          "🚨 checkActiveSearchStatus rate limited - too many calls"
+        );
+        return;
+      }
+      tracker.count++;
+
+      console.log("🔍 Checking active search status...");
+      const result = await rideBuddyService.getActiveSearchStatus();
+      console.log("📡 Active search status result:", result);
+
+      if (result.success && result.data.hasActiveSearch) {
+        console.log("✅ Found active search, setting state:", result.data);
+        setSearchState({
+          isActive: true,
+          searchId: result.data.searchId,
+          expiresAt: result.data.expiresAt,
+          source: result.data.source.name,
+          destination: result.data.destination.name,
+          timeRemaining: result.data.timeRemaining,
+          matchCount: 0,
+        });
+      } else {
+        console.log("❌ No active search found");
+        setSearchState((prev) => ({ ...prev, isActive: false }));
+      }
+    } catch (error) {
+      console.error("Error checking search status:", error);
+    }
+  };
+
+  const checkActiveSearchStatus = useCallback(() => {
+    return checkActiveSearchStatusRef.current();
+  }, []);
+
   const cancelActiveSearch = useCallback(async () => {
     try {
       console.log("🚀 Attempting to cancel active search...");
@@ -433,35 +513,28 @@ const RideBuddy = () => {
     }
   }, [showDebouncedToast]);
 
-  // Define functions using useCallback to avoid hoisting issues
-  const loadRequests = useCallback(async () => {
+  // Define functions using refs to prevent infinite loops in production
+  const loadRequestsRef = useRef();
+  loadRequestsRef.current = async () => {
     const now = Date.now();
     const MIN_CALL_INTERVAL = 1000; // Minimum 1 second between calls
 
-    // Increment call counter for debugging
-    loadRequestsCallCountRef.current += 1;
-    const callNumber = loadRequestsCallCountRef.current;
-
-    // 🚨 DEBUG: Log who called this function
-    console.log(`🚨 DEBUG: loadRequests called #${callNumber}`);
-    console.log(`🚨 DEBUG: Call stack:`, new Error().stack);
-    console.log(
-      `🚨 DEBUG: Time since last call:`,
-      now - lastLoadRequestsCallRef.current,
-      "ms"
-    );
+    // Production safeguard: Prevent infinite loops
+    const tracker = apiCallTracker.current.loadRequests;
+    if (tracker.count > 10) {
+      // Max 10 calls per minute
+      console.warn("🚨 loadRequests rate limited - too many calls");
+      return;
+    }
+    tracker.count++;
 
     // Prevent multiple simultaneous calls and rate limiting
     if (requestsLoading || !isMountedRef.current) {
-      console.log(
-        `🚨 DEBUG: loadRequests #${callNumber} blocked - loading:${requestsLoading}, mounted:${isMountedRef.current}`
-      );
       return;
     }
 
     // Rate limiting - prevent calls too close together
     if (now - lastLoadRequestsCallRef.current < MIN_CALL_INTERVAL) {
-      console.log(`🚨 DEBUG: loadRequests #${callNumber} rate limited`);
       return;
     }
 
@@ -470,7 +543,6 @@ const RideBuddy = () => {
     try {
       setRequestsLoading(true);
 
-      // Use the correct method name from the old version
       const result = await rideBuddyService.getRequests();
 
       if (!isMountedRef.current) {
@@ -478,7 +550,6 @@ const RideBuddy = () => {
       }
 
       if (result.success) {
-        // Only update if we have valid data to prevent flickering
         if (result.data && (result.data.requests || result.data.sentRequests)) {
           // Deduplicate incoming requests by _id
           const incomingData = result.data.requests || [];
@@ -492,10 +563,6 @@ const RideBuddy = () => {
           const uniqueOutgoing = outgoingData.filter(
             (request, index, self) =>
               index === self.findIndex((r) => r._id === request._id)
-          );
-
-          console.log(
-            `📥 loadRequests #${callNumber} setting ${uniqueIncoming.length} incoming, ${uniqueOutgoing.length} outgoing requests`
           );
 
           setIncomingRequests(uniqueIncoming);
@@ -523,7 +590,7 @@ const RideBuddy = () => {
         setRequestsLoaded(true);
       }
     } catch (error) {
-      console.error(`❌ loadRequests #${callNumber} error:`, error);
+      console.error("Error loading requests:", error);
       if (isMountedRef.current) {
         toast.error("Failed to load ride requests");
       }
@@ -532,80 +599,94 @@ const RideBuddy = () => {
         setRequestsLoading(false);
       }
     }
-  }, [requestsLoading]);
+  };
 
-  const loadConnections = useCallback(
-    async (forceRefresh = false) => {
-      // 🚨 DEBUG: Log who called this function
-      console.log(
-        `🚨 DEBUG: loadConnections called with forceRefresh:${forceRefresh}`
-      );
-      console.log(`🚨 DEBUG: Call stack:`, new Error().stack);
+  const loadRequests = useCallback(() => {
+    return loadRequestsRef.current();
+  }, []);
 
-      // Check if component is still mounted
-      if (!isMountedRef.current) {
-        console.log(`🚨 DEBUG: loadConnections blocked - not mounted`);
-        return;
+  // Use ref for loadConnections to prevent infinite loops
+  const loadConnectionsRef = useRef();
+  loadConnectionsRef.current = async (forceRefresh = false) => {
+    // Production safeguard: Prevent infinite loops
+    const tracker = apiCallTracker.current.loadConnections;
+    if (tracker.count > 10 && !forceRefresh) {
+      // Max 10 calls per minute
+      console.warn("🚨 loadConnections rate limited - too many calls");
+      return;
+    }
+    tracker.count++;
+
+    // Check if component is still mounted
+    if (!isMountedRef.current) {
+      return;
+    }
+
+    // Prevent multiple simultaneous calls
+    if (connectionsLoading && !forceRefresh) {
+      return;
+    }
+
+    try {
+      setConnectionsLoading(true);
+
+      // Clear cache if force refresh is requested
+      if (forceRefresh) {
+        rideBuddyService.clearCache && rideBuddyService.clearCache();
       }
 
-      // Prevent multiple simultaneous calls
-      if (connectionsLoading && !forceRefresh) {
-        console.log(`🚨 DEBUG: loadConnections blocked - already loading`);
-        return;
-      }
-
-      try {
-        setConnectionsLoading(true);
-
-        // Clear cache if force refresh is requested
-        if (forceRefresh) {
-          rideBuddyService.clearCache && rideBuddyService.clearCache();
-        }
-
-        // Use the correct method name from the old version
-        const result = await rideBuddyService.getMatches();
-        if (result.success) {
-          // Filter out expired connections and update time remaining
-          const validConnections = (result.data || [])
-            .filter((connection) => {
-              if (isConnectionExpired(connection)) {
-                return false;
-              }
-              return true;
-            })
-            .map((connection) => ({
+      const result = await rideBuddyService.getMatches();
+      if (result.success) {
+        // Filter out expired connections and update time remaining
+        const validConnections = (result.data || [])
+          .filter((connection) => {
+            if (!connection.createdAt) return true;
+            const connectionTime = new Date(connection.createdAt).getTime();
+            const now = Date.now();
+            const totalConnectionDuration = 15 * 60 * 1000; // 15 minutes total
+            return now - connectionTime <= totalConnectionDuration;
+          })
+          .map((connection) => {
+            if (!connection.createdAt) return connection;
+            const connectionTime = new Date(connection.createdAt).getTime();
+            const now = Date.now();
+            const chatDuration = 10 * 60 * 1000; // 10 minutes chat
+            const elapsed = now - connectionTime;
+            let chatTimeRemaining;
+            if (elapsed > chatDuration) {
+              chatTimeRemaining = -1; // Chat expired, but contact details still available
+            } else {
+              chatTimeRemaining = chatDuration - elapsed; // Chat time remaining
+            }
+            return {
               ...connection,
-              chatTimeRemaining: getConnectionTimeRemaining(connection),
-            }));
+              chatTimeRemaining,
+            };
+          });
 
-          console.log(
-            `📊 Server returned ${result.data?.length || 0} connections, ${
-              validConnections.length
-            } are still valid`
-          );
-
-          setActiveConnections(validConnections);
-          setConnectionsLoaded(true);
-
-          // Show message if connections were filtered out
-          if (result.data.length > validConnections.length) {
-            const expiredCount = result.data.length - validConnections.length;
-            toast(`${expiredCount} expired connection(s) removed`);
-          }
-        } else {
-          // Don't clear existing connections on error, just mark as loaded
-          setConnectionsLoaded(true);
-        }
-      } catch (error) {
-        console.error("Error loading connections:", error);
-        toast.error("Failed to load connections");
+        setActiveConnections(validConnections);
         setConnectionsLoaded(true);
-      } finally {
-        setConnectionsLoading(false);
+
+        // Show message if connections were filtered out
+        if (result.data.length > validConnections.length) {
+          const expiredCount = result.data.length - validConnections.length;
+          toast(`${expiredCount} expired connection(s) removed`);
+        }
+      } else {
+        setConnectionsLoaded(true);
       }
-    },
-    [connectionsLoading, isConnectionExpired, getConnectionTimeRemaining]
-  );
+    } catch (error) {
+      console.error("Error loading connections:", error);
+      toast.error("Failed to load connections");
+      setConnectionsLoaded(true);
+    } finally {
+      setConnectionsLoading(false);
+    }
+  };
+
+  const loadConnections = useCallback((forceRefresh = false) => {
+    return loadConnectionsRef.current(forceRefresh);
+  }, []);
 
   // Clean up expired sent requests and connections
   useEffect(() => {
@@ -1040,13 +1121,13 @@ const RideBuddy = () => {
       }
     });
 
-    // Load initial data ONLY ONCE
+    // Load initial data ONLY ONCE - using refs to prevent infinite loops
     console.log("📥 Loading initial requests and connections...");
-    loadRequests();
-    checkActiveSearchStatus(); // Check for active search on mount
+    loadRequestsRef.current();
+    checkActiveSearchStatusRef.current(); // Check for active search on mount
     setTimeout(() => {
       if (isMountedRef.current) {
-        loadConnections(true);
+        loadConnectionsRef.current(true);
       }
     }, 100);
 
@@ -1075,78 +1156,47 @@ const RideBuddy = () => {
       // Reset initialization flag for next mount
       componentInitializedRef.current = false;
     };
-  }, [
-    activeChatId,
-    activeTab,
-    checkActiveSearchStatus,
-    incomingRequests.length,
-    isAuthenticated,
-    loadConnections,
-    loadRequests,
-    navigate,
-    showDebouncedToast,
-    user,
-    user?.id,
-  ]); // Only depend on authentication state and user ID
+  }, [isAuthenticated, user?.id]); // Only depend on authentication state and user ID - removed problematic dependencies
 
-  // Request expiration checker - runs every minute
+  // Request expiration checker - runs every minute (DISABLED FOR PRODUCTION STABILITY)
   useEffect(() => {
     if (!isAuthenticated) return;
 
     // Run immediately
     checkExpiredRequests();
 
-    // Set up interval to check every minute
-    const interval = setInterval(() => {
-      checkExpiredRequests();
-    }, 60000); // 1 minute
+    // DISABLED: Periodic checks to prevent infinite loops in production
+    // No interval - only run once on mount
+  }, [isAuthenticated]); // Only depend on authentication state
 
-    return () => clearInterval(interval);
-  }, [checkExpiredRequests, isAuthenticated]); // Only depend on authentication state
+  // Manual refresh function for user-triggered updates (production-safe)
+  const refreshData = useCallback(() => {
+    if (!isMountedRef.current || !componentInitializedRef.current) return;
 
-  // Periodic data refresh - separate from initialization
-  useEffect(() => {
-    if (!isAuthenticated || !componentInitializedRef.current) return;
+    console.log("🔄 Manual data refresh triggered");
 
-    console.log("🚨 DEBUG: Setting up periodic data refresh");
+    // Use refs to avoid dependency issues
+    if (!requestsLoading) {
+      loadRequestsRef.current();
+    }
 
-    // Set up interval to refresh data every 30 seconds
-    const dataRefreshInterval = setInterval(() => {
-      if (isMountedRef.current && componentInitializedRef.current) {
-        console.log("🔄 Periodic data refresh triggered");
+    if (!connectionsLoading) {
+      loadConnectionsRef.current(false);
+    }
 
-        // Only refresh if not currently loading to avoid conflicts
-        if (!requestsLoading) {
-          loadRequests();
-        }
+    // Check search status if needed
+    if (searchState.isActive && checkActiveSearchStatusRef.current) {
+      checkActiveSearchStatusRef.current();
+    }
+  }, [requestsLoading, connectionsLoading, searchState.isActive]);
 
-        // Check for active search status updates
-        if (searchState.isActive) {
-          checkActiveSearchStatus();
-        }
+  // Periodic data refresh - DISABLED FOR PRODUCTION STABILITY
+  // This was causing infinite API calls in Vercel deployment
+  // Data will be refreshed through socket events and user interactions only
 
-        // Refresh connections periodically
-        if (!connectionsLoading) {
-          loadConnections(false); // Don't force refresh, just update
-        }
-      }
-    }, 30000); // 30 seconds
-
-    return () => {
-      console.log("🧹 Cleaning up periodic data refresh interval");
-      clearInterval(dataRefreshInterval);
-    };
-  }, [
-    checkActiveSearchStatus,
-    connectionsLoading,
-    isAuthenticated,
-    loadConnections,
-    loadRequests,
-    requestsLoading,
-    searchState.isActive,
-  ]); // Depend on auth and search state
-
-  // Enhanced search monitoring - more frequent checks when search is active
+  // Enhanced search monitoring - DISABLED FOR PRODUCTION STABILITY
+  // This was causing infinite loops in Vercel deployment
+  /*
   useEffect(() => {
     if (
       !isAuthenticated ||
@@ -1155,21 +1205,18 @@ const RideBuddy = () => {
     )
       return;
 
-    console.log("🚨 DEBUG: Setting up enhanced search monitoring");
-
-    // Check for new matches every 10 seconds when search is active
+    // DISABLED: Enhanced search monitoring to prevent infinite loops
     const searchMonitorInterval = setInterval(() => {
       if (isMountedRef.current && searchState.isActive) {
-        console.log("🔍 Enhanced search monitoring - checking for new matches");
-        checkActiveSearchStatus();
+        checkActiveSearchStatusRef.current && checkActiveSearchStatusRef.current();
       }
-    }, 10000); // 10 seconds
+    }, 10000);
 
     return () => {
-      console.log("🧹 Cleaning up enhanced search monitoring interval");
       clearInterval(searchMonitorInterval);
     };
-  }, [checkActiveSearchStatus, isAuthenticated, searchState.isActive]); // Only depend on auth and active search state
+  }, [isAuthenticated]);
+  */
 
   const handleSearch = async (e) => {
     e.preventDefault();
