@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { useState, useEffect, useContext, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "./AuthContext";
@@ -390,11 +389,11 @@ const RideBuddy = () => {
   }, []);
 
   // Enhanced search status management
-  const checkActiveSearchStatus = useCallback(async () => {
+  // REMOVED DUPLICATE: const checkActiveSearchStatus = useCallback(async () => {
     try {
       // 🚨 DEBUG: Log who called this function
 
-      console.log("  DEBUG: Call stack:", new Error().stack);
+      console.log("  DEBUG: Call stack:", new Error().stack);
 
       console.log("🔍 Checking active search status...");
       const result = await rideBuddyService.getActiveSearchStatus();
@@ -458,6 +457,10 @@ const RideBuddy = () => {
       console.error("Error checking search status:", error);
     }
   };
+
+  const checkActiveSearchStatus = useCallback(() => {
+    return checkActiveSearchStatusRef.current();
+  }, []);
 
   const cancelActiveSearch = useCallback(async () => {
     try {
