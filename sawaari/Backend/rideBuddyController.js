@@ -23,7 +23,7 @@ const {
 // Update route matching service configuration
 routeMatchingService.updateConfig({
   defaultRadius: 2, // 2km default search radius for nearby connections
-  minOverlapPercentage: 1, // 1% minimum route overlap for testing
+  minOverlapPercentage: 30, // 30% minimum route overlap for meaningful matches
   maxResults: 20, // Maximum 20 matches per search
 });
 
@@ -274,26 +274,16 @@ const cleanupExpiredPendingRequests = async () => {
   }
 };
 
-// Start periodic cleanup - enhanced with search cleanup
+// Start careful periodic cleanup - only expired pending requests
 setInterval(async () => {
-  const cleanedUpExpired = await cleanupExpiredRequests();
-  const cleanedUpSearches = await cleanupExpiredSearches();
-  const cleanedUpDuplicates = await cleanupDuplicateRequests();
-  const cleanedUpPending = await cleanupExpiredPendingRequests();
-  const cleanedUpMatches = await cleanupExpiredMatches();
+  const cleanedUpPendingRequests = await cleanupExpiredPendingRequests();
 
-  if (
-    cleanedUpExpired > 0 ||
-    cleanedUpPending > 0 ||
-    cleanedUpMatches > 0 ||
-    cleanedUpDuplicates > 0 ||
-    cleanedUpSearches > 0
-  ) {
+  if (cleanedUpPendingRequests > 0) {
     console.log(
-      `🧹 Cleaned up ${cleanedUpExpired} expired requests, ${cleanedUpDuplicates} duplicates, ${cleanedUpPending} expired pending requests, ${cleanedUpMatches} expired matches, and ${cleanedUpSearches} expired searches`
+      `🧹 Cleaned up ${cleanedUpPendingRequests} expired pending requests (older than 5 minutes)`
     );
   }
-}, 60000); // Run every minute
+}, 2 * 60 * 1000); // Run every 2 minutes
 
 /**
  * Filter matches based on user preferences
@@ -307,6 +297,82 @@ const filterMatchesByPreferences = (matches, preferences) => {
     // For now, return all matches
     return true;
   });
+};
+
+/**
+ * Filter out users who are already connected or have pending requests
+ * @param {String} userId - Current user ID
+ * @param {Array} matches - Array of potential matches
+ * @returns {Array} - Filtered matches excluding already connected users
+ */
+const filterAlreadyConnectedUsers = async (userId, matches) => {
+  try {
+    if (!matches || matches.length === 0) return matches;
+
+    // Get all existing requests and matches for this user
+    const [existingRequests, existingMatches] = await Promise.all([
+      findRideBuddyRequests({
+        $or: [
+          { senderId: new ObjectId(userId) },
+          { receiverId: new ObjectId(userId) },
+        ],
+        status: { $in: ["pending", "accepted", "auto-accepted"] },
+      }),
+      findRideBuddyMatches({
+        $or: [
+          { user1Id: new ObjectId(userId) },
+          { user2Id: new ObjectId(userId) },
+        ],
+        status: { $in: ["active", "connected"] },
+      }),
+    ]);
+
+    // Create sets of connected user IDs for fast lookup
+    const connectedUserIds = new Set();
+
+    // Add users from existing requests
+    existingRequests.forEach((request) => {
+      const otherUserId =
+        request.senderId.toString() === userId
+          ? request.receiverId.toString()
+          : request.senderId.toString();
+      connectedUserIds.add(otherUserId);
+    });
+
+    // Add users from existing matches
+    existingMatches.forEach((match) => {
+      const otherUserId =
+        match.user1Id.toString() === userId
+          ? match.user2Id.toString()
+          : match.user1Id.toString();
+      connectedUserIds.add(otherUserId);
+    });
+
+    // Filter out already connected users
+    const filteredMatches = matches.filter((match) => {
+      const matchUserId = match.userId.toString();
+      const isAlreadyConnected = connectedUserIds.has(matchUserId);
+
+      if (isAlreadyConnected) {
+        console.log(
+          `🚫 Filtering out ${match.userName} - already connected/pending`
+        );
+      }
+
+      return !isAlreadyConnected;
+    });
+
+    console.log(
+      `🔍 Filtered out ${
+        matches.length - filteredMatches.length
+      } already connected users`
+    );
+    return filteredMatches;
+  } catch (error) {
+    console.error("Error filtering connected users:", error);
+    // Return original matches if filtering fails
+    return matches;
+  }
 };
 
 /**
@@ -338,7 +404,7 @@ const searchRideBuddies = async (req, res) => {
       });
     }
 
-    // Clean up any expired searches first - TEMPORARILY DISABLED FOR TESTING
+    // Clean up any expired searches first - TEMPORARILY DISABLED FOR DEBUGGING
     // await cleanupExpiredSearches();
 
     // Check for existing active search
@@ -388,8 +454,8 @@ const searchRideBuddies = async (req, res) => {
       hasPhone: !!req.user.phone,
     });
 
-    // Create search data structure with 5-minute expiry
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes from now
+    // Create search data structure with 15-minute expiry for debugging
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes from now
     const searchData = {
       userId: new ObjectId(userId),
       userEmail,
@@ -487,6 +553,10 @@ const searchRideBuddies = async (req, res) => {
       // Filter out blocked users
       matches = await securityService.filterBlockedUsers(userId, matches);
       console.log(`📊 After security filtering: ${matches.length} matches`);
+
+      // Filter out users who are already connected or have pending requests
+      matches = await filterAlreadyConnectedUsers(userId, matches);
+      console.log(`📊 After connection filtering: ${matches.length} matches`);
 
       // Notify existing searchers about this new search
       await routeMatchingService.notifyExistingSearchers(
@@ -806,17 +876,23 @@ const sendRequest = async (req, res) => {
       });
     }
 
-    // Get receiver information from their active search
+    // Get receiver information from their recent search (active or recently expired)
     const receiverSearches = await findRideBuddySearches({
       userId: new ObjectId(receiverId),
-      status: "active",
+      $or: [
+        { status: "active" },
+        {
+          status: "expired",
+          expiredAt: { $gt: new Date(Date.now() - 2 * 60 * 1000) }, // Within last 2 minutes
+        },
+      ],
     });
 
     if (receiverSearches.length === 0) {
-      return res.status(404).json({
+      return res.status(400).json({
         success: false,
-        error: "Receiver not found",
-        message: "Receiver does not have an active search",
+        error: "Receiver not available",
+        message: "Receiver is no longer available for connections",
       });
     }
 

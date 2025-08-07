@@ -355,7 +355,7 @@ const RideBuddy = () => {
   const checkActiveSearchStatus = useCallback(async () => {
     try {
       // 🚨 DEBUG: Log who called this function
-      console.log("🚨 DEBUG: checkActiveSearchStatus called");
+
       console.log("  DEBUG: Call stack:", new Error().stack);
 
       console.log("🔍 Checking active search status...");
@@ -1075,7 +1075,19 @@ const RideBuddy = () => {
       // Reset initialization flag for next mount
       componentInitializedRef.current = false;
     };
-  }, [isAuthenticated, user?.id]); // Only depend on authentication state and user ID
+  }, [
+    activeChatId,
+    activeTab,
+    checkActiveSearchStatus,
+    incomingRequests.length,
+    isAuthenticated,
+    loadConnections,
+    loadRequests,
+    navigate,
+    showDebouncedToast,
+    user,
+    user?.id,
+  ]); // Only depend on authentication state and user ID
 
   // Request expiration checker - runs every minute
   useEffect(() => {
@@ -1381,7 +1393,10 @@ const RideBuddy = () => {
           );
         } else if (result.error === "Validation failed") {
           toast.error("Invalid request data. Please try again.");
-        } else if (result.error === "Receiver not found") {
+        } else if (
+          result.error === "Receiver not available" ||
+          result.error === "Receiver not found"
+        ) {
           toast.error("User is no longer available for connections");
           setSearchResults((prev) => {
             const filtered = prev.filter((m) => m.userId !== match.userId);

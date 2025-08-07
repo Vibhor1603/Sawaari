@@ -12,20 +12,38 @@ const { ObjectId } = require("mongodb");
 // Configuration constants
 const DEFAULT_CONFIG = {
   defaultRadius: 2, // 2km default radius
-  minOverlapPercentage: 1, // 1% minimum overlap for testing
+  minOverlapPercentage: 30, // 30% minimum overlap for meaningful matches
   maxResults: 50, // Maximum number of results to return
   searchExpiryMinutes: 5, // 5 minutes search expiry
 };
 
 /**
- * Calculate the overlap percentage between two routes with caching
+ * Convert route waypoints into directional steps
+ * @param {Array} waypoints - Array of waypoint names
+ * @returns {Array} - Array of directional steps (e.g., ["A-B", "B-C"])
+ */
+const convertToDirectionalSteps = (waypoints) => {
+  if (!waypoints || waypoints.length < 2) {
+    return [];
+  }
+
+  const steps = [];
+  for (let i = 0; i < waypoints.length - 1; i++) {
+    const step = `${waypoints[i]}-${waypoints[i + 1]}`;
+    steps.push(step);
+  }
+  return steps;
+};
+
+/**
+ * Calculate the overlap percentage between two routes using step-based directional logic
  * @param {Object} route1 - First route with source, destination, and waypoints
  * @param {Object} route2 - Second route with source, destination, and waypoints
  * @returns {Object} - Overlap details including percentage and shared distance
  */
 const calculateRouteOverlap = (route1, route2) => {
   if (!route1 || !route2) {
-    return { overlapPercentage: 0, sharedDistance: 0, commonWaypoints: [] };
+    return { overlapPercentage: 0, sharedDistance: 0, commonSteps: [] };
   }
 
   // Generate cache key for route overlap calculation
@@ -51,21 +69,17 @@ const calculateRouteOverlap = (route1, route2) => {
       ? route2.route.waypoints
       : [route2.source?.name, route2.destination?.name].filter(Boolean);
 
-  console.log(`🔍 Route overlap calculation:`, {
+  console.log(`🔍 Step-based route overlap calculation:`, {
     route1: {
       source: route1.source?.name,
       dest: route1.destination?.name,
-      hasRouteWaypoints: !!route1.route?.waypoints,
-      hasDirectWaypoints: !!route1.waypoints,
+      waypoints: waypoints1,
     },
     route2: {
       source: route2.source?.name,
       dest: route2.destination?.name,
-      hasRouteWaypoints: !!route2.route?.waypoints,
-      hasDirectWaypoints: !!route2.waypoints,
+      waypoints: waypoints2,
     },
-    waypoints1,
-    waypoints2,
   });
 
   if (!waypoints1.length || !waypoints2.length) {
@@ -73,57 +87,103 @@ const calculateRouteOverlap = (route1, route2) => {
     const result = {
       overlapPercentage: 0,
       sharedDistance: 0,
-      commonWaypoints: [],
+      commonSteps: [],
     };
     rideBuddyCacheService.setRouteCalculation(cacheKey, result, 300000); // 5 minutes cache
     return result;
   }
 
-  // Find common waypoints in sequence
-  const commonWaypoints = findCommonWaypoints(waypoints1, waypoints2);
+  // Convert routes to directional steps
+  const steps1 = convertToDirectionalSteps(waypoints1);
+  const steps2 = convertToDirectionalSteps(waypoints2);
 
-  // Calculate overlap percentage based on common waypoints
-  const maxWaypoints = Math.max(waypoints1.length, waypoints2.length);
-  let overlapPercentage =
-    maxWaypoints > 0 ? (commonWaypoints.length / maxWaypoints) * 100 : 0;
-
-  console.log(`📊 Initial overlap calculation:`, {
-    commonWaypoints: commonWaypoints.length,
-    maxWaypoints,
-    initialOverlapPercentage: overlapPercentage,
+  console.log(`📊 Route steps:`, {
+    route1Steps: steps1,
+    route2Steps: steps2,
   });
 
-  // Special handling for simple source-destination routes (2 waypoints each)
-  if (waypoints1.length === 2 && waypoints2.length === 2) {
-    // Check for exact route match (same source and destination in same order)
-    if (waypoints1[0] === waypoints2[0] && waypoints1[1] === waypoints2[1]) {
-      overlapPercentage = 100;
-      console.log(`✅ Exact route match found: 100% overlap`);
-    }
-    // Check for partial matches (same source or destination in same direction)
-    else if (waypoints1[0] === waypoints2[0]) {
-      // Same source, check if destinations are similar/nearby
-      overlapPercentage = 60; // 60% overlap for same source
-      console.log(`✅ Same source match found: 60% overlap`);
-    } else if (waypoints1[1] === waypoints2[1]) {
-      // Same destination, check if sources are similar/nearby
-      overlapPercentage = 60; // 60% overlap for same destination
-      console.log(`✅ Same destination match found: 60% overlap`);
-    } else {
-      // For testing purposes, give any two different routes a small overlap
-      overlapPercentage = 5; // 5% minimum overlap for testing
-      console.log(`⚠️ Different routes, giving minimum 5% overlap for testing`);
-    }
-    // No reverse or cross matching - only same direction routes
-  } else {
-    // For routes with different waypoint counts, ensure minimum overlap for testing
-    if (overlapPercentage === 0) {
-      overlapPercentage = 2; // 2% minimum for any routes during testing
-      console.log(
-        `⚠️ No common waypoints, giving minimum 2% overlap for testing`
-      );
+  if (steps1.length === 0 || steps2.length === 0) {
+    console.log(`❌ No steps found for routes`);
+    const result = {
+      overlapPercentage: 0,
+      sharedDistance: 0,
+      commonSteps: [],
+    };
+    rideBuddyCacheService.setRouteCalculation(cacheKey, result, 300000);
+    return result;
+  }
+
+  // Find all unique steps from both routes
+  const allSteps = new Set([...steps1, ...steps2]);
+  const totalUniqueSteps = allSteps.size;
+
+  // Find shared steps (steps that appear in both routes with same direction)
+  const sharedSteps = steps1.filter((step) => steps2.includes(step));
+  const sharedStepsCount = sharedSteps.length;
+
+  // Method 1: Step-based overlap (original logic)
+  const stepBasedOverlap =
+    totalUniqueSteps > 0 ? (sharedStepsCount / totalUniqueSteps) * 100 : 0;
+
+  // Method 2: Waypoint-based overlap (practical similarity with direction consideration)
+  const commonWaypoints = waypoints1.filter((wp) => waypoints2.includes(wp));
+  const totalUniqueWaypoints = new Set([...waypoints1, ...waypoints2]).size;
+  let waypointBasedOverlap =
+    totalUniqueWaypoints > 0
+      ? (commonWaypoints.length / totalUniqueWaypoints) * 100
+      : 0;
+
+  // Reduce waypoint overlap if routes are in reverse direction
+  if (
+    commonWaypoints.length > 0 &&
+    waypoints1.length >= 2 &&
+    waypoints2.length >= 2
+  ) {
+    const isReverse =
+      waypoints1[0] === waypoints2[waypoints2.length - 1] &&
+      waypoints1[waypoints1.length - 1] === waypoints2[0];
+    if (isReverse) {
+      waypointBasedOverlap = waypointBasedOverlap * 0.1; // Heavily penalize reverse routes
     }
   }
+
+  // Method 3: Sequential overlap (considers route order and direction)
+  let sequentialOverlap = 0;
+  const minLength = Math.min(waypoints1.length, waypoints2.length);
+  let matchingFromStart = 0;
+
+  // Count matching waypoints from start (same direction)
+  for (let i = 0; i < minLength; i++) {
+    if (waypoints1[i] === waypoints2[i]) {
+      matchingFromStart++;
+    } else {
+      break;
+    }
+  }
+
+  const maxLength = Math.max(waypoints1.length, waypoints2.length);
+  sequentialOverlap = maxLength > 0 ? (matchingFromStart / maxLength) * 100 : 0;
+
+  // Use the highest overlap percentage for better practical matching
+  const overlapPercentage = Math.max(
+    stepBasedOverlap,
+    waypointBasedOverlap,
+    sequentialOverlap
+  );
+
+  console.log(`📊 Multi-method overlap calculation:`, {
+    stepBased: Math.round(stepBasedOverlap * 100) / 100,
+    waypointBased: Math.round(waypointBasedOverlap * 100) / 100,
+    sequential: Math.round(sequentialOverlap * 100) / 100,
+    finalOverlap: Math.round(overlapPercentage * 100) / 100,
+    sharedSteps,
+    commonWaypoints,
+    calculation: `Best of: ${Math.round(
+      stepBasedOverlap
+    )}% (steps), ${Math.round(waypointBasedOverlap)}% (waypoints), ${Math.round(
+      sequentialOverlap
+    )}% (sequential)`,
+  });
 
   // Calculate shared distance based on route distances and overlap
   const route1Distance = route1.distance || 0;
@@ -134,14 +194,27 @@ const calculateRouteOverlap = (route1, route2) => {
   const result = {
     overlapPercentage: Math.round(overlapPercentage * 100) / 100, // Round to 2 decimal places
     sharedDistance: Math.round(sharedDistance * 100) / 100,
-    commonWaypoints,
-    totalCommonWaypoints: commonWaypoints.length,
+    commonSteps: sharedSteps,
+    totalSteps1: steps1.length,
+    totalSteps2: steps2.length,
+    totalUniqueSteps,
+    sharedStepsCount,
+    // Keep backward compatibility and add new data
+    commonWaypoints: commonWaypoints, // Actual common waypoints
+    sharedStepsForBackwardCompatibility: sharedSteps, // For backward compatibility
+    totalCommonWaypoints: sharedStepsCount,
     route1Waypoints: waypoints1.length,
     route2Waypoints: waypoints2.length,
   };
 
   // Cache the result for 30 minutes (route calculations are relatively stable)
   rideBuddyCacheService.setRouteCalculation(cacheKey, result, 1800000);
+
+  console.log(`✅ Final step-based overlap result:`, {
+    overlapPercentage: result.overlapPercentage,
+    sharedSteps: result.commonSteps,
+    calculation: `${sharedStepsCount}/${totalUniqueSteps} = ${result.overlapPercentage}%`,
+  });
 
   return result;
 };
@@ -827,6 +900,7 @@ const generateOverlapCacheKey = (route1, route2) => {
 // Export all functions
 module.exports = {
   calculateRouteOverlap,
+  convertToDirectionalSteps,
   findCommonWaypoints,
   isSimilarLocation,
   levenshteinDistance,
