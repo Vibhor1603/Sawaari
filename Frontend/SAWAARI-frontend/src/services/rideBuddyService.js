@@ -579,7 +579,7 @@ const cancelActiveSearch = async () => {
     console.log("🚀 cancelActiveSearch called");
 
     const response = await apiRequest("/api/ride-buddy/search/active", {
-      method: "DELETE",
+      method: "POST",
     });
 
     console.log("🔧 Cancel search API Response:", response);

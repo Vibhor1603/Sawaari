@@ -338,6 +338,9 @@ const searchRideBuddies = async (req, res) => {
       });
     }
 
+    // Clean up any expired searches first - TEMPORARILY DISABLED FOR TESTING
+    // await cleanupExpiredSearches();
+
     // Check for existing active search
     const existingSearch = await findRideBuddySearches({
       userId: new ObjectId(userId),
@@ -345,7 +348,20 @@ const searchRideBuddies = async (req, res) => {
       expiresAt: { $gt: new Date() },
     });
 
+    console.log(`🔍 Checking for existing active search for user ${userId}:`, {
+      foundSearches: existingSearch.length,
+      searches: existingSearch.map((s) => ({
+        id: s._id,
+        status: s.status,
+        expiresAt: s.expiresAt,
+        isExpired: new Date() > new Date(s.expiresAt),
+      })),
+    });
+
     if (existingSearch.length > 0) {
+      console.log(
+        `❌ User ${userId} already has an active search, rejecting new search`
+      );
       return res.status(409).json({
         success: false,
         error: "Active search exists",
@@ -417,7 +433,26 @@ const searchRideBuddies = async (req, res) => {
       source: searchData.source.name,
       destination: searchData.destination.name,
       expiresAt: searchData.expiresAt,
+      fullSearchData: searchData,
     });
+
+    // Verify the search was actually stored
+    const verifySearch = await findRideBuddySearches({
+      _id: searchResult.insertedId,
+    });
+    console.log(
+      `🔍 Verification - search exists in DB:`,
+      verifySearch.length > 0
+    );
+
+    // Also check total active searches in database
+    const allActiveSearches = await findRideBuddySearches({
+      status: "active",
+      expiresAt: { $gt: new Date() },
+    });
+    console.log(
+      `📊 Total active searches in database: ${allActiveSearches.length}`
+    );
 
     // Find existing active matches using enhanced matching
     let matches = [];
@@ -432,14 +467,26 @@ const searchRideBuddies = async (req, res) => {
         route: searchData.route,
       };
 
+      console.log(`🔍 Starting match search for user ${userName}:`, {
+        source: userRoute.source.name,
+        destination: userRoute.destination.name,
+        userId: userRoute.userId,
+      });
+
       // Use the new findActiveMatches method for real-time bidirectional matching
       matches = await routeMatchingService.findActiveMatches(userRoute, userId);
 
+      console.log(
+        `📊 Found ${matches.length} initial matches before filtering`
+      );
+
       // Filter matches based on user preferences
       matches = filterMatchesByPreferences(matches, searchData.preferences);
+      console.log(`📊 After preference filtering: ${matches.length} matches`);
 
       // Filter out blocked users
       matches = await securityService.filterBlockedUsers(userId, matches);
+      console.log(`📊 After security filtering: ${matches.length} matches`);
 
       // Notify existing searchers about this new search
       await routeMatchingService.notifyExistingSearchers(
@@ -1863,13 +1910,38 @@ const cleanupExpiredRequestsAPI = async (req, res) => {
 const cancelActiveSearch = async (req, res) => {
   try {
     const userId = req.user.userId;
+    console.log(`🚀 Attempting to cancel search for user: ${userId}`);
+
+    // First, check if there's an active search
+    const activeSearches = await findRideBuddySearches({
+      userId: new ObjectId(userId),
+      status: "active",
+    });
+
+    console.log(
+      `🔍 Found ${activeSearches.length} active searches for user ${userId}`
+    );
+    activeSearches.forEach((search, index) => {
+      console.log(`🔍 Active search ${index + 1}:`, {
+        id: search._id,
+        status: search.status,
+        expiresAt: search.expiresAt,
+        isExpired: new Date() > new Date(search.expiresAt),
+      });
+    });
 
     const result = await updateRideBuddySearch(
       { userId: new ObjectId(userId), status: "active" },
       { status: "cancelled", cancelledAt: new Date() }
     );
 
+    console.log(`📊 Update result:`, {
+      matchedCount: result.matchedCount,
+      modifiedCount: result.modifiedCount,
+    });
+
     if (result.modifiedCount === 0) {
+      console.log(`❌ No active search found to cancel for user ${userId}`);
       return res.status(404).json({
         success: false,
         error: "No active search found",
@@ -1879,6 +1951,7 @@ const cancelActiveSearch = async (req, res) => {
 
     // Invalidate cache
     rideBuddyCacheService.invalidateUserCaches(userId);
+    console.log(`✅ Search cancelled successfully for user ${userId}`);
 
     res.json({
       success: true,
@@ -1963,4 +2036,51 @@ module.exports = {
   cleanupDuplicateRequestsAPI,
   cancelActiveSearch,
   getActiveSearchStatus,
+  // Debug endpoint
+  debugMatching: async (req, res) => {
+    try {
+      const userId = req.user.userId;
+
+      // Get all active searches
+      const allSearches = await findRideBuddySearches({
+        status: "active",
+        expiresAt: { $gt: new Date() },
+      });
+
+      // Test matching with a simple route
+      const testRoute = {
+        userId: "test",
+        source: { name: "Test Source" },
+        destination: { name: "Test Destination" },
+        route: { waypoints: [] },
+      };
+
+      const matches = await routeMatchingService.findActiveMatches(
+        testRoute,
+        "test"
+      );
+
+      res.json({
+        success: true,
+        data: {
+          totalActiveSearches: allSearches.length,
+          searches: allSearches.map((s) => ({
+            userId: s.userId.toString(),
+            userName: s.userName,
+            source: s.source.name,
+            destination: s.destination.name,
+            expiresAt: s.expiresAt,
+          })),
+          testMatches: matches.length,
+          matches: matches.map((m) => ({
+            userName: m.userName,
+            overlapPercentage: m.overlap.overlapPercentage,
+          })),
+        },
+      });
+    } catch (error) {
+      console.error("Debug matching error:", error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  },
 };

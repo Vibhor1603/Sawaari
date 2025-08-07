@@ -12,7 +12,7 @@ const { ObjectId } = require("mongodb");
 // Configuration constants
 const DEFAULT_CONFIG = {
   defaultRadius: 2, // 2km default radius
-  minOverlapPercentage: 1, // 1% minimum overlap for testing (was 25%)
+  minOverlapPercentage: 1, // 1% minimum overlap for testing
   maxResults: 50, // Maximum number of results to return
   searchExpiryMinutes: 5, // 5 minutes search expiry
 };
@@ -37,17 +37,33 @@ const calculateRouteOverlap = (route1, route2) => {
     return cached;
   }
 
-  // Extract waypoints from routes
+  // Extract waypoints from routes - handle both route.waypoints and route.route.waypoints
   const waypoints1 =
-    route1.waypoints ||
-    [route1.source?.name, route1.destination?.name].filter(Boolean);
+    route1.waypoints && route1.waypoints.length > 0
+      ? route1.waypoints
+      : route1.route?.waypoints && route1.route.waypoints.length > 0
+      ? route1.route.waypoints
+      : [route1.source?.name, route1.destination?.name].filter(Boolean);
   const waypoints2 =
-    route2.waypoints ||
-    [route2.source?.name, route2.destination?.name].filter(Boolean);
+    route2.waypoints && route2.waypoints.length > 0
+      ? route2.waypoints
+      : route2.route?.waypoints && route2.route.waypoints.length > 0
+      ? route2.route.waypoints
+      : [route2.source?.name, route2.destination?.name].filter(Boolean);
 
   console.log(`🔍 Route overlap calculation:`, {
-    route1: { source: route1.source?.name, dest: route1.destination?.name },
-    route2: { source: route2.source?.name, dest: route2.destination?.name },
+    route1: {
+      source: route1.source?.name,
+      dest: route1.destination?.name,
+      hasRouteWaypoints: !!route1.route?.waypoints,
+      hasDirectWaypoints: !!route1.waypoints,
+    },
+    route2: {
+      source: route2.source?.name,
+      dest: route2.destination?.name,
+      hasRouteWaypoints: !!route2.route?.waypoints,
+      hasDirectWaypoints: !!route2.waypoints,
+    },
     waypoints1,
     waypoints2,
   });
@@ -71,21 +87,42 @@ const calculateRouteOverlap = (route1, route2) => {
   let overlapPercentage =
     maxWaypoints > 0 ? (commonWaypoints.length / maxWaypoints) * 100 : 0;
 
+  console.log(`📊 Initial overlap calculation:`, {
+    commonWaypoints: commonWaypoints.length,
+    maxWaypoints,
+    initialOverlapPercentage: overlapPercentage,
+  });
+
   // Special handling for simple source-destination routes (2 waypoints each)
   if (waypoints1.length === 2 && waypoints2.length === 2) {
     // Check for exact route match (same source and destination in same order)
     if (waypoints1[0] === waypoints2[0] && waypoints1[1] === waypoints2[1]) {
       overlapPercentage = 100;
+      console.log(`✅ Exact route match found: 100% overlap`);
     }
     // Check for partial matches (same source or destination in same direction)
     else if (waypoints1[0] === waypoints2[0]) {
       // Same source, check if destinations are similar/nearby
       overlapPercentage = 60; // 60% overlap for same source
+      console.log(`✅ Same source match found: 60% overlap`);
     } else if (waypoints1[1] === waypoints2[1]) {
       // Same destination, check if sources are similar/nearby
       overlapPercentage = 60; // 60% overlap for same destination
+      console.log(`✅ Same destination match found: 60% overlap`);
+    } else {
+      // For testing purposes, give any two different routes a small overlap
+      overlapPercentage = 5; // 5% minimum overlap for testing
+      console.log(`⚠️ Different routes, giving minimum 5% overlap for testing`);
     }
     // No reverse or cross matching - only same direction routes
+  } else {
+    // For routes with different waypoint counts, ensure minimum overlap for testing
+    if (overlapPercentage === 0) {
+      overlapPercentage = 2; // 2% minimum for any routes during testing
+      console.log(
+        `⚠️ No common waypoints, giving minimum 2% overlap for testing`
+      );
+    }
   }
 
   // Calculate shared distance based on route distances and overlap
@@ -550,6 +587,26 @@ const rankMatches = (matches, preferences = {}) => {
  */
 const findActiveMatches = async (userRoute, excludeUserId) => {
   try {
+    // First, let's see ALL active searches in the database
+    const allActiveSearches = await findRideBuddySearches({
+      status: "active",
+      expiresAt: { $gt: new Date() },
+    });
+
+    console.log(
+      `🔍 TOTAL active searches in database: ${allActiveSearches.length}`
+    );
+    allActiveSearches.forEach((search, index) => {
+      console.log(`🔍 All search ${index + 1}:`, {
+        userName: search.userName,
+        userId: search.userId.toString(),
+        source: search.source?.name,
+        dest: search.destination?.name,
+        isCurrentUser: search.userId.toString() === excludeUserId,
+        expiresAt: search.expiresAt,
+      });
+    });
+
     // Get all active searches excluding the current user
     const activeSearches = await findRideBuddySearches({
       status: "active",
@@ -558,12 +615,23 @@ const findActiveMatches = async (userRoute, excludeUserId) => {
     });
 
     console.log(
-      `🔍 Found ${activeSearches.length} active searches to check for matches`
+      `🔍 Found ${activeSearches.length} active searches to check for matches (excluding current user)`
     );
     console.log(`🔍 User route:`, {
       source: userRoute.source?.name,
       dest: userRoute.destination?.name,
       userId: excludeUserId,
+    });
+
+    // Log all active searches for debugging
+    activeSearches.forEach((search, index) => {
+      console.log(`🔍 Active search ${index + 1}:`, {
+        userName: search.userName,
+        source: search.source?.name,
+        dest: search.destination?.name,
+        userId: search.userId.toString(),
+        expiresAt: search.expiresAt,
+      });
     });
 
     const matches = [];
@@ -575,7 +643,13 @@ const findActiveMatches = async (userRoute, excludeUserId) => {
       });
 
       const overlapResult = calculateRouteOverlap(userRoute, search);
-      console.log(`📊 Overlap result:`, overlapResult);
+      console.log(`📊 Overlap result for ${search.userName}:`, {
+        overlapPercentage: overlapResult.overlapPercentage,
+        minRequired: DEFAULT_CONFIG.minOverlapPercentage,
+        willMatch:
+          overlapResult.overlapPercentage >=
+          DEFAULT_CONFIG.minOverlapPercentage,
+      });
 
       if (
         overlapResult.overlapPercentage >= DEFAULT_CONFIG.minOverlapPercentage

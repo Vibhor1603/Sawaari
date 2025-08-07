@@ -263,7 +263,7 @@ router
 // Cancel active search
 router
   .route("/api/ride-buddy/search/active")
-  .delete(authenticateToken, rideBuddyLimiter, cancelActiveSearch);
+  .post(authenticateToken, rideBuddyLimiter, cancelActiveSearch);
 
 // Get active search status
 router
@@ -301,6 +301,14 @@ router.route("/api/ride-buddy/match/:id").delete(authenticateToken, endMatch);
 router
   .route("/api/ride-buddy/debug/user")
   .get(authenticateToken, debugUserData);
+
+// Debug matching endpoint
+router
+  .route("/api/ride-buddy/debug/matching")
+  .get(
+    authenticateToken,
+    require("../Backend/rideBuddyController").debugMatching
+  );
 
 // Ride buddy chat endpoints (protected)
 router.route("/api/ride-buddy/chats").get(authenticateToken, getActiveChats);

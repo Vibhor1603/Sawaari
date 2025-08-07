@@ -405,10 +405,11 @@ const RideBuddy = () => {
         // Handle specific error cases
         if (
           result.error?.includes("404") ||
-          result.error?.includes("not found")
+          result.error?.includes("not found") ||
+          result.error?.includes("No active search found")
         ) {
-          showDebouncedToast("info", "No active search to cancel");
-          // Reset search state anyway
+          showDebouncedToast("info", "Search already cancelled");
+          // Reset search state to match backend
           setSearchState({
             isActive: false,
             searchId: null,
@@ -1123,7 +1124,15 @@ const RideBuddy = () => {
       console.log("🧹 Cleaning up periodic data refresh interval");
       clearInterval(dataRefreshInterval);
     };
-  }, [isAuthenticated, searchState.isActive]); // Depend on auth and search state
+  }, [
+    checkActiveSearchStatus,
+    connectionsLoading,
+    isAuthenticated,
+    loadConnections,
+    loadRequests,
+    requestsLoading,
+    searchState.isActive,
+  ]); // Depend on auth and search state
 
   // Enhanced search monitoring - more frequent checks when search is active
   useEffect(() => {
