@@ -44,7 +44,7 @@ export default function App() {
         <Toaster
           position="top-right"
           toastOptions={{
-            duration: 4000,
+            duration: 2000, // Fixed: Reduced to 2 seconds as requested
             style: {
               background: "#363636",
               color: "#fff",
@@ -53,14 +53,19 @@ export default function App() {
               maxWidth: "400px",
             },
             success: {
+              duration: 2000, // Ensure success toasts also auto-dismiss in 2 seconds
               style: {
                 background: "#10B981",
               },
             },
             error: {
+              duration: 2000, // Ensure error toasts also auto-dismiss in 2 seconds
               style: {
                 background: "#EF4444",
               },
+            },
+            loading: {
+              duration: Infinity, // Loading toasts should not auto-dismiss
             },
           }}
         />

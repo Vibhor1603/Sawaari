@@ -22,33 +22,113 @@ function haversineDistance(lat1, lon1, lat2, lon2) {
   return distance;
 }
 
+// Clean and deduplicate hotspots data - keep the one with most destinations
+function cleanHotspotsData(hotspots) {
+  const hotspotsMap = new Map();
+
+  hotspots.forEach((hotspot) => {
+    if (!hotspot.name || !hotspot.latitude || !hotspot.longitude) {
+      console.log(`⚠️ Skipping invalid hotspot:`, hotspot);
+      return;
+    }
+
+    const key = hotspot.name.trim();
+    const destinationCount = (hotspot.destinations || []).length;
+
+    if (!hotspotsMap.has(key)) {
+      // First occurrence of this hotspot
+      hotspotsMap.set(key, {
+        ...hotspot,
+        name: key,
+        destinations: hotspot.destinations || [],
+        destinationCount,
+      });
+    } else {
+      // Duplicate found - keep the one with more destinations
+      const existing = hotspotsMap.get(key);
+      const existingDestCount = existing.destinationCount;
+
+      if (destinationCount > existingDestCount) {
+        // Current hotspot has more destinations, replace the existing one
+        hotspotsMap.set(key, {
+          ...hotspot,
+          name: key,
+          destinations: hotspot.destinations || [],
+          destinationCount,
+        });
+        console.log(
+          `🔄 Replaced duplicate hotspot "${key}": ${existingDestCount} -> ${destinationCount} destinations`
+        );
+      } else {
+        console.log(
+          `⚠️ Skipping duplicate hotspot "${key}": keeping existing with ${existingDestCount} destinations (current has ${destinationCount})`
+        );
+      }
+    }
+  });
+
+  // Convert map back to array and remove the helper property
+  const cleaned = Array.from(hotspotsMap.values()).map((hotspot) => {
+    const { destinationCount, ...cleanHotspot } = hotspot;
+    return cleanHotspot;
+  });
+
+  console.log(
+    `🧹 Cleaned hotspots: ${hotspots.length} -> ${cleaned.length} (removed ${
+      hotspots.length - cleaned.length
+    } duplicates)`
+  );
+  return cleaned;
+}
+
 // Create graph from hotspots data
 function createGraph(hotspots) {
   const graph = new Graph();
 
-  // First, add all nodes to the graph
-  hotspots.forEach((hotspot) => {
-    graph.addNode(hotspot.name, {
-      latitude: hotspot.latitude,
-      longitude: hotspot.longitude,
-    });
+  // Clean and deduplicate hotspots data first
+  const cleanedHotspots = cleanHotspotsData(hotspots);
+
+  // Add all nodes to the graph
+  cleanedHotspots.forEach((hotspot) => {
+    try {
+      graph.addNode(hotspot.name, {
+        latitude: hotspot.latitude,
+        longitude: hotspot.longitude,
+      });
+    } catch (error) {
+      console.log(`⚠️ Failed to add node ${hotspot.name}:`, error.message);
+    }
   });
 
-  // Then, add edges
-  hotspots.forEach((hotspot) => {
+  // Then, add edges (with duplicate prevention)
+  const addedEdges = new Set();
+  cleanedHotspots.forEach((hotspot) => {
     if (hotspot.destinations && Array.isArray(hotspot.destinations)) {
       hotspot.destinations.forEach((destination) => {
         if (graph.hasNode(hotspot.name) && graph.hasNode(destination.name)) {
-          const distance = haversineDistance(
-            hotspot.latitude,
-            hotspot.longitude,
-            destination.latitude,
-            destination.longitude
+          const edgeKey = `${hotspot.name}->${destination.name}`;
+          if (
+            !addedEdges.has(edgeKey) &&
+            !graph.hasEdge(hotspot.name, destination.name)
+          ) {
+            const distance = haversineDistance(
+              hotspot.latitude,
+              hotspot.longitude,
+              destination.latitude,
+              destination.longitude
+            );
+            graph.addEdge(hotspot.name, destination.name, {
+              weight: distance,
+              fare: destination.estimated_fare || 0,
+            });
+            addedEdges.add(edgeKey);
+          } else {
+            console.log(`⚠️ Skipping duplicate edge: ${edgeKey}`);
+          }
+        } else {
+          console.log(
+            `⚠️ Missing nodes for edge: ${hotspot.name} -> ${destination.name}`
           );
-          graph.addEdge(hotspot.name, destination.name, {
-            weight: distance,
-            fare: destination.estimated_fare || 0,
-          });
         }
       });
     }
@@ -110,37 +190,31 @@ function calculateFare(distance, waitingTime = 0, travelTime = new Date()) {
 }
 
 // Find shortest path between two points
-function findShortestPath(
-  graph,
-  start,
-  end,
-  waitingTime = 0,
-  travelTime = new Date()
-) {
+function findShortestPath(graph, start, end) {
   try {
     const path = dijkstra.bidirectional(graph, start, end);
 
     let totalDistance = 0;
+    let totalFare = 0;
+
     if (path && path.length > 1) {
       for (let i = 0; i < path.length - 1; i++) {
         try {
           const edge = graph.edge(path[i], path[i + 1]);
           const distance = graph.getEdgeAttribute(edge, "weight") || 0;
+          const fare = graph.getEdgeAttribute(edge, "fare") || 0;
           totalDistance += distance;
+          totalFare += fare;
         } catch (edgeError) {
           console.warn(`Edge not found between ${path[i]} and ${path[i + 1]}`);
         }
       }
     }
 
-    // Calculate fare using new fare calculation logic
-    const fareResult = calculateFare(totalDistance, waitingTime, travelTime);
-
     return {
       path: path || [],
       totalDistance: Math.round(totalDistance * 100) / 100,
-      fareBreakdown: fareResult.breakdown,
-      totalFare: fareResult.totalFare,
+      totalFare: Math.round(totalFare),
     };
   } catch (error) {
     console.error("Error finding shortest path:", error);
@@ -167,9 +241,25 @@ class RouteService {
   // Initialize or refresh the graph
   async initializeGraph() {
     try {
+      console.log("🚀 Initializing route graph...");
+
+      // Get hotspots data
       this.hotspots = await getHotspots();
+      console.log(`📍 Loaded ${this.hotspots.length} hotspots`);
+
+      // Validate hotspots data
+      if (!this.hotspots || this.hotspots.length === 0) {
+        throw new Error("No hotspots data available");
+      }
+
+      // Create graph with duplicate prevention
       this.graph = createGraph(this.hotspots);
       this.lastUpdated = new Date();
+
+      console.log(
+        `✅ Graph initialized successfully: ${this.graph.order} nodes, ${this.graph.size} edges`
+      );
+
       return {
         success: true,
         message: "Graph initialized successfully",
@@ -177,8 +267,21 @@ class RouteService {
         edgeCount: this.graph.size,
       };
     } catch (error) {
-      console.error("Error initializing graph:", error);
-      throw new Error("Failed to initialize route graph");
+      console.error("❌ Error initializing graph:", error);
+
+      // Don't throw error - create empty graph as fallback
+      console.log("🔄 Creating fallback empty graph...");
+      this.graph = new Graph();
+      this.hotspots = [];
+      this.lastUpdated = new Date();
+
+      return {
+        success: false,
+        message: `Graph initialization failed: ${error.message}`,
+        nodeCount: 0,
+        edgeCount: 0,
+        fallback: true,
+      };
     }
   }
 
@@ -194,12 +297,7 @@ class RouteService {
   }
 
   // Calculate route between two points
-  async calculateRoute(
-    source,
-    destination,
-    waitingTime = 0,
-    travelTime = new Date()
-  ) {
+  async calculateRoute(source, destination) {
     if (!this.graph) {
       await this.initializeGraph();
     }
@@ -221,13 +319,7 @@ class RouteService {
       throw new Error("Source and destination cannot be the same");
     }
 
-    const result = findShortestPath(
-      this.graph,
-      source,
-      destination,
-      waitingTime,
-      travelTime
-    );
+    const result = findShortestPath(this.graph, source, destination);
 
     if (!result.path || result.path.length === 0) {
       throw new Error(`No route found between ${source} and ${destination}`);
@@ -251,7 +343,6 @@ class RouteService {
         path: result.path,
         pathCoordinates,
         totalFare: result.totalFare,
-        fareBreakdown: result.fareBreakdown,
         distance: result.totalDistance,
         estimatedTime: this.estimateTime(result.path),
       },

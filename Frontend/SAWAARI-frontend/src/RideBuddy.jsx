@@ -63,13 +63,13 @@ const RideBuddy = () => {
 
     switch (type) {
       case "success":
-        toast.success(message);
+        toast.success(message, { duration: 2000 });
         break;
       case "error":
-        toast.error(message);
+        toast.error(message, { duration: 2000 });
         break;
       default:
-        toast(message);
+        toast(message, { duration: 2000 });
     }
   }, []);
 

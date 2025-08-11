@@ -127,8 +127,16 @@ async function startServer() {
 
     // Initialize route service
     const { routeService } = require("./Backend/routeService");
-    await routeService.initializeGraph();
-    console.log("✅ Route service initialized");
+    const graphResult = await routeService.initializeGraph();
+
+    if (graphResult.success) {
+      console.log("✅ Route service initialized successfully");
+    } else {
+      console.log(
+        "⚠️ Route service initialized with fallback (some features may be limited)"
+      );
+      console.log(`   Reason: ${graphResult.message}`);
+    }
 
     // Initialize performance monitoring
     performanceMonitor.start();

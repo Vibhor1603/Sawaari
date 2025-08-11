@@ -211,9 +211,9 @@ const signIn = async (req, res) => {
       email: user.email,
       phone: user.phone,
       hasPhone: !!user.phone,
-      phoneLength: user.phone ? user.phone.length : 0
+      phoneLength: user.phone ? user.phone.length : 0,
     });
-    
+
     const tokens = generateTokenPair(user);
 
     // Save refresh token to database
@@ -269,7 +269,7 @@ const signUp = async (req, res) => {
       email: email,
       phone: phone,
       hasPhone: !!phone,
-      phoneLength: phone ? phone.length : 0
+      phoneLength: phone ? phone.length : 0,
     });
 
     // Check if user already exists
@@ -299,7 +299,7 @@ const signUp = async (req, res) => {
       email: userData.email,
       phone: userData.phone,
       hasPhone: !!userData.phone,
-      phoneLength: userData.phone ? userData.phone.length : 0
+      phoneLength: userData.phone ? userData.phone.length : 0,
     });
 
     const result = await createUser(userData);
@@ -1082,7 +1082,7 @@ const changeUserPassword = async (req, res) => {
 const debugUserDatabase = async (req, res) => {
   try {
     const { email } = req.query;
-    
+
     if (!email) {
       return res.status(400).json({
         success: false,
@@ -1091,7 +1091,7 @@ const debugUserDatabase = async (req, res) => {
     }
 
     const user = await findUserByEmail(email);
-    
+
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -1109,8 +1109,8 @@ const debugUserDatabase = async (req, res) => {
         hasPhone: !!user.phone,
         phoneLength: user.phone ? user.phone.length : 0,
         createdAt: user.createdAt,
-        isActive: user.isActive
-      }
+        isActive: user.isActive,
+      },
     });
   } catch (error) {
     console.error("Debug user database error:", error);

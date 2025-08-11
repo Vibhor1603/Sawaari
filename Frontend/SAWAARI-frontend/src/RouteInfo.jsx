@@ -1,11 +1,40 @@
 /* eslint-disable react/prop-types */
 /* eslint-disable no-unused-vars */
 import React, { useState, useEffect } from "react";
-import { MapContainer, TileLayer, Polyline } from "react-leaflet";
+import {
+  MapContainer,
+  TileLayer,
+  Polyline,
+  Marker,
+  Popup,
+} from "react-leaflet";
+import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
 import routeService from "./services/routeService";
 import LocationTracker from "./LocationTracker";
+
+// Custom icons for route markers
+const startIcon = new L.DivIcon({
+  html: '<div style="background: #10B981; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-size: 16px; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">🚀</div>',
+  className: "custom-marker",
+  iconSize: [30, 30],
+  iconAnchor: [15, 15],
+});
+
+const endIcon = new L.DivIcon({
+  html: '<div style="background: #EF4444; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-size: 16px; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">🏁</div>',
+  className: "custom-marker",
+  iconSize: [30, 30],
+  iconAnchor: [15, 15],
+});
+
+const transferIcon = new L.DivIcon({
+  html: '<div style="background: #F97316; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-size: 16px; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">🔄</div>',
+  className: "custom-marker",
+  iconSize: [30, 30],
+  iconAnchor: [15, 15],
+});
 import MapInteractionHandler from "./MapInteractionHandler";
 import HotspotMarkers from "./HotspotMarkers";
 import RouteForm from "./RouteForm";
@@ -22,7 +51,7 @@ export default function RouteInfo({ hotspot }) {
   ]);
   const [totalFare, setTotalFare] = useState(0);
   const [routeData, setRouteData] = useState(null);
-  const [fareBreakdown, setFareBreakdown] = useState(null);
+
   const [distance, setDistance] = useState(0);
   const [showResults, setShowResults] = useState(false);
 
@@ -81,8 +110,7 @@ export default function RouteInfo({ hotspot }) {
       const result = await routeService.calculateRoute(source, destination);
 
       if (result.success) {
-        const { path, pathCoordinates, totalFare, fareBreakdown, distance } =
-          result.data;
+        const { path, pathCoordinates, totalFare, distance } = result.data;
 
         // Convert pathCoordinates to the format expected by the map
         const coordinates = pathCoordinates.map((coord) => [
@@ -93,7 +121,6 @@ export default function RouteInfo({ hotspot }) {
         setShortestPath(path);
         setPathCoordinates(coordinates);
         setTotalFare(totalFare);
-        setFareBreakdown(fareBreakdown);
         setDistance(distance);
         setRouteData(result.data);
         setShowResults(true);
@@ -102,18 +129,51 @@ export default function RouteInfo({ hotspot }) {
           console.log("✅ Used cached route data");
         }
       } else {
-        setError(result.message || "Failed to calculate route.");
+        // Enhanced error handling for better UX
+        const errorMessage = result.message || "Failed to calculate route.";
+        if (
+          errorMessage.includes("No route found") ||
+          errorMessage.includes("not found")
+        ) {
+          setError(
+            "🚫 No direct route available between these locations. Try selecting different pickup points or destinations from the map."
+          );
+        } else if (
+          errorMessage.includes("Source location") &&
+          errorMessage.includes("not found")
+        ) {
+          setError(
+            "📍 Source location not found. Please select a valid pickup point from the available hotspots."
+          );
+        } else if (
+          errorMessage.includes("Destination location") &&
+          errorMessage.includes("not found")
+        ) {
+          setError(
+            "📍 Destination not found. Please select a valid destination from the available hotspots."
+          );
+        } else {
+          setError(errorMessage);
+        }
       }
     } catch (error) {
       console.error("Route calculation error:", error);
-      setError("Unable to calculate route. Please try again.");
+      if (error.message.includes("No route found")) {
+        setError(
+          "🚫 No direct route available between these locations. Try selecting different pickup points or destinations from the map."
+        );
+      } else if (error.message.includes("not found")) {
+        setError(
+          "📍 Location not found. Please select valid locations from the available hotspots on the map."
+        );
+      } else {
+        setError(
+          "⚠️ Unable to calculate route. Please check your connection and try again."
+        );
+      }
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const clickHandler = (latitude, longitude) => {
-    setSelectedDestination([latitude, longitude]);
   };
 
   const handleNewSearch = () => {
@@ -122,13 +182,12 @@ export default function RouteInfo({ hotspot }) {
     setPathCoordinates([]);
     setTotalFare(0);
     setRouteData(null);
-    setFareBreakdown(null);
     setDistance(0);
     setError("");
   };
 
   return (
-    <div className="min-h-screen bg-black pt-20 relative overflow-hidden">
+    <div className="min-h-screen bg-black pt-10 relative overflow-hidden">
       {/* Creative Background Elements */}
       <div className="absolute inset-0 pointer-events-none">
         {/* Animated Route Lines */}
@@ -198,8 +257,35 @@ export default function RouteInfo({ hotspot }) {
                 />
 
                 {error && (
-                  <div className="mt-4 p-3 bg-red-500/20 border border-red-500/40 rounded-lg">
-                    <p className="text-sm text-red-200">{error}</p>
+                  <div className="mt-4 p-4 bg-red-500/20 border border-red-500/40 rounded-lg">
+                    <div className="flex items-start gap-3">
+                      <div className="text-red-400 text-lg mt-0.5">⚠️</div>
+                      <div className="flex-1">
+                        <p className="text-sm text-red-200 leading-relaxed">
+                          {error}
+                        </p>
+                        {error.includes("No direct route available") && (
+                          <div className="mt-3 p-3 bg-black/30 rounded-lg">
+                            <p className="text-xs text-gray-300 mb-2">
+                              💡 <strong>Suggestions:</strong>
+                            </p>
+                            <ul className="text-xs text-gray-300 space-y-1">
+                              <li>
+                                • Try selecting nearby hotspots from the map
+                              </li>
+                              <li>
+                                • Check if both locations have active
+                                auto-rickshaw services
+                              </li>
+                              <li>
+                                • Consider breaking your journey into multiple
+                                segments
+                              </li>
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 )}
 
@@ -232,31 +318,70 @@ export default function RouteInfo({ hotspot }) {
                   </div>
                   <button
                     onClick={handleNewSearch}
-                    className="px-4 py-2 bg-sawaari-yellow text-black rounded-lg hover:bg-sawaari-yellow/80 transition-colors text-sm font-semibold"
+                    className="px-2 sm:px-3 py-2 bg-sawaari-yellow text-black rounded-lg hover:bg-sawaari-yellow/80 transition-colors text-sm font-semibold"
                   >
                     New Search
                   </button>
                 </div>
 
                 {/* Route Steps */}
-                <div className="max-h-48 overflow-y-auto mb-4 space-y-2">
-                  {shortestPath.map((node, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center gap-3 p-2 bg-black/40 rounded-lg"
-                    >
-                      <span className="w-8 h-8 bg-sawaari-yellow-muted border border-sawaari-yellow-border rounded-full flex items-center justify-center text-sm font-bold text-sawaari-yellow">
-                        {index + 1}
-                      </span>
-                      <span className="text-sm text-gray-200 flex-1 text-readable-secondary">
-                        {node}
-                      </span>
-                    </div>
-                  ))}
+                <div className="max-h-48 overflow-y-visible mb-6 space-y-2">
+                  {shortestPath.map((node, index) => {
+                    const isStart = index === 0;
+                    const isEnd = index === shortestPath.length - 1;
+                    const isTransfer = !isStart && !isEnd;
+
+                    return (
+                      <div key={index}>
+                        <div className="flex items-center gap-3 p-3 bg-black/40 rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`w-8 h-8 ${
+                                isStart
+                                  ? "bg-green-500"
+                                  : isEnd
+                                  ? "bg-red-500"
+                                  : "bg-orange-500"
+                              } rounded-full flex items-center justify-center text-sm font-bold text-white`}
+                            >
+                              {isStart ? "🚀" : isEnd ? "🏁" : "🔄"}
+                            </span>
+                            {isTransfer && (
+                              <span className="text-xs bg-orange-500/20 border border-orange-500/40 rounded px-2 py-1 text-orange-300">
+                                Transfer
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <span className="text-sm text-gray-200 text-readable-secondary">
+                              {node}
+                            </span>
+                            {isTransfer && (
+                              <p className="text-xs text-orange-300 mt-1">
+                                🛺 Change auto-rickshaw here
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Connection line between steps */}
+                        {index < shortestPath.length - 1 && (
+                          <div className="flex items-center gap-3 py-1 pl-4">
+                            <div className="w-8 flex justify-center">
+                              <div className="w-0.5 h-4 bg-gray-600"></div>
+                            </div>
+                            <span className="text-xs text-gray-400">
+                              🛺 Auto ride to next stop
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
 
                 {/* Fare Summary */}
-                <div className="bg-black/60 rounded-lg p-4 space-y-3">
+                <div className="bg-black/60 rounded-lg p-4 space-y-2 mt-24">
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-200 text-readable-secondary">
                       Distance:
@@ -283,13 +408,26 @@ export default function RouteInfo({ hotspot }) {
                       ₹{totalFare}
                     </span>
                   </div>
-                  {fareBreakdown && fareBreakdown.timeType !== "regular" && (
-                    <div className="text-center">
-                      <span className="inline-flex items-center gap-1 px-3 py-1 bg-sawaari-yellow-muted border border-sawaari-yellow-border rounded-full text-xs text-sawaari-yellow">
-                        {fareBreakdown.timeType === "night"
-                          ? "🌙 Night Rate"
-                          : "⚡ Peak Rate"}
-                      </span>
+
+                  {/* Transfer Information */}
+                  {shortestPath.length > 2 && (
+                    <div className="mt-4 p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg">
+                      <div className="flex items-start gap-2">
+                        <span className="text-orange-400 text-sm mt-0.5">
+                          🔄
+                        </span>
+                        <div>
+                          <p className="text-xs text-orange-300 font-semibold">
+                            Transfer Required
+                          </p>
+                          <p className="text-xs text-gray-300 mt-1">
+                            You&apos;ll need to change auto-rickshaws{" "}
+                            {shortestPath.length - 2} time(s) during this
+                            journey. Look for the orange markers on the map for
+                            transfer points.
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -299,8 +437,8 @@ export default function RouteInfo({ hotspot }) {
 
           {/* Right Column - Map */}
           <div className="lg:col-span-3">
-            <div className="glass-strong rounded-2xl p-4">
-              <h2 className="text-xl font-bold text-white mb-4 text-readable">
+            <div className="glass-strong rounded-2xl sm:p-4 ">
+              <h2 className="text-xl font-bold text-white mb-4  text-readable">
                 Interactive Route Map
               </h2>
               <div className="h-[600px] rounded-xl overflow-hidden border border-white/10">
@@ -317,16 +455,54 @@ export default function RouteInfo({ hotspot }) {
                   <MapInteractionHandler
                     selectedDestination={selectedDestination}
                   />
-                  <HotspotMarkers
-                    hotspot={hotspot}
-                    clickHandler={clickHandler}
-                  />
+                  <HotspotMarkers hotspot={hotspot} />
                   {pathCoordinates.length > 0 && (
-                    <Polyline
-                      positions={pathCoordinates}
-                      color="#f4b942"
-                      weight={4}
-                    />
+                    <>
+                      <Polyline
+                        positions={pathCoordinates}
+                        color="#1a1a1a"
+                        weight={6}
+                        opacity={0.8}
+                      />
+
+                      {/* Route markers */}
+                      {pathCoordinates.map((coord, index) => {
+                        const isStart = index === 0;
+                        const isEnd = index === pathCoordinates.length - 1;
+                        const isTransfer = !isStart && !isEnd;
+
+                        let icon = transferIcon;
+                        let popupText =
+                          "Transfer Point - Change auto-rickshaw here";
+
+                        if (isStart) {
+                          icon = startIcon;
+                          popupText = `Start: ${shortestPath[index]}`;
+                        } else if (isEnd) {
+                          icon = endIcon;
+                          popupText = `Destination: ${shortestPath[index]}`;
+                        } else {
+                          popupText = `Transfer at: ${shortestPath[index]} - Change auto-rickshaw here`;
+                        }
+
+                        return (
+                          <Marker key={index} position={coord} icon={icon}>
+                            <Popup>
+                              <div className="text-center">
+                                <p className="font-semibold text-gray-800">
+                                  {popupText}
+                                </p>
+                                {isTransfer && (
+                                  <p className="text-xs text-orange-600 mt-1">
+                                    🛺 Wait here for your next auto-rickshaw
+                                  </p>
+                                )}
+                              </div>
+                            </Popup>
+                          </Marker>
+                        );
+                      })}
+                    </>
                   )}
                 </MapContainer>
               </div>

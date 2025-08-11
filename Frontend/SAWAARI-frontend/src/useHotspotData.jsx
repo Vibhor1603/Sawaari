@@ -6,16 +6,13 @@ export function useHotspotData() {
   useEffect(() => {
     const fetchHotspots = async () => {
       try {
-        console.log("Fetching hotspot data...");
         const response = await fetch(
           `${import.meta.env.VITE_API_BASE_URL}/hotspots`
         );
         const result = await response.json();
-        console.log("Hotspot data received:", result);
 
         // Extract the data array from the response
         const data = result.success ? result.data : [];
-        console.log("Extracted hotspot data:", data);
         setHotspotData(data);
         localStorage.setItem("hotspotData", JSON.stringify(data));
       } catch (error) {
