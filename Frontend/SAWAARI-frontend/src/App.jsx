@@ -2,21 +2,19 @@
 // App.jsx
 import { useContext } from "react";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
-import Navbar from "./navbar";
-import Hotspots from "./hotspots";
-import Footer from "./footer";
+import { Navbar, Footer } from "./components/layout";
+import Hotspots from "./features/hotspots/hotspots";
 import Root from "./Root";
-import Routeinfo from "./RouteInfo";
-import RideBuddy from "./RideBuddy";
+import Routeinfo from "./features/routes/RouteInfo";
+import RideBuddy from "./features/ridebuddy/RideBuddy";
 import { AuthContext } from "./AuthContext";
 import { AuthModalProvider } from "./contexts/AuthModalContext";
-import AuthModalContainer from "./components/AuthModalContainer";
-import Logout from "./Logout";
-import ForgotPassword from "./ForgotPassword";
-import Contact from "./Contact";
-import UserProfile from "./UserProfile";
-import FloatingRickshaws from "./components/FloatingRickshaws";
-import NotFound from "./NotFound";
+import { AuthModalContainer } from "./components/auth";
+import Logout from "./features/auth/Logout";
+import ForgotPassword from "./features/auth/ForgotPassword";
+import Contact from "./features/contact/Contact";
+import UserProfile from "./features/auth/UserProfile";
+import { FloatingRickshaws, NotFound } from "./components/common";
 import { Toaster } from "react-hot-toast";
 
 export default function App() {

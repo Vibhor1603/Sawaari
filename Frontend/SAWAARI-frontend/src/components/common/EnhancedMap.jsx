@@ -2,9 +2,9 @@
 // Enhanced Map component with geolocation-based hotspot loading
 import { useEffect, useRef, useState } from "react";
 import { MapContainer, TileLayer, useMap, useMapEvents } from "react-leaflet";
-import { useMapHotspots } from "../hooks/useMapHotspots";
-import HotspotMarkers from "../HotspotMarkers";
-import LocationTracker from "../LocationTracker";
+import { useMapHotspots } from "../../hooks/useMapHotspots";
+import HotspotMarkers from "../../features/hotspots/HotspotMarkers";
+import LocationTracker from "../../components/map/LocationTracker";
 
 // Component to handle map events and trigger hotspot loading
 function MapEventHandler({ onBoundsChange, onLocationChange }) {

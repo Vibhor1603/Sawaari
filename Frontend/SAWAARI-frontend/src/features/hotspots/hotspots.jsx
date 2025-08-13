@@ -1,7 +1,7 @@
 /* eslint-disable no-unused-vars */
 import { useState, useEffect } from "react";
 import { MapContainer, TileLayer } from "react-leaflet";
-import LocationTracker from "./LocationTracker";
+import { LocationTracker } from "../../components/map";
 import HotspotMarkers from "./HotspotMarkers";
 import { useHotspotData } from "./useHotspotData";
 

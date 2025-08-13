@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Select, { components } from "react-select";
-import locationService from "../services/locationService";
+import locationService from "../../services/locationService";
 
 const DatabaseLocationSelect = ({
   value,

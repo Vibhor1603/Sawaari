@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useContext, useCallback } from "react";
 import PropTypes from "prop-types";
-import { AuthContext } from "../AuthContext";
-import socketService from "../services/socketService";
+import { AuthContext } from "../../AuthContext";
+import socketService from "../../services/socketService";
 import toast from "react-hot-toast";
 
 const LiveChat = ({ chatId, partnerName, onClose }) => {

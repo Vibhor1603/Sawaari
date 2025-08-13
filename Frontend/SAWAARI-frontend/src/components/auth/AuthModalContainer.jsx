@@ -1,9 +1,9 @@
 import { useContext, useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { AuthContext } from "../AuthContext";
-import { useAuthModal } from "../contexts/AuthModalContext";
-import AuthModal from "./AuthModal";
-import authService from "../services/authService";
+import { AuthContext } from "../../AuthContext";
+import { useAuthModal } from "../../contexts/AuthModalContext";
+import AuthModal from "../AuthModal";
+import authService from "../../services/authService";
 import toast from "react-hot-toast";
 
 export default function AuthModalContainer() {

@@ -11,14 +11,13 @@ import {
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
-import routeService from "./services/routeService";
-import LocationTracker from "./LocationTracker";
-import MapInteractionHandler from "./MapInteractionHandler";
-import HotspotMarkers from "./HotspotMarkers";
+import routeService from "../../services/routeService";
+import { LocationTracker, MapInteractionHandler } from "../../components/map";
+import HotspotMarkers from "../hotspots/HotspotMarkers";
 import RouteForm from "./RouteForm";
-import RouteOptions from "./components/RouteOptions";
-import MultipleRoutePolylines from "./components/MultipleRoutePolylines";
-import { useHotspotData } from "./useHotspotData";
+import RouteOptions from "../../components/routes/RouteOptions";
+import MultipleRoutePolylines from "../../components/routes/MultipleRoutePolylines";
+import { useHotspotData } from "../hotspots/useHotspotData";
 
 // Custom icons for route markers
 const startIcon = new L.DivIcon({

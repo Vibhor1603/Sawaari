@@ -1,9 +1,9 @@
 import { useState, useEffect, useContext } from "react";
-import { AuthContext } from "./AuthContext";
-import { useAuthGuard } from "./hooks/useAuthGuard";
-import authService from "./services/authService";
+import { AuthContext } from "../../AuthContext";
+import { useAuthGuard } from "../../hooks/useAuthGuard";
+import authService from "../../services/authService";
 import toast from "react-hot-toast";
-import FloatingRickshaws from "./components/FloatingRickshaws";
+import FloatingRickshaws from "../../components/common/FloatingRickshaws";
 
 const UserProfile = () => {
   const { user, updateUser } = useContext(AuthContext);

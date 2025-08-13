@@ -1,6 +1,7 @@
+/* eslint-disable react/prop-types */
 import { useEffect } from "react";
-import SigninForm from "../SigninForm";
-import SignUpForm from "../SignUpForm";
+import SigninForm from "../features/auth/SigninForm";
+import SignUpForm from "../features/auth/SignUpForm";
 
 export default function AuthModal({
   isOpen,
