@@ -20,7 +20,7 @@ import NotFound from "./NotFound";
 import { Toaster } from "react-hot-toast";
 
 export default function App() {
-  const { hotspot } = useContext(AuthContext);
+  // Hotspot data is now handled by individual components using database-driven lazy loading
 
   return (
     <Router>
@@ -30,12 +30,13 @@ export default function App() {
         <Routes>
           <Route index element={<Root />} />
           <Route path="/home" element={<Root />} />
-          <Route path="/hotspots" element={<Hotspots hotspot={hotspot} />} />
-          <Route path="/routes" element={<Routeinfo hotspot={hotspot} />} />
+          <Route path="/hotspots" element={<Hotspots />} />
+          <Route path="/routes" element={<Routeinfo />} />
           <Route path="/ridebuddy" element={<RideBuddy />} />
           <Route path="/profile" element={<UserProfile />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/logout" element={<Logout />} />
+          <Route path="/contact" element={<Contact />} />
           <Route path="/feedbacks" element={<Contact />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

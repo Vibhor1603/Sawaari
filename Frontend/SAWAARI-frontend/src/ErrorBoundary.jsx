@@ -33,6 +33,22 @@ class ErrorBoundary extends React.Component {
               Something went wrong
             </h2>
             <p>We&apos;re sorry, but something unexpected happened.</p>
+            <div className="mt-3 p-3 bg-light rounded">
+              <p className="mb-1">
+                <strong>Need Help?</strong>
+              </p>
+              <p className="mb-0 text-muted">
+                If you encountered a problem, please send an email describing
+                the issue to:{" "}
+                <a
+                  href="mailto:sawaaribyvibhor@gmail.com"
+                  className="text-primary"
+                  style={{ textDecoration: "none" }}
+                >
+                  sawaaribyvibhor@gmail.com
+                </a>
+              </p>
+            </div>
 
             {import.meta.env.DEV && (
               <details className="mt-3" style={{ textAlign: "left" }}>

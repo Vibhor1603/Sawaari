@@ -9,8 +9,9 @@ export default function InteractiveHero() {
   const features = [
     {
       id: 0,
-      title: "Find Rickshaws",
-      description: "Discover available auto rickshaws near you instantly",
+      title: "Find Rickhsaw points",
+      description:
+        "Discover available auto rickshaws points near you instantly",
       link: "/hotspots",
     },
     {
@@ -140,9 +141,10 @@ export default function InteractiveHero() {
             {/* Enhanced feature indicators with subtle colors - Responsive */}
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 lg:gap-6">
               {features.map((feature, index) => (
-                <button
+                <NavLink
                   key={feature.id}
-                  className={`flex-1 p-3 sm:p-4 text-left rounded-xl border transition-all duration-300 hover:shadow-sawaari-subtle ${
+                  to={feature.link}
+                  className={`flex-1 p-3 sm:p-4 text-left rounded-xl border transition-all duration-300 hover:shadow-sawaari-subtle cursor-pointer ${
                     index === activeFeature
                       ? "border-sawaari-yellow bg-sawaari-yellow-muted"
                       : "border-white/20 bg-black/40 hover:border-sawaari-yellow/50 hover:bg-sawaari-yellow-muted/50"
@@ -155,7 +157,7 @@ export default function InteractiveHero() {
                   <p className="text-xs sm:text-sm text-gray-200 text-readable-secondary">
                     {feature.description}
                   </p>
-                </button>
+                </NavLink>
               ))}
             </div>
           </div>

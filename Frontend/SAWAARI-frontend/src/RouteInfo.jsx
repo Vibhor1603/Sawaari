@@ -13,6 +13,12 @@ import "leaflet/dist/leaflet.css";
 
 import routeService from "./services/routeService";
 import LocationTracker from "./LocationTracker";
+import MapInteractionHandler from "./MapInteractionHandler";
+import HotspotMarkers from "./HotspotMarkers";
+import RouteForm from "./RouteForm";
+import RouteOptions from "./components/RouteOptions";
+import MultipleRoutePolylines from "./components/MultipleRoutePolylines";
+import { useHotspotData } from "./useHotspotData";
 
 // Custom icons for route markers
 const startIcon = new L.DivIcon({
@@ -35,11 +41,8 @@ const transferIcon = new L.DivIcon({
   iconSize: [30, 30],
   iconAnchor: [15, 15],
 });
-import MapInteractionHandler from "./MapInteractionHandler";
-import HotspotMarkers from "./HotspotMarkers";
-import RouteForm from "./RouteForm";
 
-export default function RouteInfo({ hotspot }) {
+export default function RouteInfo() {
   const [source, setSource] = useState("");
   const [destination, setDestination] = useState("");
   const [shortestPath, setShortestPath] = useState([]);
@@ -51,9 +54,17 @@ export default function RouteInfo({ hotspot }) {
   ]);
   const [totalFare, setTotalFare] = useState(0);
   const [routeData, setRouteData] = useState(null);
-
   const [distance, setDistance] = useState(0);
   const [showResults, setShowResults] = useState(false);
+
+  // New states for multiple routes
+  const [multipleRoutes, setMultipleRoutes] = useState([]);
+  const [selectedRouteId, setSelectedRouteId] = useState(null);
+  const [recommendations, setRecommendations] = useState(null);
+  const [showMultipleRoutes, setShowMultipleRoutes] = useState(false);
+
+  // Get hotspot data using the hook
+  const [hotspot] = useHotspotData();
 
   // Set document title
   useEffect(() => {
@@ -88,7 +99,7 @@ export default function RouteInfo({ hotspot }) {
     return () => {
       isMounted = false;
     };
-  }, [hotspot]); // FIXED: Empty dependency array to run only once on mount
+  }, [hotspot]);
 
   const handleRouteSearch = async (e) => {
     e.preventDefault();
@@ -98,6 +109,10 @@ export default function RouteInfo({ hotspot }) {
     setTotalFare(0);
     setIsLoading(true);
     setShowResults(false);
+    setShowMultipleRoutes(false);
+    setMultipleRoutes([]);
+    setSelectedRouteId(null);
+    setRecommendations(null);
 
     if (!source || !destination) {
       setError("Please enter both source and destination.");
@@ -106,24 +121,30 @@ export default function RouteInfo({ hotspot }) {
     }
 
     try {
-      // Use the real API-based route calculation with smart caching
+      // Get routes (backend now returns multiple routes by default)
       const result = await routeService.calculateRoute(source, destination);
 
-      if (result.success) {
-        const { path, pathCoordinates, totalFare, distance } = result.data;
+      if (
+        result.success &&
+        result.data.routes &&
+        result.data.routes.length > 0
+      ) {
+        // Routes found
+        setMultipleRoutes(result.data.routes);
+        setRecommendations(result.data.recommendations);
 
-        // Convert pathCoordinates to the format expected by the map
-        const coordinates = pathCoordinates.map((coord) => [
-          coord.latitude,
-          coord.longitude,
-        ]);
+        // Show multiple routes UI if more than one route
+        if (result.data.routes.length > 1) {
+          setShowMultipleRoutes(true);
+        } else {
+          setShowMultipleRoutes(false);
+        }
 
-        setShortestPath(path);
-        setPathCoordinates(coordinates);
-        setTotalFare(totalFare);
-        setDistance(distance);
-        setRouteData(result.data);
         setShowResults(true);
+
+        // Select the first route by default
+        const firstRoute = result.data.routes[0];
+        handleRouteSelect(firstRoute);
 
         if (result.cached) {
           console.log("✅ Used cached route data");
@@ -132,25 +153,25 @@ export default function RouteInfo({ hotspot }) {
         // Enhanced error handling for better UX
         const errorMessage = result.message || "Failed to calculate route.";
         if (
-          errorMessage.includes("No route found") ||
-          errorMessage.includes("not found")
-        ) {
-          setError(
-            "🚫 No direct route available between these locations. Try selecting different pickup points or destinations from the map."
-          );
-        } else if (
           errorMessage.includes("Source location") &&
           errorMessage.includes("not found")
         ) {
           setError(
-            "📍 Source location not found. Please select a valid pickup point from the available hotspots."
+            "📍 Source location not found. Please select a valid location from the available rickshaw points."
           );
         } else if (
           errorMessage.includes("Destination location") &&
           errorMessage.includes("not found")
         ) {
           setError(
-            "📍 Destination not found. Please select a valid destination from the available hotspots."
+            "📍 Destination not found. Please select a valid destination from the available rickshaw points."
+          );
+        } else if (
+          errorMessage.includes("No route found") ||
+          errorMessage.includes("not found")
+        ) {
+          setError(
+            "🚫 No direct route available between these locations. Try selecting different rickshaw points or destinations from the map."
           );
         } else {
           setError(errorMessage);
@@ -160,30 +181,57 @@ export default function RouteInfo({ hotspot }) {
       console.error("Route calculation error:", error);
       if (error.message.includes("No route found")) {
         setError(
-          "🚫 No direct route available between these locations. Try selecting different pickup points or destinations from the map."
+          "🚫 No direct route available between these locations. Try selecting different rickshaw points or destinations from the map."
         );
       } else if (error.message.includes("not found")) {
         setError(
-          "📍 Location not found. Please select valid locations from the available hotspots on the map."
+          "📍 Location not found. Please select valid locations from the available rickshaw points on the map."
         );
       } else {
-        setError(
-          "⚠️ Unable to calculate route. Please check your connection and try again."
-        );
+        setError("⚠️ Unable to calculate route. Please try again.");
       }
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Handle route selection from multiple options
+  const handleRouteSelect = (route) => {
+    setSelectedRouteId(route.id);
+
+    // Update map display with selected route
+    const coordinates = route.pathCoordinates.map((coord) => [
+      coord.latitude,
+      coord.longitude,
+    ]);
+
+    setShortestPath(route.path);
+    setPathCoordinates(coordinates);
+    setTotalFare(route.totalFare);
+    setDistance(route.distance);
+    setRouteData({
+      ...route,
+      estimatedTime: route.estimatedTime,
+    });
+  };
+
+  // Handle new search
   const handleNewSearch = () => {
     setShowResults(false);
+    setShowMultipleRoutes(false);
     setShortestPath([]);
     setPathCoordinates([]);
     setTotalFare(0);
     setRouteData(null);
     setDistance(0);
     setError("");
+    setMultipleRoutes([]);
+    setSelectedRouteId(null);
+    setRecommendations(null);
+  };
+
+  const clickHandler = (latitude, longitude) => {
+    setSelectedDestination([latitude, longitude]);
   };
 
   return (
@@ -252,7 +300,6 @@ export default function RouteInfo({ hotspot }) {
                   destination={destination}
                   setDestination={setDestination}
                   handleRouteSearch={handleRouteSearch}
-                  hotspot={hotspot}
                   isLoading={isLoading}
                 />
 
@@ -271,7 +318,8 @@ export default function RouteInfo({ hotspot }) {
                             </p>
                             <ul className="text-xs text-gray-300 space-y-1">
                               <li>
-                                • Try selecting nearby hotspots from the map
+                                • Try selecting nearby rickshaw points from the
+                                map
                               </li>
                               <li>
                                 • Check if both locations have active
@@ -294,13 +342,22 @@ export default function RouteInfo({ hotspot }) {
                     <span className="text-blue-400 font-semibold">
                       📍 Note:
                     </span>{" "}
-                    Currently showing sample routes for testing purposes. More
-                    locations and routes will be added soon!
+                    Stay tuned and keep coming back. More locations and routes
+                    will be added soon!
                   </p>
                 </div>
               </div>
+            ) : showMultipleRoutes ? (
+              /* Multiple Route Options */
+              <RouteOptions
+                routes={multipleRoutes}
+                recommendations={recommendations}
+                onRouteSelect={handleRouteSelect}
+                selectedRouteId={selectedRouteId}
+                onNewSearch={handleNewSearch}
+              />
             ) : (
-              /* Route Results */
+              /* Single Route Results */
               <div className="glass-strong rounded-2xl p-6">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
@@ -437,8 +494,8 @@ export default function RouteInfo({ hotspot }) {
 
           {/* Right Column - Map */}
           <div className="lg:col-span-3">
-            <div className="glass-strong rounded-2xl sm:p-4 ">
-              <h2 className="text-xl font-bold text-white mb-4  text-readable">
+            <div className="glass-strong rounded-2xl sm:p-4">
+              <h2 className="text-xl font-bold text-white mb-4 text-readable">
                 Interactive Route Map
               </h2>
               <div className="h-[600px] rounded-xl overflow-hidden border border-white/10">
@@ -455,12 +512,25 @@ export default function RouteInfo({ hotspot }) {
                   <MapInteractionHandler
                     selectedDestination={selectedDestination}
                   />
-                  <HotspotMarkers hotspot={hotspot} />
-                  {pathCoordinates.length > 0 && (
+                  <HotspotMarkers
+                    hotspot={hotspot}
+                    clickHandler={clickHandler}
+                  />
+
+                  {/* Multiple Route Polylines */}
+                  {showMultipleRoutes && multipleRoutes.length > 0 && (
+                    <MultipleRoutePolylines
+                      routes={multipleRoutes}
+                      selectedRouteId={selectedRouteId}
+                    />
+                  )}
+
+                  {/* Single Route Polyline */}
+                  {!showMultipleRoutes && pathCoordinates.length > 0 && (
                     <>
                       <Polyline
                         positions={pathCoordinates}
-                        color="#1a1a1a"
+                        color="#f4b942"
                         weight={6}
                         opacity={0.8}
                       />

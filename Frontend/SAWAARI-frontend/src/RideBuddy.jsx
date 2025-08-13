@@ -1,14 +1,22 @@
+/* eslint-disable no-undef */
 /* eslint-disable no-unused-vars */
-import { useState, useEffect, useContext, useCallback, useRef } from "react";
+import {
+  useState,
+  useEffect,
+  useContext,
+  useCallback,
+  useRef,
+  useMemo,
+} from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "./AuthContext";
 import { useAuthGuard } from "./hooks/useAuthGuard";
 import rideBuddyService from "./services/rideBuddyService";
-import { useHotspotData } from "./useHotspotData";
+
 import socketService from "./services/socketService";
 import authService from "./services/authService";
 import LiveChat from "./components/LiveChat";
-import LocationSelect from "./components/LocationSelect";
+import DatabaseLocationSelect from "./components/DatabaseLocationSelect";
 import SearchStatus from "./components/SearchStatus";
 import toast from "react-hot-toast";
 
@@ -20,6 +28,7 @@ const RideBuddy = () => {
   const { isAuthenticated, isLoading } = useAuthGuard(
     "Please sign in to access Travel Buddy"
   );
+  // Load more functionality is now handled by DatabaseLocationSelect
 
   // Enhanced toast debouncing to prevent rapid-fire duplicate toasts
   const lastToastRef = useRef({ message: "", timestamp: 0, type: "" });
@@ -211,20 +220,8 @@ const RideBuddy = () => {
     }
   }, [isConnectionExpired]);
 
-  // Get hotspot data for dropdowns
-  const [hotspotData] = useHotspotData();
-
-  // Extract location names from hotspot data
-  const locationNames = React.useMemo(() => {
-    if (hotspotData && Array.isArray(hotspotData)) {
-      const names = hotspotData
-        .map((spot) => spot.name)
-        .filter(Boolean)
-        .sort();
-      return names;
-    }
-    return [];
-  }, [hotspotData]);
+  // Location data is now handled by DatabaseLocationSelect component
+  // Location search and pagination is now handled by DatabaseLocationSelect
 
   // Main state
   const [activeTab, setActiveTab] = useState("search");
@@ -336,7 +333,7 @@ const RideBuddy = () => {
   // Clear expired connections on component mount
   useEffect(() => {
     clearExpiredConnections();
-  }, []); // Run only once on mount - removed clearExpiredConnections dependency
+  }, [clearExpiredConnections]); // Run only once on mount - removed clearExpiredConnections dependency
 
   // Define handleSearchExpiry before it's used in useEffect
   const handleSearchExpiry = useCallback(() => {
@@ -1153,7 +1150,17 @@ const RideBuddy = () => {
       // Reset initialization flag for next mount
       componentInitializedRef.current = false;
     };
-  }, [isAuthenticated, user?.id]); // Only depend on authentication state and user ID - removed problematic dependencies
+  }, [
+    activeChatId,
+    activeTab,
+    incomingRequests.length,
+    isAuthenticated,
+    loadConnections,
+    navigate,
+    showDebouncedToast,
+    user,
+    user?.id,
+  ]); // Only depend on authentication state and user ID - removed problematic dependencies
 
   // Request expiration checker - runs every minute (DISABLED FOR PRODUCTION STABILITY)
   useEffect(() => {
@@ -1164,7 +1171,7 @@ const RideBuddy = () => {
 
     // DISABLED: Periodic checks to prevent infinite loops in production
     // No interval - only run once on mount
-  }, [isAuthenticated]); // Only depend on authentication state
+  }, [checkExpiredRequests, isAuthenticated]); // Only depend on authentication state
 
   // Manual refresh function for user-triggered updates (production-safe)
   const refreshData = useCallback(() => {
@@ -1801,59 +1808,77 @@ const RideBuddy = () => {
                     onCancel={cancelActiveSearch}
                   />
 
+                  {/* Custom styles and menu list components are no longer needed with DatabaseLocationSelect */}
+
                   <form onSubmit={handleSearch} className="space-y-6">
                     <div className="grid md:grid-cols-2 gap-4">
-                      <LocationSelect
-                        value={searchForm.source.name}
-                        onChange={(selectedName) => {
-                          const selectedHotspot = hotspotData.find(
-                            (h) => h.name === selectedName
-                          );
-                          setSearchForm((prev) => ({
-                            ...prev,
-                            source: {
-                              name: selectedName,
-                              coordinates: selectedHotspot
-                                ? [
-                                    selectedHotspot.latitude,
-                                    selectedHotspot.longitude,
-                                  ]
-                                : null,
-                            },
-                          }));
-                        }}
-                        options={locationNames}
-                        placeholder="Type to search source location..."
-                        label="Source Location"
-                        icon="📍"
-                        required={true}
-                      />
+                      {/* Source Location */}
+                      <div>
+                        <label className="block text-xs font-semibold text-sawaari-yellow mb-1 text-readable">
+                          <span className="mr-1">📍</span>
+                          Source Location
+                          <span className="text-red-400 ml-1">*</span>
+                        </label>
+                        <DatabaseLocationSelect
+                          value={
+                            searchForm.source.name
+                              ? { name: searchForm.source.name }
+                              : null
+                          }
+                          onChange={(selectedLocation) => {
+                            setSearchForm((prev) => ({
+                              ...prev,
+                              source: {
+                                name: selectedLocation
+                                  ? selectedLocation.name
+                                  : "",
+                                coordinates: selectedLocation
+                                  ? [
+                                      selectedLocation.latitude,
+                                      selectedLocation.longitude,
+                                    ]
+                                  : null,
+                              },
+                            }));
+                          }}
+                          placeholder="Type to search source location..."
+                          className="w-full"
+                        />
+                      </div>
 
-                      <LocationSelect
-                        value={searchForm.destination.name}
-                        onChange={(selectedName) => {
-                          const selectedHotspot = hotspotData.find(
-                            (h) => h.name === selectedName
-                          );
-                          setSearchForm((prev) => ({
-                            ...prev,
-                            destination: {
-                              name: selectedName,
-                              coordinates: selectedHotspot
-                                ? [
-                                    selectedHotspot.latitude,
-                                    selectedHotspot.longitude,
-                                  ]
-                                : null,
-                            },
-                          }));
-                        }}
-                        options={locationNames}
-                        placeholder="Type to search destination location..."
-                        label="Destination Location"
-                        icon="🎯"
-                        required={true}
-                      />
+                      {/* Destination Location */}
+                      <div>
+                        <label className="block text-xs font-semibold text-sawaari-yellow mb-1 text-readable">
+                          <span className="mr-1">🎯</span>
+                          Destination Location
+                          <span className="text-red-400 ml-1">*</span>
+                        </label>
+                        <DatabaseLocationSelect
+                          value={
+                            searchForm.destination.name
+                              ? { name: searchForm.destination.name }
+                              : null
+                          }
+                          onChange={(selectedLocation) => {
+                            setSearchForm((prev) => ({
+                              ...prev,
+                              destination: {
+                                name: selectedLocation
+                                  ? selectedLocation.name
+                                  : "",
+                                coordinates: selectedLocation
+                                  ? [
+                                      selectedLocation.latitude,
+                                      selectedLocation.longitude,
+                                    ]
+                                  : null,
+                              },
+                            }));
+                          }}
+                          placeholder="Type to search destination location..."
+                          className="w-full"
+                        />
+                      </div>
 
                       {/* Search Radius Selector */}
                       <div className="md:col-span-2">

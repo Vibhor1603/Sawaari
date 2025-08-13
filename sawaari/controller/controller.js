@@ -577,7 +577,7 @@ const getRouteGraphStatus = async (req, res) => {
   }
 };
 
-// Calculate route between two points
+// Calculate route between two points (enhanced with multiple routes)
 const calculateRoute = async (req, res) => {
   try {
     const { source, destination } = req.body;
@@ -589,12 +589,82 @@ const calculateRoute = async (req, res) => {
       });
     }
 
+    console.log(`🔍 Calculating route from "${source}" to "${destination}"`);
+
+    // First, try the original single route calculation to ensure it works
     const result = await routeService.calculateRoute(source, destination);
+
+    if (!result.success) {
+      throw new Error(result.message || "Route calculation failed");
+    }
+
+    console.log(`✅ Single route found: ${result.data.path.join(" → ")}`);
+
+    // Now try to find multiple routes
+    let allRoutes = [];
+    let recommendations = {};
+
+    try {
+      const multipleResult = await routeService.calculateMultipleRoutes(
+        source,
+        destination
+      );
+
+      if (
+        multipleResult.success &&
+        multipleResult.data.routes &&
+        multipleResult.data.routes.length > 0
+      ) {
+        allRoutes = multipleResult.data.routes;
+        recommendations = multipleResult.data.recommendations;
+        console.log(`🛣️ Found ${allRoutes.length} total routes`);
+      } else {
+        throw new Error("Multiple routes calculation failed");
+      }
+    } catch (multipleError) {
+      console.log(
+        "Multiple routes failed, using single route:",
+        multipleError.message
+      );
+
+      // Convert single route to multiple routes format
+      allRoutes = [
+        {
+          id: "main",
+          type: "shortest",
+          name: "Main Route",
+          path: result.data.path,
+          pathCoordinates: result.data.pathCoordinates,
+          distance: result.data.distance,
+          totalFare: result.data.totalFare,
+          fareBreakdown: result.data.fareBreakdown,
+          estimatedTime: result.data.estimatedTime,
+          color: "#f4b942",
+          description: "Available route",
+        },
+      ];
+
+      recommendations = {
+        fastest: { id: "main", estimatedTime: result.data.estimatedTime },
+        cheapest: { id: "main", totalFare: result.data.totalFare },
+        shortest: { id: "main", distance: result.data.distance },
+      };
+    }
+
+    const responseData = {
+      source,
+      destination,
+      routes: allRoutes,
+      recommendations,
+      totalOptions: allRoutes.length,
+    };
 
     res.status(200).json({
       success: true,
-      message: "Route calculated successfully",
-      data: result.data,
+      message: `${
+        allRoutes.length > 1 ? "Multiple routes" : "Route"
+      } calculated successfully`,
+      data: responseData,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
@@ -608,6 +678,11 @@ const calculateRoute = async (req, res) => {
       return res.status(404).json({
         error: "Route not found",
         message: error.message,
+        suggestions: [
+          "Check if the location names are spelled correctly",
+          "Try using nearby locations",
+          "Contact support if the issue persists",
+        ],
       });
     }
 
@@ -800,26 +875,108 @@ const calculateFareEstimates = async (req, res) => {
   }
 };
 
-module.exports = {
-  home,
-  hotspots,
-  feedbacks,
-  ridebuddy,
-  findmatch,
-  signIn,
-  signUp,
-  refreshToken,
-  logout,
-  // New route calculation endpoints
-  initializeRouteGraph,
-  getRouteGraphStatus,
-  calculateRoute,
-  calculateFareEstimates,
-  storeRouteForRideBuddy,
-  findMatchingRoutesForRideBuddy,
-  getAvailableLocations,
-  getRouteSuggestions,
+// ===== NEW PAGINATED HOTSPOT ENDPOINTS =====
+
+// Get paginated hotspots
+const getHotspotsPaginated = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const search = req.query.search || "";
+
+    const skip = (page - 1) * limit;
+
+    const { dbService } = require("../Backend/database");
+    const hotspotsCollection = await dbService.getCollection("hotspots");
+
+    // Build search query
+    let query = {};
+    if (search.trim()) {
+      query = {
+        name: { $regex: search.trim(), $options: "i" },
+      };
+    }
+
+    // Get total count for pagination info
+    const totalCount = await hotspotsCollection.countDocuments(query);
+
+    // Get paginated results
+    const hotspots = await hotspotsCollection
+      .find(query)
+      .sort({ name: 1 })
+      .skip(skip)
+      .limit(limit)
+      .toArray();
+
+    const totalPages = Math.ceil(totalCount / limit);
+    const hasMore = page < totalPages;
+
+    res.status(200).json({
+      success: true,
+      data: hotspots,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalCount,
+        hasMore,
+        limit,
+        count: hotspots.length,
+      },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("Paginated hotspots fetch error:", error);
+    res.status(500).json({
+      error: "Database error",
+      message: "Unable to fetch hotspots data",
+    });
+  }
 };
+
+// Search hotspots with real-time results
+const searchHotspots = async (req, res) => {
+  try {
+    const query = req.query.q || "";
+    const limit = parseInt(req.query.limit) || 20;
+
+    if (!query.trim()) {
+      return res.status(400).json({
+        error: "Validation failed",
+        message: "Search query is required",
+      });
+    }
+
+    const { dbService } = require("../Backend/database");
+    const hotspotsCollection = await dbService.getCollection("hotspots");
+
+    // Search with regex for partial matches
+    const searchQuery = {
+      name: { $regex: query.trim(), $options: "i" },
+    };
+
+    const hotspots = await hotspotsCollection
+      .find(searchQuery)
+      .sort({ name: 1 })
+      .limit(limit)
+      .toArray();
+
+    res.status(200).json({
+      success: true,
+      data: hotspots,
+      query: query.trim(),
+      count: hotspots.length,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("Hotspots search error:", error);
+    res.status(500).json({
+      error: "Search error",
+      message: "Unable to search hotspots",
+    });
+  }
+};
+
+// Module exports moved to the end of the file after all function definitions
 // User Profile Management Endpoints
 
 /**
@@ -1147,6 +1304,9 @@ module.exports = {
   findMatchingRoutesForRideBuddy,
   getAvailableLocations,
   getRouteSuggestions,
+  // Paginated hotspot endpoints
+  getHotspotsPaginated,
+  searchHotspots,
   // Debug endpoints
   debugUserDatabase,
 };

@@ -139,6 +139,12 @@ class RouteService {
     });
   }
 
+  // Calculate multiple route options (uses same endpoint as single route)
+  async calculateMultipleRoutes(source, destination) {
+    // Use the same calculateRoute method since backend now returns multiple routes by default
+    return this.calculateRoute(source, destination);
+  }
+
   // Store route for ride buddy
   async storeRoute(userId, source, destination) {
     return this._rateLimitedCall(async () => {

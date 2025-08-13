@@ -1,8 +1,8 @@
-import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import Select, { components } from "react-select";
 import PropTypes from "prop-types";
 
-const LocationSelect = ({
+const StableLocationSelect = ({
   value,
   onChange,
   options,
@@ -15,8 +15,6 @@ const LocationSelect = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [loadedCount, setLoadedCount] = useState(pageSize);
-  const scrollPositionRef = useRef(0);
-  const shouldRestoreScroll = useRef(false);
 
   // Filter options based on search term
   const filteredOptions = useMemo(() => {
@@ -59,15 +57,6 @@ const LocationSelect = ({
   // Load more options
   const loadMore = useCallback(() => {
     if (loadedCount < filteredOptions.length) {
-      // Store current scroll position
-      const menuListElement = document.querySelector(
-        ".react-select__menu-list"
-      );
-      if (menuListElement) {
-        scrollPositionRef.current = menuListElement.scrollTop;
-        shouldRestoreScroll.current = true;
-      }
-
       setLoadedCount((prev) =>
         Math.min(prev + pageSize, filteredOptions.length)
       );
@@ -75,41 +64,40 @@ const LocationSelect = ({
   }, [loadedCount, filteredOptions.length, pageSize]);
 
   // Reset loaded count when options change
-  useEffect(() => {
+  React.useEffect(() => {
     setLoadedCount(pageSize);
   }, [options, pageSize]);
-
-  // Restore scroll position after loading more items
-  useEffect(() => {
-    if (shouldRestoreScroll.current) {
-      const menuListElement = document.querySelector(
-        ".react-select__menu-list"
-      );
-      if (menuListElement && scrollPositionRef.current > 0) {
-        // Use requestAnimationFrame to ensure DOM is fully updated
-        requestAnimationFrame(() => {
-          menuListElement.scrollTop = scrollPositionRef.current;
-          shouldRestoreScroll.current = false;
-        });
-      }
-    }
-  }, [loadedCount]);
 
   // Custom MenuList component with load more
   const MenuList = (props) => {
     const { children } = props;
+
     return (
-      <components.MenuList {...props}>
-        {children}
+      <components.MenuList
+        {...props}
+        style={{
+          ...props.style,
+          backgroundColor: "rgba(0, 0, 0, 0.98)",
+          backdropFilter: "blur(10px)",
+        }}
+      >
+        <div
+          style={{
+            backgroundColor: "rgba(0, 0, 0, 0.95)",
+            borderRadius: "0.375rem",
+          }}
+        >
+          {children}
+        </div>
         {loadedCount < filteredOptions.length && (
-          <div className="px-3 py-2 text-center text-xs border-t border-gray-700 bg-black">
+          <div className="px-3 py-2 text-center text-xs border-t border-gray-600 bg-black/95 sticky bottom-0 rounded-b-lg">
             <span
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 loadMore();
               }}
-              className="text-sawaari-yellow hover:text-yellow-300 cursor-pointer transition-colors duration-200 bg-gray-900 hover:bg-gray-800 px-3 py-1 rounded"
+              className="text-sawaari-yellow hover:text-yellow-300 cursor-pointer transition-colors duration-200 bg-gray-900/80 hover:bg-gray-800/80 px-3 py-1 rounded"
             >
               Load More
             </span>
@@ -153,16 +141,22 @@ const LocationSelect = ({
     }),
     menu: (provided) => ({
       ...provided,
-      backgroundColor: "#000000",
-      border: "1px solid rgba(255, 255, 255, 0.1)",
+      backgroundColor: "rgba(0, 0, 0, 0.95)",
+      border: "1px solid rgba(255, 255, 255, 0.2)",
       borderRadius: "0.5rem",
       zIndex: 9999,
+      maxHeight: "300px",
+      boxShadow: "0 10px 25px rgba(0, 0, 0, 0.8)",
+      backdropFilter: "blur(10px)",
     }),
     menuList: (provided) => ({
       ...provided,
-      backgroundColor: "#000000",
+      backgroundColor: "rgba(0, 0, 0, 0.98)",
       borderRadius: "0.5rem",
       padding: "0.25rem",
+      maxHeight: "270px",
+      overflowY: "auto",
+      backdropFilter: "blur(10px)",
     }),
     option: (provided, state) => ({
       ...provided,
@@ -216,27 +210,25 @@ const LocationSelect = ({
         styles={customStyles}
         isSearchable={true}
         isClearable={false}
-        menuPortalTarget={document.body}
-        menuPosition="fixed"
         className="react-select-container"
         classNamePrefix="react-select"
         onInputChange={handleInputChange}
         filterOption={() => true} // Disable built-in filtering since we handle it
+        components={{
+          IndicatorSeparator: () => null,
+          MenuList,
+        }}
         noOptionsMessage={({ inputValue }) =>
           inputValue
             ? `No locations found matching "${inputValue}"`
             : "No locations available"
         }
-        components={{
-          IndicatorSeparator: () => null,
-          MenuList,
-        }}
       />
     </div>
   );
 };
 
-LocationSelect.propTypes = {
+StableLocationSelect.propTypes = {
   value: PropTypes.string,
   onChange: PropTypes.func.isRequired,
   options: PropTypes.arrayOf(PropTypes.string).isRequired,
@@ -248,4 +240,4 @@ LocationSelect.propTypes = {
   pageSize: PropTypes.number,
 };
 
-export default LocationSelect;
+export default StableLocationSelect;

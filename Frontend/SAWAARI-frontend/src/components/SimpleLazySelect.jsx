@@ -1,8 +1,8 @@
-import { useState, useMemo, useCallback, useEffect, useRef } from "react";
-import Select, { components } from "react-select";
+import React, { useState, useMemo, useCallback } from "react";
+import Select from "react-select";
 import PropTypes from "prop-types";
 
-const LocationSelect = ({
+const SimpleLazySelect = ({
   value,
   onChange,
   options,
@@ -11,33 +11,32 @@ const LocationSelect = ({
   icon,
   required = false,
   className = "",
-  pageSize = 20,
+  pageSize = 15,
 }) => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [loadedCount, setLoadedCount] = useState(pageSize);
-  const scrollPositionRef = useRef(0);
-  const shouldRestoreScroll = useRef(false);
+  const [inputValue, setInputValue] = useState("");
+  const [menuIsOpen, setMenuIsOpen] = useState(false);
 
-  // Filter options based on search term
-  const filteredOptions = useMemo(() => {
-    if (!searchTerm) return options;
-    return options.filter((option) =>
-      option.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [options, searchTerm]);
+  // Filter and limit options based on search
+  const filteredAndLimitedOptions = useMemo(() => {
+    let filtered = options;
 
-  // Get currently visible options (lazy loaded)
-  const visibleOptions = useMemo(() => {
-    return filteredOptions.slice(0, loadedCount);
-  }, [filteredOptions, loadedCount]);
+    // Filter by search term
+    if (inputValue) {
+      filtered = options.filter((option) =>
+        option.toLowerCase().includes(inputValue.toLowerCase())
+      );
+    }
 
-  // Transform options to react-select format
-  const selectOptions = useMemo(() => {
-    return visibleOptions.map((option) => ({
-      value: option,
-      label: option,
-    }));
-  }, [visibleOptions]);
+    // Limit to pageSize for performance
+    const limited = filtered.slice(0, pageSize);
+
+    return {
+      options: limited.map((option) => ({ value: option, label: option })),
+      totalCount: filtered.length,
+      showingCount: limited.length,
+      hasMore: filtered.length > pageSize,
+    };
+  }, [options, inputValue, pageSize]);
 
   // Find the selected option
   const selectedOption = value ? { value, label: value } : null;
@@ -48,76 +47,39 @@ const LocationSelect = ({
   };
 
   // Handle input change (search)
-  const handleInputChange = useCallback(
-    (inputValue) => {
-      setSearchTerm(inputValue);
-      setLoadedCount(pageSize); // Reset to initial page size when searching
-    },
-    [pageSize]
+  const handleInputChange = useCallback((newInputValue) => {
+    setInputValue(newInputValue);
+  }, []);
+
+  // Custom NoOptionsMessage
+  const NoOptionsMessage = ({ inputValue }) => (
+    <div className="px-3 py-4 text-center text-sm text-gray-400">
+      {inputValue ? (
+        <div>
+          <div className="text-yellow-400 mb-1">🔍</div>
+          No locations found matching "{inputValue}"
+          <div className="text-xs mt-1 text-gray-500">
+            Try a different search term
+          </div>
+        </div>
+      ) : (
+        <div>
+          <div className="text-yellow-400 mb-1">📍</div>
+          Start typing to search locations
+        </div>
+      )}
+    </div>
   );
 
-  // Load more options
-  const loadMore = useCallback(() => {
-    if (loadedCount < filteredOptions.length) {
-      // Store current scroll position
-      const menuListElement = document.querySelector(
-        ".react-select__menu-list"
-      );
-      if (menuListElement) {
-        scrollPositionRef.current = menuListElement.scrollTop;
-        shouldRestoreScroll.current = true;
-      }
-
-      setLoadedCount((prev) =>
-        Math.min(prev + pageSize, filteredOptions.length)
-      );
-    }
-  }, [loadedCount, filteredOptions.length, pageSize]);
-
-  // Reset loaded count when options change
-  useEffect(() => {
-    setLoadedCount(pageSize);
-  }, [options, pageSize]);
-
-  // Restore scroll position after loading more items
-  useEffect(() => {
-    if (shouldRestoreScroll.current) {
-      const menuListElement = document.querySelector(
-        ".react-select__menu-list"
-      );
-      if (menuListElement && scrollPositionRef.current > 0) {
-        // Use requestAnimationFrame to ensure DOM is fully updated
-        requestAnimationFrame(() => {
-          menuListElement.scrollTop = scrollPositionRef.current;
-          shouldRestoreScroll.current = false;
-        });
-      }
-    }
-  }, [loadedCount]);
-
-  // Custom MenuList component with load more
-  const MenuList = (props) => {
-    const { children } = props;
-    return (
-      <components.MenuList {...props}>
-        {children}
-        {loadedCount < filteredOptions.length && (
-          <div className="px-3 py-2 text-center text-xs border-t border-gray-700 bg-black">
-            <span
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                loadMore();
-              }}
-              className="text-sawaari-yellow hover:text-yellow-300 cursor-pointer transition-colors duration-200 bg-gray-900 hover:bg-gray-800 px-3 py-1 rounded"
-            >
-              Load More
-            </span>
-          </div>
-        )}
-      </components.MenuList>
-    );
-  };
+  // Custom LoadingMessage
+  const LoadingMessage = () => (
+    <div className="px-3 py-4 text-center text-sm text-gray-400">
+      <div className="flex items-center justify-center gap-2">
+        <div className="w-3 h-3 border border-sawaari-yellow border-t-transparent rounded-full animate-spin"></div>
+        Searching locations...
+      </div>
+    </div>
+  );
 
   // Custom styles to match the website theme
   const customStyles = {
@@ -157,12 +119,14 @@ const LocationSelect = ({
       border: "1px solid rgba(255, 255, 255, 0.1)",
       borderRadius: "0.5rem",
       zIndex: 9999,
+      maxHeight: "300px",
     }),
     menuList: (provided) => ({
       ...provided,
       backgroundColor: "#000000",
       borderRadius: "0.5rem",
       padding: "0.25rem",
+      maxHeight: "270px",
     }),
     option: (provided, state) => ({
       ...provided,
@@ -206,12 +170,15 @@ const LocationSelect = ({
           {icon && <span className="mr-1">{icon}</span>}
           {label}
           {required && <span className="text-red-400 ml-1">*</span>}
+          <span className="text-xs text-gray-400 ml-2">
+            ({filteredAndLimitedOptions.totalCount} locations)
+          </span>
         </label>
       )}
       <Select
         value={selectedOption}
         onChange={handleChange}
-        options={selectOptions}
+        options={filteredAndLimitedOptions.options}
         placeholder={placeholder}
         styles={customStyles}
         isSearchable={true}
@@ -221,22 +188,33 @@ const LocationSelect = ({
         className="react-select-container"
         classNamePrefix="react-select"
         onInputChange={handleInputChange}
+        onMenuOpen={() => setMenuIsOpen(true)}
+        onMenuClose={() => setMenuIsOpen(false)}
         filterOption={() => true} // Disable built-in filtering since we handle it
-        noOptionsMessage={({ inputValue }) =>
-          inputValue
-            ? `No locations found matching "${inputValue}"`
-            : "No locations available"
-        }
         components={{
           IndicatorSeparator: () => null,
-          MenuList,
+          NoOptionsMessage,
+          LoadingMessage,
         }}
+        inputValue={inputValue}
+        menuIsOpen={menuIsOpen}
       />
+
+      {/* Show info about limited results */}
+      {menuIsOpen && filteredAndLimitedOptions.hasMore && (
+        <div className="text-xs text-gray-400 mt-1 px-2">
+          Showing first {filteredAndLimitedOptions.showingCount} of{" "}
+          {filteredAndLimitedOptions.totalCount} locations.
+          <span className="text-sawaari-yellow ml-1">
+            Keep typing to narrow down results.
+          </span>
+        </div>
+      )}
     </div>
   );
 };
 
-LocationSelect.propTypes = {
+SimpleLazySelect.propTypes = {
   value: PropTypes.string,
   onChange: PropTypes.func.isRequired,
   options: PropTypes.arrayOf(PropTypes.string).isRequired,
@@ -248,4 +226,4 @@ LocationSelect.propTypes = {
   pageSize: PropTypes.number,
 };
 
-export default LocationSelect;
+export default SimpleLazySelect;

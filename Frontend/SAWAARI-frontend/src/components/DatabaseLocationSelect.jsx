@@ -1,83 +1,137 @@
-import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import Select, { components } from "react-select";
-import PropTypes from "prop-types";
+import locationService from "../services/locationService";
 
-const LocationSelect = ({
+const DatabaseLocationSelect = ({
   value,
   onChange,
-  options,
-  placeholder,
+  placeholder = "Select location...",
   label,
   icon,
   required = false,
   className = "",
-  pageSize = 20,
+  disabled = false,
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [loadedCount, setLoadedCount] = useState(pageSize);
+  const [locations, setLocations] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [isSearching, setIsSearching] = useState(false);
+
+  const searchTimeoutRef = useRef(null);
   const scrollPositionRef = useRef(0);
   const shouldRestoreScroll = useRef(false);
 
-  // Filter options based on search term
-  const filteredOptions = useMemo(() => {
-    if (!searchTerm) return options;
-    return options.filter((option) =>
-      option.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [options, searchTerm]);
+  // Load initial locations
+  const loadInitialLocations = useCallback(async () => {
+    if (locations.length > 0) return; // Already loaded
 
-  // Get currently visible options (lazy loaded)
-  const visibleOptions = useMemo(() => {
-    return filteredOptions.slice(0, loadedCount);
-  }, [filteredOptions, loadedCount]);
+    setLoading(true);
+    setError(null);
 
-  // Transform options to react-select format
-  const selectOptions = useMemo(() => {
-    return visibleOptions.map((option) => ({
-      value: option,
-      label: option,
-    }));
-  }, [visibleOptions]);
+    try {
+      const result = await locationService.getLocationsPaginated(1, 20);
+      setLocations(result.data);
+      setHasMore(result.pagination.hasMore);
+      setCurrentPage(1);
+    } catch (err) {
+      setError("Failed to load locations");
+      console.error("Error loading initial locations:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [locations.length]);
 
-  // Find the selected option
-  const selectedOption = value ? { value, label: value } : null;
+  // Load more locations
+  const loadMoreLocations = useCallback(async () => {
+    if (loading || !hasMore || isSearching) return;
+
+    // Store current scroll position
+    const menuListElement = document.querySelector(".react-select__menu-list");
+    if (menuListElement) {
+      scrollPositionRef.current = menuListElement.scrollTop;
+      shouldRestoreScroll.current = true;
+    }
+
+    setLoading(true);
+
+    try {
+      const nextPage = currentPage + 1;
+      const result = await locationService.getLocationsPaginated(nextPage, 20);
+
+      setLocations((prev) => [...prev, ...result.data]);
+      setHasMore(result.pagination.hasMore);
+      setCurrentPage(nextPage);
+    } catch (err) {
+      setError("Failed to load more locations");
+      console.error("Error loading more locations:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [loading, hasMore, isSearching, currentPage]);
+
+  // Search locations
+  const searchLocations = useCallback(async (query) => {
+    if (!query.trim()) {
+      setIsSearching(false);
+      return;
+    }
+
+    setIsSearching(true);
+    setLoading(true);
+    setError(null);
+
+    try {
+      const result = await locationService.searchLocations(query, 20);
+      // Update locations with search results
+      setLocations(result.data);
+      setHasMore(false); // No pagination for search results
+    } catch (err) {
+      setError("Failed to search locations");
+      console.error("Error searching locations:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Handle search input change with debouncing
+  const handleInputChange = useCallback(
+    (inputValue) => {
+      setSearchTerm(inputValue);
+
+      // Clear previous timeout
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+
+      // Reset to initial state if no search term
+      if (!inputValue.trim()) {
+        setIsSearching(false);
+        setCurrentPage(1);
+        setHasMore(true);
+        loadInitialLocations();
+        return;
+      }
+
+      // Debounce search
+      searchTimeoutRef.current = setTimeout(() => {
+        searchLocations(inputValue);
+      }, 300);
+    },
+    [searchLocations, loadInitialLocations]
+  );
 
   // Handle selection change
   const handleChange = (selectedOption) => {
     onChange(selectedOption ? selectedOption.value : "");
   };
 
-  // Handle input change (search)
-  const handleInputChange = useCallback(
-    (inputValue) => {
-      setSearchTerm(inputValue);
-      setLoadedCount(pageSize); // Reset to initial page size when searching
-    },
-    [pageSize]
-  );
-
-  // Load more options
-  const loadMore = useCallback(() => {
-    if (loadedCount < filteredOptions.length) {
-      // Store current scroll position
-      const menuListElement = document.querySelector(
-        ".react-select__menu-list"
-      );
-      if (menuListElement) {
-        scrollPositionRef.current = menuListElement.scrollTop;
-        shouldRestoreScroll.current = true;
-      }
-
-      setLoadedCount((prev) =>
-        Math.min(prev + pageSize, filteredOptions.length)
-      );
-    }
-  }, [loadedCount, filteredOptions.length, pageSize]);
-
-  // Reset loaded count when options change
+  // Load initial locations on mount
   useEffect(() => {
-    setLoadedCount(pageSize);
-  }, [options, pageSize]);
+    loadInitialLocations();
+  }, [loadInitialLocations]);
 
   // Restore scroll position after loading more items
   useEffect(() => {
@@ -86,14 +140,31 @@ const LocationSelect = ({
         ".react-select__menu-list"
       );
       if (menuListElement && scrollPositionRef.current > 0) {
-        // Use requestAnimationFrame to ensure DOM is fully updated
         requestAnimationFrame(() => {
           menuListElement.scrollTop = scrollPositionRef.current;
           shouldRestoreScroll.current = false;
         });
       }
     }
-  }, [loadedCount]);
+  }, [locations.length]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Transform locations to react-select format
+  const selectOptions = locations.map((location) => ({
+    value: location.name,
+    label: location.name,
+  }));
+
+  // Find the selected option
+  const selectedOption = value ? { value, label: value } : null;
 
   // Custom MenuList component with load more
   const MenuList = (props) => {
@@ -101,17 +172,17 @@ const LocationSelect = ({
     return (
       <components.MenuList {...props}>
         {children}
-        {loadedCount < filteredOptions.length && (
+        {!isSearching && hasMore && (
           <div className="px-3 py-2 text-center text-xs border-t border-gray-700 bg-black">
             <span
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                loadMore();
+                loadMoreLocations();
               }}
               className="text-sawaari-yellow hover:text-yellow-300 cursor-pointer transition-colors duration-200 bg-gray-900 hover:bg-gray-800 px-3 py-1 rounded"
             >
-              Load More
+              {loading ? "Loading..." : "Load More"}
             </span>
           </div>
         )}
@@ -119,7 +190,7 @@ const LocationSelect = ({
     );
   };
 
-  // Custom styles to match the website theme
+  // Custom styles to match the website theme (same as original LocationSelect)
   const customStyles = {
     control: (provided, state) => ({
       ...provided,
@@ -216,6 +287,7 @@ const LocationSelect = ({
         styles={customStyles}
         isSearchable={true}
         isClearable={false}
+        isDisabled={disabled}
         menuPortalTarget={document.body}
         menuPosition="fixed"
         className="react-select-container"
@@ -225,6 +297,8 @@ const LocationSelect = ({
         noOptionsMessage={({ inputValue }) =>
           inputValue
             ? `No locations found matching "${inputValue}"`
+            : loading
+            ? "Loading locations..."
             : "No locations available"
         }
         components={{
@@ -236,16 +310,4 @@ const LocationSelect = ({
   );
 };
 
-LocationSelect.propTypes = {
-  value: PropTypes.string,
-  onChange: PropTypes.func.isRequired,
-  options: PropTypes.arrayOf(PropTypes.string).isRequired,
-  placeholder: PropTypes.string,
-  label: PropTypes.string,
-  icon: PropTypes.string,
-  required: PropTypes.bool,
-  className: PropTypes.string,
-  pageSize: PropTypes.number,
-};
-
-export default LocationSelect;
+export default DatabaseLocationSelect;

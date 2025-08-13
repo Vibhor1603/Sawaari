@@ -1,20 +1,34 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 
-const ContactPage = () => {
-  const navigate = useNavigate();
+export default function Contact() {
   const [formData, setFormData] = useState({
+    name: "",
     email: "",
-    mobile: "",
-    feedback: "",
+    message: "",
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState(null);
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  // Set document title
+  useEffect(() => {
+    document.title = "Contact Us - SAWAARI";
+    return () => {
+      document.title = "SAWAARI - Smart Rickshaw Navigation";
+    };
+  }, []);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
+    setSubmitStatus(null);
 
     try {
       const response = await fetch(
@@ -28,155 +42,180 @@ const ContactPage = () => {
         }
       );
 
-      if (response.ok) {
-        console.log("feedback submitted");
-        navigate("/");
+      const result = await response.json();
+
+      if (result.success) {
+        setSubmitStatus("success");
+        setFormData({
+          name: "",
+          email: "",
+          message: "",
+        });
       } else {
-        console.log("feedback error");
+        setSubmitStatus("error");
       }
     } catch (error) {
-      console.log(error);
+      console.error("Error submitting feedback:", error);
+      setSubmitStatus("error");
+    } finally {
+      setIsSubmitting(false);
     }
-
-    console.log("Form submitted:", formData);
-    setFormData({ email: "", mobile: "", feedback: "" });
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-black p-4 pt-24">
-      {/* Background Elements */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-[20%] left-[10%] text-2xl opacity-10 animate-subtle-float">
-          📞
-        </div>
-        <div
-          className="absolute top-[30%] right-[15%] text-2xl opacity-10 animate-subtle-float"
-          style={{ animationDelay: "1s" }}
-        >
-          ✉️
-        </div>
-        <div
-          className="absolute bottom-[25%] left-[20%] text-2xl opacity-10 animate-subtle-float"
-          style={{ animationDelay: "2s" }}
-        >
-          🛺
-        </div>
-        <div
-          className="absolute bottom-[35%] right-[25%] text-2xl opacity-10 animate-subtle-float"
-          style={{ animationDelay: "3s" }}
-        >
-          💬
-        </div>
+    <div className="min-h-screen bg-black pt-20 relative overflow-hidden">
+      {/* Minimal Background Elements */}
+      <div className="absolute inset-0 pointer-events-none">
+        {["📧", "🛺", "💬"].map((icon, i) => (
+          <div
+            key={i}
+            className="absolute text-xl opacity-8 animate-drift"
+            style={{
+              top: `${20 + Math.random() * 60}%`,
+              left: `${10 + Math.random() * 80}%`,
+              animationDelay: `${i * 2}s`,
+            }}
+          >
+            {icon}
+          </div>
+        ))}
       </div>
 
-      <div className="w-full max-w-lg relative z-10">
-        <div className="glass-strong shadow-sawaari-xl p-8 rounded-2xl">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center gap-3 mb-4">
-              <span className="text-3xl animate-subtle-float">📞</span>
-              <h2 className="text-3xl font-bold gradient-text-sawaari">
-                Contact Us
-              </h2>
-              <span className="text-3xl animate-subtle-float">📞</span>
-            </div>
-            <p className="text-lg text-text-secondary">
-              <span className="font-bold text-sawaari-yellow">
-                We would love to hear from you!
-              </span>
-            </p>
-            <p className="text-sm text-text-muted font-kalam mt-2">
-              आपकी राय हमारे लिए महत्वपूर्ण है
-            </p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Email Field */}
-            <div>
-              <label
-                htmlFor="email"
-                className="block mb-2 text-sawaari-green font-medium"
-              >
-                📧 Email address
-              </label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="Enter your email address"
-                required
-                className="form-input"
-              />
+      {/* Main Content Area */}
+      <div className="container-sawaari pt-16 pb-8">
+        <div className="max-w-md mx-auto">
+          {/* Contact Form */}
+          <div className="glass-strong rounded-2xl p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 bg-sawaari-yellow-muted border border-sawaari-yellow-border rounded-full flex items-center justify-center">
+                <span className="text-xl">📞</span>
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-white text-readable">
+                  Contact Us
+                </h1>
+                <p className="text-sm text-gray-200 text-readable-secondary">
+                  Send us your feedback
+                </p>
+              </div>
             </div>
 
-            {/* Mobile Field */}
-            <div>
-              <label
-                htmlFor="mobile"
-                className="block mb-2 text-sawaari-green font-medium"
-              >
-                📱 Mobile number
-              </label>
-              <input
-                type="tel"
-                id="mobile"
-                name="mobile"
-                value={formData.mobile}
-                onChange={handleChange}
-                placeholder="Enter your mobile number"
-                required
-                className="form-input"
-              />
-            </div>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Name Field */}
+              <div>
+                <label className="block text-sm font-semibold text-sawaari-yellow mb-1 text-readable">
+                  <span className="mr-2">👤</span>
+                  Name *
+                </label>
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-3 py-2 bg-black/40 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:border-sawaari-yellow focus:ring-2 focus:ring-sawaari-yellow/20 transition-all duration-300"
+                  placeholder="Your full name"
+                />
+              </div>
 
-            {/* Feedback Field */}
-            <div>
-              <label
-                htmlFor="feedback"
-                className="block mb-2 text-sawaari-green font-medium"
-              >
-                💭 Your feedback
-              </label>
-              <textarea
-                id="feedback"
-                name="feedback"
-                rows="4"
-                value={formData.feedback}
-                onChange={handleChange}
-                placeholder="Share your thoughts, suggestions, or experiences with SAWAARI..."
-                required
-                className="form-input resize-vertical min-h-[120px]"
-              />
-            </div>
+              {/* Email Field */}
+              <div>
+                <label className="block text-sm font-semibold text-sawaari-yellow mb-1 text-readable">
+                  <span className="mr-2">📧</span>
+                  Email *
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-3 py-2 bg-black/40 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:border-sawaari-yellow focus:ring-2 focus:ring-sawaari-yellow/20 transition-all duration-300"
+                  placeholder="your@email.com"
+                />
+              </div>
 
-            {/* Submit Button */}
-            <button type="submit" className="btn-primary w-full group">
-              <span className="flex items-center justify-center gap-2">
-                Submit Feedback
-                <span className="text-xl group-hover:animate-subtle-float">
-                  🚀
-                </span>
-              </span>
-            </button>
-          </form>
+              {/* Message Field */}
+              <div>
+                <label className="block text-sm font-semibold text-sawaari-yellow mb-1 text-readable">
+                  <span className="mr-2">💬</span>
+                  Message *
+                </label>
+                <textarea
+                  name="message"
+                  value={formData.message}
+                  onChange={handleInputChange}
+                  required
+                  rows={4}
+                  className="w-full px-3 py-2 bg-black/40 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:border-sawaari-yellow focus:ring-2 focus:ring-sawaari-yellow/20 transition-all duration-300 resize-vertical"
+                  placeholder="How can we help you?"
+                />
+              </div>
 
-          {/* Additional Info */}
-          <div className="mt-8 pt-6 border-t border-neutral-200 text-center">
-            <p className="text-sm text-gray-200 mb-2">
-              🛺 Join the SAWAARI community and help us improve!
-            </p>
-            <div className="flex justify-center gap-4 text-xs text-gray-200">
-              <span>📧 Quick Response</span>
-              <span>🔒 Secure & Private</span>
-              <span>💝 Much Appreciated</span>
+              {/* Submit Button */}
+              <div className="flex justify-center">
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="flex items-center justify-center gap-2 px-6 py-2 bg-gradient-to-r from-sawaari-yellow to-sawaari-yellow/80 text-black font-medium text-sm rounded-lg shadow-sawaari-subtle hover:shadow-sawaari-glow hover:-translate-y-0.5 transition-all duration-300 transform hover:scale-[1.01] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <div className="w-3 h-3 border-2 border-black/30 border-t-black rounded-full animate-spin"></div>
+                      <span>Sending...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-sm">📤</span>
+                      <span>Send Message</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Status Messages */}
+              {submitStatus === "success" && (
+                <div className="p-3 bg-green-500/20 border border-green-500/40 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <span className="text-green-400 text-lg">✅</span>
+                    <div>
+                      <p className="text-green-200 font-semibold text-sm">
+                        Message sent successfully!
+                      </p>
+                      <p className="text-green-300 text-xs">
+                        We&apos;ll get back to you soon.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {submitStatus === "error" && (
+                <div className="p-3 bg-red-500/20 border border-red-500/40 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <span className="text-red-400 text-lg">❌</span>
+                    <div>
+                      <p className="text-red-200 font-semibold text-sm">
+                        Failed to send message
+                      </p>
+                      <p className="text-red-300 text-xs">
+                        Please try again later.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </form>
+
+            <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+              <p className="text-xs text-gray-200">
+                <span className="text-blue-400 font-semibold">📧 Email:</span>{" "}
+                sawaaribyvibhor@gmail.com
+              </p>
             </div>
           </div>
         </div>
       </div>
     </div>
   );
-};
-
-export default ContactPage;
+}

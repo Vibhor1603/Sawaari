@@ -19,6 +19,9 @@ const {
   findMatchingRoutesForRideBuddy,
   getAvailableLocations,
   getRouteSuggestions,
+  // New paginated hotspot endpoints
+  getHotspotsPaginated,
+  searchHotspots,
   // Debug endpoints
   debugUserDatabase,
 } = require("../controller/controller");
@@ -69,6 +72,12 @@ router.route("/").get(home);
 
 // Hotspots - public but with optional auth for personalization
 router.route("/hotspots").get(optionalAuth, hotspots);
+
+// New paginated hotspot endpoints
+router
+  .route("/api/hotspots/paginated")
+  .get(hotspotsLimiter, getHotspotsPaginated);
+router.route("/api/hotspots/search").get(hotspotsLimiter, searchHotspots);
 
 // Authentication routes with stricter rate limiting
 router.route("/signin").post(authLimiter, validateInput(signInSchema), signIn);

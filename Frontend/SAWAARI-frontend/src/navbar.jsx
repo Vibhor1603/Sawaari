@@ -79,7 +79,7 @@ export default function Navbar() {
                   }`
                 }
               >
-                Hotspots
+                Rickshaw Points
               </NavLink>
               <NavLink
                 to="/routes"
@@ -104,6 +104,18 @@ export default function Navbar() {
                 }
               >
                 Find Travel Buddy
+              </NavLink>
+              <NavLink
+                to="/contact"
+                className={({ isActive }) =>
+                  `px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
+                    isActive
+                      ? "text-sawaari-yellow bg-sawaari-yellow-muted border border-sawaari-yellow-border text-readable"
+                      : "text-gray-300 hover:text-sawaari-yellow hover:bg-sawaari-yellow-muted/50 text-readable-secondary"
+                  }`
+                }
+              >
+                Contact Us
               </NavLink>
             </div>
 
@@ -212,7 +224,7 @@ export default function Navbar() {
                   }`
                 }
               >
-                Hotspots
+                Rickshaw Points
               </NavLink>
               <NavLink
                 to="/routes"
@@ -239,6 +251,19 @@ export default function Navbar() {
                 }
               >
                 Find Travel Buddy
+              </NavLink>
+              <NavLink
+                to="/contact"
+                onClick={closeNav}
+                className={({ isActive }) =>
+                  `px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+                    isActive
+                      ? "text-sawaari-yellow bg-sawaari-yellow-muted border border-sawaari-yellow-border text-readable"
+                      : "text-gray-300 hover:text-sawaari-yellow hover:bg-sawaari-yellow-muted/50 text-readable-secondary"
+                  }`
+                }
+              >
+                Contact Us
               </NavLink>
 
               {/* Enhanced Mobile User Menu */}

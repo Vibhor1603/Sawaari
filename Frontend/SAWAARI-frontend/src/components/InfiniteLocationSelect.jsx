@@ -1,8 +1,8 @@
-import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import React, { useState, useMemo, useCallback, useRef } from "react";
 import Select, { components } from "react-select";
 import PropTypes from "prop-types";
 
-const LocationSelect = ({
+const InfiniteLocationSelect = ({
   value,
   onChange,
   options,
@@ -15,6 +15,9 @@ const LocationSelect = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [loadedCount, setLoadedCount] = useState(pageSize);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuListRef = useRef(null);
   const scrollPositionRef = useRef(0);
   const shouldRestoreScroll = useRef(false);
 
@@ -28,7 +31,13 @@ const LocationSelect = ({
 
   // Get currently visible options (lazy loaded)
   const visibleOptions = useMemo(() => {
-    return filteredOptions.slice(0, loadedCount);
+    const result = filteredOptions.slice(0, loadedCount);
+    console.log("📋 VisibleOptions updated:", {
+      filteredCount: filteredOptions.length,
+      loadedCount,
+      visibleCount: result.length,
+    });
+    return result;
   }, [filteredOptions, loadedCount]);
 
   // Transform options to react-select format
@@ -52,36 +61,58 @@ const LocationSelect = ({
     (inputValue) => {
       setSearchTerm(inputValue);
       setLoadedCount(pageSize); // Reset to initial page size when searching
+      setIsLoading(false); // Reset loading state
     },
     [pageSize]
   );
 
   // Load more options
   const loadMore = useCallback(() => {
-    if (loadedCount < filteredOptions.length) {
-      // Store current scroll position
+    console.log("🔄 LoadMore called:", {
+      loadedCount,
+      totalOptions: filteredOptions.length,
+      isLoading,
+    });
+    if (loadedCount < filteredOptions.length && !isLoading) {
+      console.log("✅ Loading more options...");
+
+      // Find the actual scrollable element in the DOM
       const menuListElement = document.querySelector(
         ".react-select__menu-list"
       );
       if (menuListElement) {
         scrollPositionRef.current = menuListElement.scrollTop;
         shouldRestoreScroll.current = true;
+        console.log("📍 Stored scroll position:", scrollPositionRef.current);
       }
 
-      setLoadedCount((prev) =>
-        Math.min(prev + pageSize, filteredOptions.length)
-      );
+      setIsLoading(true);
+
+      // Use setTimeout to ensure UI updates properly
+      setTimeout(() => {
+        setLoadedCount((prev) => {
+          const newCount = Math.min(prev + pageSize, filteredOptions.length);
+          console.log("📊 Updated loadedCount:", prev, "→", newCount);
+          return newCount;
+        });
+        setIsLoading(false);
+      }, 100);
+    } else {
+      console.log("❌ LoadMore blocked:", {
+        hasMore: loadedCount < filteredOptions.length,
+        isLoading,
+      });
     }
-  }, [loadedCount, filteredOptions.length, pageSize]);
+  }, [loadedCount, filteredOptions.length, pageSize, isLoading]);
 
   // Reset loaded count when options change
-  useEffect(() => {
+  React.useEffect(() => {
     setLoadedCount(pageSize);
   }, [options, pageSize]);
 
   // Restore scroll position after loading more items
-  useEffect(() => {
-    if (shouldRestoreScroll.current) {
+  React.useEffect(() => {
+    if (shouldRestoreScroll.current && !isLoading) {
       const menuListElement = document.querySelector(
         ".react-select__menu-list"
       );
@@ -89,27 +120,55 @@ const LocationSelect = ({
         // Use requestAnimationFrame to ensure DOM is fully updated
         requestAnimationFrame(() => {
           menuListElement.scrollTop = scrollPositionRef.current;
+          console.log(
+            "📍 Restored scroll position:",
+            scrollPositionRef.current
+          );
           shouldRestoreScroll.current = false;
         });
       }
     }
-  }, [loadedCount]);
+  }, [loadedCount, isLoading]);
 
-  // Custom MenuList component with load more
+  // Custom MenuList component with manual load more
   const MenuList = (props) => {
     const { children } = props;
+    const [showLoadMore, setShowLoadMore] = useState(false);
+
+    const handleScroll = useCallback((e) => {
+      const { target } = e;
+      const { scrollTop, scrollHeight, clientHeight } = target;
+      const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+
+      console.log("📜 Scroll event:", {
+        distanceFromBottom: Math.round(distanceFromBottom),
+        loadedCount,
+        totalOptions: filteredOptions.length,
+        hasMore: loadedCount < filteredOptions.length,
+      });
+
+      // Show "Load More" text when scrolled to bottom (with 10px threshold)
+      if (distanceFromBottom <= 10 && loadedCount < filteredOptions.length) {
+        console.log("✅ Showing Load More");
+        setShowLoadMore(true);
+      } else {
+        setShowLoadMore(false);
+      }
+    }, []);
+
     return (
-      <components.MenuList {...props}>
+      <components.MenuList {...props} onScroll={handleScroll}>
         {children}
         {loadedCount < filteredOptions.length && (
-          <div className="px-3 py-2 text-center text-xs border-t border-gray-700 bg-black">
+          <div className="px-3 py-2 text-center text-xs border-t border-gray-700">
             <span
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                console.log("🔄 Load More clicked");
                 loadMore();
               }}
-              className="text-sawaari-yellow hover:text-yellow-300 cursor-pointer transition-colors duration-200 bg-gray-900 hover:bg-gray-800 px-3 py-1 rounded"
+              className="text-sawaari-yellow hover:text-yellow-300 cursor-pointer transition-colors duration-200"
             >
               Load More
             </span>
@@ -118,6 +177,28 @@ const LocationSelect = ({
       </components.MenuList>
     );
   };
+
+  // Custom NoOptionsMessage
+  const NoOptionsMessage = (props) => (
+    <components.NoOptionsMessage {...props}>
+      <div className="text-center text-sm text-gray-400">
+        {searchTerm ? (
+          <div>
+            <div className="text-yellow-400 mb-1">🔍</div>
+            No locations found matching &quot;{searchTerm}&quot;
+            <div className="text-xs mt-1 text-gray-500">
+              Try a different search term
+            </div>
+          </div>
+        ) : (
+          <div>
+            <div className="text-yellow-400 mb-1">📍</div>
+            Start typing to search locations
+          </div>
+        )}
+      </div>
+    </components.NoOptionsMessage>
+  );
 
   // Custom styles to match the website theme
   const customStyles = {
@@ -157,12 +238,15 @@ const LocationSelect = ({
       border: "1px solid rgba(255, 255, 255, 0.1)",
       borderRadius: "0.5rem",
       zIndex: 9999,
+      maxHeight: "300px",
     }),
     menuList: (provided) => ({
       ...provided,
       backgroundColor: "#000000",
       borderRadius: "0.5rem",
       padding: "0.25rem",
+      maxHeight: "270px",
+      overflowY: "auto",
     }),
     option: (provided, state) => ({
       ...provided,
@@ -221,22 +305,21 @@ const LocationSelect = ({
         className="react-select-container"
         classNamePrefix="react-select"
         onInputChange={handleInputChange}
+        onMenuOpen={() => setIsMenuOpen(true)}
+        onMenuClose={() => setIsMenuOpen(false)}
         filterOption={() => true} // Disable built-in filtering since we handle it
-        noOptionsMessage={({ inputValue }) =>
-          inputValue
-            ? `No locations found matching "${inputValue}"`
-            : "No locations available"
-        }
         components={{
           IndicatorSeparator: () => null,
           MenuList,
+          NoOptionsMessage,
         }}
+        menuIsOpen={isMenuOpen}
       />
     </div>
   );
 };
 
-LocationSelect.propTypes = {
+InfiniteLocationSelect.propTypes = {
   value: PropTypes.string,
   onChange: PropTypes.func.isRequired,
   options: PropTypes.arrayOf(PropTypes.string).isRequired,
@@ -248,4 +331,4 @@ LocationSelect.propTypes = {
   pageSize: PropTypes.number,
 };
 
-export default LocationSelect;
+export default InfiniteLocationSelect;

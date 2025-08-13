@@ -26,6 +26,7 @@ const {
   calculateRoute,
   calculateFareEstimates,
   storeRouteForRideBuddy,
+  getAvailableLocations,
 } = require("./controller/controller");
 
 // Import ride buddy controller functions
@@ -112,6 +113,7 @@ router.post("/feedback", submitFeedback);
 
 // Route calculation endpoints (public)
 router.get("/api/routes/status", getRouteGraphStatus);
+router.get("/api/routes/locations", getAvailableLocations);
 router.post("/api/routes/calculate", calculateRoute);
 router.post("/api/routes/fare-estimates", calculateFareEstimates);
 

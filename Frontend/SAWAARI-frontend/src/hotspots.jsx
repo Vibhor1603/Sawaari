@@ -1,6 +1,9 @@
 /* eslint-disable no-unused-vars */
 import { useState, useEffect } from "react";
-import EnhancedMap from "./components/EnhancedMap";
+import { MapContainer, TileLayer } from "react-leaflet";
+import LocationTracker from "./LocationTracker";
+import HotspotMarkers from "./HotspotMarkers";
+import { useHotspotData } from "./useHotspotData";
 
 // Component to display hotspots with enhanced geolocation-based loading
 function Hotspots() {
@@ -8,9 +11,12 @@ function Hotspots() {
     28.619155291665052, 77.42591115327116,
   ]);
 
+  // Get hotspot data using the hook
+  const [hotspot] = useHotspotData();
+
   // Set document title
   useEffect(() => {
-    document.title = "Hotspots - SAWAARI";
+    document.title = "Rickshaw Points - SAWAARI";
     return () => {
       document.title = "SAWAARI - Smart Rickshaw Navigation";
     };
@@ -68,7 +74,7 @@ function Hotspots() {
       </div>
 
       {/* Main Content Area */}
-      <div className="container-sawaari pt-40 pb-8">
+      <div className="container-sawaari py-10 sm:py-20">
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Left Column - Info */}
           <div className="lg:col-span-1 space-y-6">
@@ -79,10 +85,10 @@ function Hotspots() {
                 </div>
                 <div>
                   <h1 className="text-xl font-bold text-white">
-                    Pickup <span className="text-sawaari-yellow">Zones</span>
+                    Rickshaw <span className="text-sawaari-yellow">Points</span>
                   </h1>
                   <p className="text-sm text-gray-200">
-                    Auto-rickshaw hotspots
+                    Auto-rickshaw service locations
                   </p>
                 </div>
               </div>
@@ -107,15 +113,15 @@ function Hotspots() {
               <div className="space-y-2 text-sm text-gray-200">
                 <h3 className="text-white font-semibold mb-2">Map Legend</h3>
                 <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 bg-green-500 rounded-full"></span>
+                  <span className="w-3 h-3 bg-red-500 rounded-full"></span>
                   <span>High availability</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 bg-yellow-500 rounded-full"></span>
+                  <span className="w-3 h-3 bg-orange-500 rounded-full"></span>
                   <span>Medium availability</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 bg-red-500 rounded-full"></span>
+                  <span className="w-3 h-3 bg-yellow-500 rounded-full"></span>
                   <span>Low availability</span>
                 </div>
               </div>
@@ -125,15 +131,15 @@ function Hotspots() {
                   <span className="text-sawaari-yellow font-semibold">
                     Tip:
                   </span>{" "}
-                  Click on Hotspots to see destinations and fares
+                  Click on rickshaw points to see destinations and fares
                 </p>
               </div>
 
               <div className="mt-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
                 <p className="text-xs text-gray-200">
                   <span className="text-blue-400 font-semibold">📍 Note:</span>{" "}
-                  Currently showing sample locations for testing purposes. More
-                  Hotspots will be added soon!
+                  Stay tuned and keep coming back. More rickshaw points will be
+                  added soon!
                 </p>
               </div>
             </div>
@@ -143,15 +149,24 @@ function Hotspots() {
           <div className="lg:col-span-2">
             <div className="glass-strong rounded-2xl p-4">
               <h2 className="text-xl font-bold text-white mb-4">
-                Interactive Hotspot Map
+                Interactive Rickshaw Points Map
               </h2>
               <div className="h-[500px] rounded-xl overflow-hidden border border-white/10">
-                <EnhancedMap
+                <MapContainer
                   center={[28.633043462708848, 77.44792897992077]}
-                  zoom={10}
-                  onHotspotClick={handleHotspotClick}
-                  showControls={true}
-                />
+                  zoom={14}
+                  style={{ height: "100%", width: "100%" }}
+                >
+                  <TileLayer
+                    url="https://tile.openstreetmap.de/{z}/{x}/{y}.png"
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  />
+                  <LocationTracker />
+                  <HotspotMarkers
+                    hotspot={hotspot}
+                    clickHandler={handleHotspotClick}
+                  />
+                </MapContainer>
               </div>
             </div>
           </div>

@@ -10,7 +10,7 @@ function Authstate(props) {
   const [token, setToken] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [hotspot, setHotspots] = useState([]);
+  // Hotspot state removed - now handled by individual components
   const [error, setError] = useState(null);
 
   // Initialize authentication state
@@ -67,34 +67,7 @@ function Authstate(props) {
   }, []);
   */
 
-  // Fetch hotspots data
-  useEffect(() => {
-    const fetchHotspots = async () => {
-      try {
-        const response = await fetch(
-          `${import.meta.env.VITE_API_BASE_URL}/hotspots`
-        );
-        const data = await response.json();
-
-        // Ensure we always set an array
-        if (Array.isArray(data)) {
-          setHotspots(data);
-        } else if (data && Array.isArray(data.data)) {
-          setHotspots(data.data);
-        } else {
-          console.error("Hotspot data is not an array:", data);
-          setHotspots([]); // Set empty array as fallback
-          setError("Invalid hotspot data format");
-        }
-      } catch (error) {
-        console.error("Error fetching hotspots:", error);
-        setHotspots([]); // Set empty array as fallback
-        setError("Failed to fetch hotspots data");
-      }
-    };
-
-    fetchHotspots();
-  }, []);
+  // Hotspot data loading removed - now handled by individual components using database-driven lazy loading
 
   // Enhanced login function
   const login = useCallback(async (credentials) => {
@@ -258,8 +231,7 @@ function Authstate(props) {
     isLoading,
     error,
 
-    // Data
-    hotspot,
+    // Data - hotspot removed, now handled by individual components
 
     // Authentication functions
     login,

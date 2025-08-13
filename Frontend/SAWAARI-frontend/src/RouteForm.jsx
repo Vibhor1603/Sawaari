@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import LocationSelect from "./components/LocationSelect";
+/* eslint-disable react/prop-types */
+import DatabaseLocationSelect from "./components/DatabaseLocationSelect";
 
 export default function RouteForm({
   source,
@@ -7,84 +7,52 @@ export default function RouteForm({
   destination,
   setDestination,
   handleRouteSearch,
-  hotspot,
 }) {
-  const [availableLocations, setAvailableLocations] = useState([]);
-  const [isLoadingLocations, setIsLoadingLocations] = useState(false);
-
-  // Fetch available locations from API
-  useEffect(() => {
-    // Use hotspot prop directly instead of API call
-    if (hotspot && Array.isArray(hotspot)) {
-      setAvailableLocations(
-        hotspot
-          .map((spot) => ({ name: spot.name }))
-          .sort((a, b) => a.name.localeCompare(b.name))
-      );
-    }
-    setIsLoadingLocations(false);
-  }, [hotspot]);
-
-  // Extract unique location names from the available locations
-  const getLocationNames = () => {
-    return availableLocations.map((location) => location.name).sort();
-  };
-
-  const locationNames = getLocationNames();
-
   return (
     <div className="bg-black/40 backdrop-blur-sm border border-white/10 rounded-xl p-6 max-w-md mx-auto">
-      {/* Simple Header */}
-      <div className="text-center mb-6">
-        <h3 className="text-xl font-bold text-white mb-2">Route Planner</h3>
-        <p className="text-sm text-gray-300">
-          Find the best route for your journey
-        </p>
-      </div>
-
       <form onSubmit={handleRouteSearch} className="space-y-4">
         {/* Source Location */}
-        <LocationSelect
-          value={source}
-          onChange={setSource}
-          options={locationNames}
-          placeholder={
-            isLoadingLocations
-              ? "Loading locations..."
-              : "Type to search source location..."
-          }
-          label="Source Location"
-          icon="📍"
-          required={true}
-        />
+        <div className="space-y-2">
+          <label className="flex items-center gap-2 text-sm font-medium text-white">
+            <span>📍</span>
+            Source Location
+          </label>
+          <DatabaseLocationSelect
+            value={source}
+            onChange={setSource}
+            placeholder="Type to search source location..."
+            className="w-full"
+          />
+        </div>
 
         {/* Destination Location */}
-        <LocationSelect
-          value={destination}
-          onChange={setDestination}
-          options={locationNames}
-          placeholder={
-            isLoadingLocations
-              ? "Loading locations..."
-              : "Type to search destination location..."
-          }
-          label="Destination Location"
-          icon="🎯"
-          required={true}
-        />
+        <div className="space-y-2">
+          <label className="flex items-center gap-2 text-sm font-medium text-white">
+            <span>🎯</span>
+            Destination Location
+          </label>
+          <DatabaseLocationSelect
+            value={destination}
+            onChange={setDestination}
+            placeholder="Type to search destination location..."
+            className="w-full"
+          />
+        </div>
 
         {/* Submit Button */}
-        <button
-          type="submit"
-          className="w-full flex items-center justify-center gap-2 p-3 bg-gradient-to-r from-sawaari-yellow to-sawaari-yellow/80 text-black font-semibold text-sm rounded-lg shadow-sawaari-subtle hover:shadow-sawaari-glow hover:-translate-y-1 transition-all duration-300 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none group"
-          disabled={isLoadingLocations}
-        >
-          <span className="text-lg">🔍</span>
-          <span>Find Best Route</span>
-          <span className="text-lg group-hover:animate-rickshaw-bounce">
-            🛺
-          </span>
-        </button>
+        <div className="flex justify-center">
+          <button
+            type="submit"
+            className="flex items-center justify-center gap-2 px-6 py-2 bg-gradient-to-r from-sawaari-yellow to-sawaari-yellow/80 text-black font-medium text-sm rounded-lg shadow-sawaari-subtle hover:shadow-sawaari-glow hover:-translate-y-0.5 transition-all duration-300 transform hover:scale-[1.01] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none group"
+            disabled={!source || !destination}
+          >
+            <span className="text-sm">🔍</span>
+            <span>Find Best Route</span>
+            <span className="text-sm group-hover:animate-rickshaw-bounce">
+              🛺
+            </span>
+          </button>
+        </div>
 
         {/* Simple Tips */}
         <div className="mt-4 p-3 bg-sawaari-yellow-muted border border-sawaari-yellow-border rounded-lg">

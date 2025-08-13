@@ -97,7 +97,7 @@ export default function Footer() {
                   href="/hotspots"
                   className="text-gray-300 hover:text-sawaari-yellow transition-colors duration-300 text-readable-secondary"
                 >
-                  Hotspots
+                  Rickshaw Points
                 </a>
               </li>
               <li>
