@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { useState, useEffect, useRef, useContext, useCallback } from "react";
 import PropTypes from "prop-types";
 import { AuthContext } from "../../AuthContext";

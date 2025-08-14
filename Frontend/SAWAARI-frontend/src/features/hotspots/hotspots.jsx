@@ -1,9 +1,6 @@
 /* eslint-disable no-unused-vars */
 import { useState, useEffect } from "react";
-import { MapContainer, TileLayer } from "react-leaflet";
-import { LocationTracker } from "../../components/map";
-import HotspotMarkers from "./HotspotMarkers";
-import { useHotspotData } from "./useHotspotData";
+import { EnhancedMap } from "../../components/common";
 
 // Component to display hotspots with enhanced geolocation-based loading
 function Hotspots() {
@@ -11,8 +8,7 @@ function Hotspots() {
     28.619155291665052, 77.42591115327116,
   ]);
 
-  // Get hotspot data using the hook
-  const [hotspot] = useHotspotData();
+  // No need to fetch all hotspots - EnhancedMap will handle bounds-based loading
 
   // Set document title
   useEffect(() => {
@@ -152,21 +148,12 @@ function Hotspots() {
                 Interactive Rickshaw Points Map
               </h2>
               <div className="h-[500px] rounded-xl overflow-hidden border border-white/10">
-                <MapContainer
+                <EnhancedMap
                   center={[28.633043462708848, 77.44792897992077]}
                   zoom={14}
-                  style={{ height: "100%", width: "100%" }}
-                >
-                  <TileLayer
-                    url="https://tile.openstreetmap.de/{z}/{x}/{y}.png"
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                  />
-                  <LocationTracker />
-                  <HotspotMarkers
-                    hotspot={hotspot}
-                    clickHandler={handleHotspotClick}
-                  />
-                </MapContainer>
+                  onHotspotClick={handleHotspotClick}
+                  showControls={true}
+                />
               </div>
             </div>
           </div>

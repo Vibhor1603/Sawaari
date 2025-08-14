@@ -12,12 +12,16 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
 import routeService from "../../services/routeService";
-import { LocationTracker, MapInteractionHandler } from "../../components/map";
+import {
+  LocationTracker,
+  MapInteractionHandler,
+  MapEventHandler,
+} from "../../components/map";
 import HotspotMarkers from "../hotspots/HotspotMarkers";
 import RouteForm from "./RouteForm";
 import RouteOptions from "../../components/routes/RouteOptions";
 import MultipleRoutePolylines from "../../components/routes/MultipleRoutePolylines";
-import { useHotspotData } from "../hotspots/useHotspotData";
+import { useBoundsHotspots } from "../../hooks/useBoundsHotspots";
 
 // Custom icons for route markers
 const startIcon = new L.DivIcon({
@@ -62,8 +66,12 @@ export default function RouteInfo() {
   const [recommendations, setRecommendations] = useState(null);
   const [showMultipleRoutes, setShowMultipleRoutes] = useState(false);
 
-  // Get hotspot data using the hook
-  const [hotspot] = useHotspotData();
+  // Use bounds-based hotspot loading
+  const {
+    hotspots,
+    loading: hotspotsLoading,
+    onMapBoundsChange,
+  } = useBoundsHotspots();
 
   // Set document title
   useEffect(() => {
@@ -90,15 +98,15 @@ export default function RouteInfo() {
       }
     };
 
-    // Only initialize if hotspot data exists and component is still mounted
-    if (Array.isArray(hotspot) && hotspot.length > 0 && isMounted) {
+    // Initialize graph on component mount
+    if (isMounted) {
       initializeGraph();
     }
 
     return () => {
       isMounted = false;
     };
-  }, [hotspot]);
+  }, []); // Remove hotspot dependency
 
   const handleRouteSearch = async (e) => {
     e.preventDefault();
@@ -272,10 +280,10 @@ export default function RouteInfo() {
       </div>
 
       {/* Main Content Area */}
-      <div className="container-sawaari pt-24 pb-8">
-        <div className="grid lg:grid-cols-5 gap-8">
+      <div className="container-sawaari py-10 sm:py-20">
+        <div className="grid lg:grid-cols-3 gap-8">
           {/* Left Column - Route Form or Results */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-1 space-y-6">
             {!showResults ? (
               /* Route Form */
               <div className="glass-strong rounded-2xl p-6">
@@ -492,15 +500,21 @@ export default function RouteInfo() {
           </div>
 
           {/* Right Column - Map */}
-          <div className="lg:col-span-3">
-            <div className="glass-strong rounded-2xl sm:p-4">
+          <div className="lg:col-span-2">
+            <div className="glass-strong rounded-2xl p-4">
               <h2 className="text-xl font-bold text-white mb-4 text-readable">
                 Interactive Route Map
               </h2>
-              <div className="h-[600px] rounded-xl overflow-hidden border border-white/10">
+              <div className="h-[500px] rounded-xl overflow-hidden border border-white/10 relative">
+                {hotspotsLoading && (
+                  <div className="absolute top-3 right-3 bg-black/80 text-white px-3 py-2 rounded-lg text-xs flex items-center gap-2 z-[1000]">
+                    <div className="w-3 h-3 border-2 border-white/40 border-t-sawaari-yellow rounded-full animate-spin" />
+                    <span>Loading...</span>
+                  </div>
+                )}
                 <MapContainer
                   center={[28.633043462708848, 77.44792897992077]}
-                  zoom={10}
+                  zoom={14}
                   style={{ height: "100%", width: "100%" }}
                 >
                   <TileLayer
@@ -511,8 +525,12 @@ export default function RouteInfo() {
                   <MapInteractionHandler
                     selectedDestination={selectedDestination}
                   />
+                  <MapEventHandler
+                    onBoundsChange={onMapBoundsChange}
+                    onLocationChange={() => {}} // Not needed for routes
+                  />
                   <HotspotMarkers
-                    hotspot={hotspot}
+                    hotspot={hotspots}
                     clickHandler={clickHandler}
                   />
 
