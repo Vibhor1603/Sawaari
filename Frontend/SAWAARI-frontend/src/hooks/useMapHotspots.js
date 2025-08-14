@@ -24,13 +24,13 @@ export const useMapHotspots = (initialCenter = null, initialZoom = 10) => {
         return;
       }
 
-      // Check if bounds are the same as last request (increased threshold)
+      // Check if bounds are the same as last request (reduced threshold for better responsiveness)
       if (
         lastBounds &&
-        Math.abs(bounds.north - lastBounds.north) < 0.05 &&
-        Math.abs(bounds.south - lastBounds.south) < 0.05 &&
-        Math.abs(bounds.east - lastBounds.east) < 0.05 &&
-        Math.abs(bounds.west - lastBounds.west) < 0.05
+        Math.abs(bounds.north - lastBounds.north) < 0.01 &&
+        Math.abs(bounds.south - lastBounds.south) < 0.01 &&
+        Math.abs(bounds.east - lastBounds.east) < 0.01 &&
+        Math.abs(bounds.west - lastBounds.west) < 0.01
       ) {
         if (import.meta.env.DEV) {
           console.log("📍 Bounds haven't changed significantly, skipping");
@@ -54,14 +54,21 @@ export const useMapHotspots = (initialCenter = null, initialZoom = 10) => {
         );
 
         if (result.success) {
-          setHotspots(result.data);
-          setLastBounds(bounds);
+          // Only update if we have data or if it's a fresh request
+          if (result.data && result.data.length > 0) {
+            setHotspots(result.data);
+            setLastBounds(bounds);
+          } else if (!result.cached) {
+            // Only clear hotspots if it's a fresh request with no data
+            setHotspots([]);
+            setLastBounds(bounds);
+          }
 
           // Replace stats instead of accumulating
           setStats({
-            total: result.data.length,
-            cached: result.cached ? result.data.length : 0,
-            fresh: result.cached ? 0 : result.data.length,
+            total: result.data ? result.data.length : 0,
+            cached: result.cached ? (result.data ? result.data.length : 0) : 0,
+            fresh: result.cached ? 0 : result.data ? result.data.length : 0,
           });
 
           // Only log in development
@@ -89,13 +96,13 @@ export const useMapHotspots = (initialCenter = null, initialZoom = 10) => {
 
   // Debounced hotspot loading to prevent too many API calls during map movement
   const loadHotspotsDebounced = useCallback(
-    (bounds, zoom, delay = 2000) => {
+    (bounds, zoom, delay = 500) => {
       // Clear existing timeout
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
 
-      // Set new timeout with longer delay
+      // Set new timeout with shorter delay for better responsiveness
       timeoutRef.current = setTimeout(() => {
         loadHotspots(bounds, zoom);
       }, delay);
@@ -174,8 +181,8 @@ export const useMapHotspots = (initialCenter = null, initialZoom = 10) => {
         return;
       }
 
-      // Skip if bounds haven't changed significantly (moved to loadHotspots)
-      loadHotspotsDebounced(bounds, zoom, 3000); // Much longer debounce delay
+      // Use shorter debounce for better responsiveness
+      loadHotspotsDebounced(bounds, zoom, 800); // Reduced debounce delay
     },
     [loadHotspotsDebounced]
   );

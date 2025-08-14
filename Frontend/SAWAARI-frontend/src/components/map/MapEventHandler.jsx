@@ -8,7 +8,7 @@ export default function MapEventHandler({ onBoundsChange, onLocationChange }) {
 
   useMapEvents({
     moveend: () => {
-      // Debounce bounds change events with longer delay
+      // Debounce bounds change events with reasonable delay
       if (boundsChangeTimeoutRef.current) {
         clearTimeout(boundsChangeTimeoutRef.current);
       }
@@ -25,11 +25,11 @@ export default function MapEventHandler({ onBoundsChange, onLocationChange }) {
         };
 
         onBoundsChange(boundsObj, zoom);
-      }, 3000); // Much longer delay to prevent spam
+      }, 500); // Reduced delay for better responsiveness
     },
 
     zoomend: () => {
-      // Debounce zoom events too
+      // Immediate response for zoom changes
       if (boundsChangeTimeoutRef.current) {
         clearTimeout(boundsChangeTimeoutRef.current);
       }
@@ -46,7 +46,7 @@ export default function MapEventHandler({ onBoundsChange, onLocationChange }) {
         };
 
         onBoundsChange(boundsObj, zoom);
-      }, 2000); // Longer delay for zoom too
+      }, 200); // Much faster response for zoom
     },
 
     locationfound: (e) => {

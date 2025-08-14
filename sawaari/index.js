@@ -14,36 +14,30 @@ require("dotenv").config();
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server, {
-  cors: {
-    origin: [
+// Parse CORS origins from environment variable
+const corsOrigins = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(",").map((origin) => origin.trim())
+  : [
       "http://localhost:3000",
       "http://localhost:5173", // Vite default port
       "http://127.0.0.1:3000",
       "http://127.0.0.1:5173",
-      "https://sawaari.vercel.app",
-      "https://sawaari-vibhor-sharmas-projects.vercel.app",
-      "https://sawaari-nums1xo72-vibhor-sharmas-projects.vercel.app",
-    ],
+    ];
+
+const io = socketIo(server, {
+  cors: {
+    origin: corsOrigins,
     methods: ["GET", "POST", "PUT"],
     credentials: true,
   },
 });
 
-const port = process.env.PORT || 5000;
+const port = process.env.PORT;
 
 // Middleware
 app.use(
   cors({
-    origin: [
-      "http://localhost:3000",
-      "http://localhost:5173", // Vite default port
-      "http://127.0.0.1:3000",
-      "http://127.0.0.1:5173",
-      "https://sawaari.vercel.app",
-      "https://sawaari-vibhor-sharmas-projects.vercel.app",
-      "https://sawaari-nums1xo72-vibhor-sharmas-projects.vercel.app",
-    ],
+    origin: corsOrigins,
     credentials: true,
   })
 );

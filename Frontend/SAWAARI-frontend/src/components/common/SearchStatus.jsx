@@ -16,38 +16,40 @@ const SearchStatus = ({ searchState, onCancel }) => {
   };
 
   return (
-    <div className="bg-gradient-to-r from-emerald-500/20 to-blue-500/20 backdrop-blur-sm rounded-2xl p-5 mb-6 border border-emerald-400/20 shadow-xl">
+    <div className="bg-gradient-to-r from-emerald-500/20 to-blue-500/20 backdrop-blur-sm rounded-lg sm:rounded-2xl p-3 sm:p-5 mb-4 sm:mb-6 border border-emerald-400/20 shadow-xl">
       {/* Header with Status */}
-      <div className="flex items-center justify-center gap-3 mb-4">
+      <div className="flex items-center justify-center gap-2 sm:gap-3 mb-3 sm:mb-4">
         <div className="relative">
-          <div className="w-4 h-4 bg-emerald-400 rounded-full animate-pulse"></div>
-          <div className="absolute inset-0 w-4 h-4 bg-emerald-400 rounded-full animate-ping opacity-60"></div>
+          <div className="w-3 h-3 sm:w-4 sm:h-4 bg-emerald-400 rounded-full animate-pulse"></div>
+          <div className="absolute inset-0 w-3 h-3 sm:w-4 sm:h-4 bg-emerald-400 rounded-full animate-ping opacity-60"></div>
         </div>
-        <span className="text-white font-bold text-lg">Search Active</span>
+        <span className="text-white font-bold text-sm sm:text-lg">
+          Search Active
+        </span>
       </div>
 
       {/* Route Display */}
-      <div className="text-center mb-4">
-        <div className="inline-flex items-center gap-3 bg-black/30 rounded-xl px-4 py-2">
-          <span className="text-white font-medium text-sm">
+      <div className="text-center mb-3 sm:mb-4">
+        <div className="inline-flex items-center gap-2 sm:gap-3 bg-black/30 rounded-lg px-3 py-1.5 sm:px-4 sm:py-2">
+          <span className="text-white font-medium text-xs sm:text-sm truncate max-w-[80px] sm:max-w-none">
             {searchState.source}
           </span>
           <div className="flex items-center gap-1">
-            <div className="w-2 h-2 bg-sawaari-yellow rounded-full"></div>
-            <div className="w-2 h-2 bg-sawaari-yellow rounded-full opacity-60"></div>
-            <div className="w-2 h-2 bg-sawaari-yellow rounded-full opacity-30"></div>
+            <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-sawaari-yellow rounded-full"></div>
+            <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-sawaari-yellow rounded-full opacity-60"></div>
+            <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-sawaari-yellow rounded-full opacity-30"></div>
           </div>
-          <span className="text-white font-medium text-sm">
+          <span className="text-white font-medium text-xs sm:text-sm truncate max-w-[80px] sm:max-w-none">
             {searchState.destination}
           </span>
         </div>
       </div>
 
       {/* Timer and Cancel Row */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2 bg-black/30 backdrop-blur-sm rounded-xl px-4 py-2">
+      <div className="flex items-center justify-between mb-3 sm:mb-4">
+        <div className="flex items-center gap-1.5 sm:gap-2 bg-black/30 backdrop-blur-sm rounded-lg px-2.5 py-1.5 sm:px-4 sm:py-2">
           <svg
-            className="w-4 h-4 text-white/80"
+            className="w-3 h-3 sm:w-4 sm:h-4 text-white/80"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -59,18 +61,18 @@ const SearchStatus = ({ searchState, onCancel }) => {
               d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
             />
           </svg>
-          <span className="text-white font-mono text-sm font-bold">
+          <span className="text-white font-mono text-xs sm:text-sm font-bold">
             {formatTime(searchState.timeRemaining)}
           </span>
         </div>
 
         <button
           onClick={onCancel}
-          className="bg-red-500/80 hover:bg-red-500 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 flex items-center gap-2 hover:scale-105 shadow-lg"
+          className="bg-red-500/80 hover:bg-red-500 text-white px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-300 flex items-center gap-1 sm:gap-2 hover:scale-105 shadow-lg"
           title="Cancel search"
         >
           <svg
-            className="w-4 h-4"
+            className="w-3 h-3 sm:w-4 sm:h-4"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -82,7 +84,7 @@ const SearchStatus = ({ searchState, onCancel }) => {
               d="M6 18L18 6M6 6l12 12"
             />
           </svg>
-          <span>Cancel</span>
+          <span className="hidden sm:inline">Cancel</span>
         </button>
       </div>
 

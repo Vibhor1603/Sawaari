@@ -7,7 +7,7 @@ let client = null;
 // Connect to MongoDB
 async function connectDB() {
   try {
-    const mongoUrl = process.env.MONGO_URL || "mongodb://localhost:27017";
+    const mongoUrl = process.env.MONGO_URL;
     const dbName = process.env.DB_NAME || "Sawaari";
 
     client = new MongoClient(mongoUrl);

@@ -19,13 +19,13 @@ export const useBoundsHotspots = () => {
         return;
       }
 
-      // Check if bounds are the same as last request
+      // Check if bounds are the same as last request (reduced threshold)
       if (
         lastBounds &&
-        Math.abs(bounds.north - lastBounds.north) < 0.01 &&
-        Math.abs(bounds.south - lastBounds.south) < 0.01 &&
-        Math.abs(bounds.east - lastBounds.east) < 0.01 &&
-        Math.abs(bounds.west - lastBounds.west) < 0.01
+        Math.abs(bounds.north - lastBounds.north) < 0.005 &&
+        Math.abs(bounds.south - lastBounds.south) < 0.005 &&
+        Math.abs(bounds.east - lastBounds.east) < 0.005 &&
+        Math.abs(bounds.west - lastBounds.west) < 0.005
       ) {
         return;
       }
@@ -41,8 +41,15 @@ export const useBoundsHotspots = () => {
         );
 
         if (result.success) {
-          setHotspots(result.data || []);
-          setLastBounds(bounds);
+          // Only update if we have data
+          if (result.data && result.data.length > 0) {
+            setHotspots(result.data);
+            setLastBounds(bounds);
+          } else if (!result.cached) {
+            // Only clear if it's a fresh request with no data
+            setHotspots([]);
+            setLastBounds(bounds);
+          }
         } else {
           setError(result.error || "Failed to load hotspots");
         }

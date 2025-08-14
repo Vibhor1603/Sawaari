@@ -1,6 +1,5 @@
 /* eslint-disable react/prop-types */
 // Enhanced Map component with geolocation-based hotspot loading
-import { useEffect, useRef, useState } from "react";
 import { MapContainer, TileLayer } from "react-leaflet";
 import { useMapHotspots } from "../../hooks/useMapHotspots";
 import HotspotMarkers from "../../features/hotspots/HotspotMarkers";
@@ -78,7 +77,6 @@ export default function EnhancedMap({
     hotspots,
     loading,
     error,
-    stats,
     onMapBoundsChange,
     onLocationChange,
     refreshHotspots,

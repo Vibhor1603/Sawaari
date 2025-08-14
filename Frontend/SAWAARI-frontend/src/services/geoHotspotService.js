@@ -3,16 +3,16 @@ class GeoHotspotService {
   constructor() {
     this.baseURL = import.meta.env.VITE_API_BASE_URL;
     this.cache = new Map();
-    this.cacheTimeout = 15 * 60 * 1000; // 15 minutes cache (increased)
+    this.cacheTimeout = 5 * 60 * 1000; // 5 minutes cache for more responsive updates
     this.pendingRequests = new Map(); // Track pending requests to prevent duplicates
   }
 
-  // Generate cache key for bounds
+  // Generate cache key for bounds (reduced precision for better cache hits)
   generateBoundsKey(bounds, zoom) {
     const { north, south, east, west } = bounds;
-    return `bounds_${north.toFixed(4)}_${south.toFixed(4)}_${east.toFixed(
-      4
-    )}_${west.toFixed(4)}_${zoom}`;
+    return `bounds_${north.toFixed(3)}_${south.toFixed(3)}_${east.toFixed(
+      3
+    )}_${west.toFixed(3)}_${zoom}`;
   }
 
   // Generate cache key for location

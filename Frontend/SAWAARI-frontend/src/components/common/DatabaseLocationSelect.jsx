@@ -1,3 +1,5 @@
+/* eslint-disable no-unused-vars */
+/* eslint-disable react/prop-types */
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Select, { components } from "react-select";
 import locationService from "../../services/locationService";
@@ -5,7 +7,7 @@ import locationService from "../../services/locationService";
 const DatabaseLocationSelect = ({
   value,
   onChange,
-  placeholder = "Select location...",
+  placeholder = "Search location",
   label,
   icon,
   required = false,
@@ -194,16 +196,16 @@ const DatabaseLocationSelect = ({
   const customStyles = {
     control: (provided, state) => ({
       ...provided,
-      backgroundColor: "rgba(0, 0, 0, 0.3)",
+      backgroundColor: "rgba(0, 0, 0, 0.4)",
       border: state.isFocused
-        ? "2px solid #f4b942"
-        : "1px solid rgba(255, 255, 255, 0.2)",
+        ? "1px solid #f4b942"
+        : "1px solid rgba(255, 255, 255, 0.1)",
       borderRadius: "0.5rem",
       padding: "0.125rem",
       minHeight: "40px",
-      boxShadow: state.isFocused ? "0 0 0 2px rgba(244, 185, 66, 0.2)" : "none",
+      boxShadow: "none",
       "&:hover": {
-        border: "1px solid rgba(255, 255, 255, 0.3)",
+        border: "1px solid rgba(255, 255, 255, 0.2)",
       },
       transition: "all 0.3s ease",
     }),
@@ -225,9 +227,10 @@ const DatabaseLocationSelect = ({
     menu: (provided) => ({
       ...provided,
       backgroundColor: "#000000",
-      border: "1px solid rgba(255, 255, 255, 0.1)",
+      border: "1px solid rgba(255, 255, 255, 0.05)",
       borderRadius: "0.5rem",
       zIndex: 9999,
+      boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.3)",
     }),
     menuList: (provided) => ({
       ...provided,

@@ -164,14 +164,14 @@ export default function RouteInfo() {
           errorMessage.includes("not found")
         ) {
           setError(
-            "📍 Source location not found. Please select a valid location from the available rickshaw points."
+            "Source location not found. Please select a valid location from the available rickshaw points."
           );
         } else if (
           errorMessage.includes("Destination location") &&
           errorMessage.includes("not found")
         ) {
           setError(
-            "📍 Destination not found. Please select a valid destination from the available rickshaw points."
+            "Destination not found. Please select a valid destination from the available rickshaw points."
           );
         } else if (
           errorMessage.includes("No route found") ||
@@ -192,7 +192,7 @@ export default function RouteInfo() {
         );
       } else if (error.message.includes("not found")) {
         setError(
-          "📍 Location not found. Please select valid locations from the available rickshaw points on the map."
+          "Location not found. Please select valid locations from the available rickshaw points on the map."
         );
       } else {
         setError("⚠️ Unable to calculate route. Please try again.");
@@ -242,7 +242,7 @@ export default function RouteInfo() {
   };
 
   return (
-    <div className="min-h-screen bg-black pt-10 relative overflow-hidden">
+    <div className="min-h-screen bg-black pt-16 sm:pt-20 relative overflow-hidden">
       {/* Creative Background Elements */}
       <div className="absolute inset-0 pointer-events-none">
         {/* Animated Route Lines */}
@@ -280,22 +280,22 @@ export default function RouteInfo() {
       </div>
 
       {/* Main Content Area */}
-      <div className="container-sawaari py-10 sm:py-20">
-        <div className="grid lg:grid-cols-3 gap-8">
+      <div className="container-sawaari py-6 sm:py-10 lg:py-20">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
           {/* Left Column - Route Form or Results */}
-          <div className="lg:col-span-1 space-y-6">
+          <div className="lg:col-span-1 space-y-4 sm:space-y-6 order-1 lg:order-1">
             {!showResults ? (
               /* Route Form */
-              <div className="glass-strong rounded-2xl p-6">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-12 h-12 bg-sawaari-yellow-muted border border-sawaari-yellow-border rounded-full flex items-center justify-center">
-                    <span className="text-xl">🗺️</span>
+              <div className="bg-black/20 backdrop-blur-sm border border-white/10 rounded-lg sm:rounded-xl p-3 sm:p-6">
+                <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-6">
+                  <div className="w-8 h-8 sm:w-12 sm:h-12 bg-sawaari-yellow/20 rounded-full flex items-center justify-center">
+                    <span className="text-sm sm:text-xl">🗺️</span>
                   </div>
                   <div>
-                    <h1 className="text-xl font-bold text-white text-readable">
+                    <h1 className="text-lg sm:text-xl font-bold text-white text-readable">
                       Route Planner
                     </h1>
-                    <p className="text-sm text-gray-200 text-readable-secondary">
+                    <p className="text-xs sm:text-sm text-gray-200 text-readable-secondary hidden sm:block">
                       Smart navigation
                     </p>
                   </div>
@@ -321,7 +321,7 @@ export default function RouteInfo() {
                         {error.includes("No direct route available") && (
                           <div className="mt-3 p-3 bg-black/30 rounded-lg">
                             <p className="text-xs text-gray-300 mb-2">
-                              💡 <strong>Suggestions:</strong>
+                              <strong>Suggestions:</strong>
                             </p>
                             <ul className="text-xs text-gray-300 space-y-1">
                               <li>
@@ -344,13 +344,13 @@ export default function RouteInfo() {
                   </div>
                 )}
 
-                <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                <div className="mt-3 sm:mt-4 p-2 sm:p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
                   <p className="text-xs text-gray-200">
-                    <span className="text-blue-400 font-semibold">
-                      📍 Note:
-                    </span>{" "}
-                    Stay tuned and keep coming back. More locations and routes
-                    will be added soon!
+                    <span className="text-blue-400 font-semibold">Note:</span>{" "}
+                    <span className="hidden sm:inline">
+                      Stay tuned and keep coming back.{" "}
+                    </span>
+                    More locations coming soon!
                   </p>
                 </div>
               </div>
@@ -365,24 +365,24 @@ export default function RouteInfo() {
               />
             ) : (
               /* Single Route Results */
-              <div className="glass-strong rounded-2xl p-6">
-                <div className="flex items-center justify-between mb-6">
+              <div className="glass-strong rounded-xl sm:rounded-2xl p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 gap-3 sm:gap-0">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-sawaari-yellow-muted border border-sawaari-yellow-border rounded-full flex items-center justify-center">
-                      <span className="text-xl">✅</span>
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-sawaari-yellow-muted border border-sawaari-yellow-border rounded-full flex items-center justify-center">
+                      <span className="text-lg sm:text-xl">✅</span>
                     </div>
                     <div>
-                      <h3 className="text-xl font-bold text-white text-readable">
+                      <h3 className="text-lg sm:text-xl font-bold text-white text-readable">
                         Route Found
                       </h3>
-                      <p className="text-sm text-gray-200 text-readable-secondary">
+                      <p className="text-xs sm:text-sm text-gray-200 text-readable-secondary">
                         {source} → {destination}
                       </p>
                     </div>
                   </div>
                   <button
                     onClick={handleNewSearch}
-                    className="px-2 sm:px-3 py-2 bg-sawaari-yellow text-black rounded-lg hover:bg-sawaari-yellow/80 transition-colors text-sm font-semibold"
+                    className="px-3 py-2 bg-sawaari-yellow text-black rounded-lg hover:bg-sawaari-yellow/80 transition-colors text-xs sm:text-sm font-semibold self-start sm:self-auto"
                   >
                     New Search
                   </button>
@@ -500,12 +500,12 @@ export default function RouteInfo() {
           </div>
 
           {/* Right Column - Map */}
-          <div className="lg:col-span-2">
-            <div className="glass-strong rounded-2xl p-4">
-              <h2 className="text-xl font-bold text-white mb-4 text-readable">
+          <div className="lg:col-span-2 order-2 lg:order-2">
+            <div className="glass-strong rounded-xl sm:rounded-2xl p-3 sm:p-4">
+              <h2 className="text-lg sm:text-xl font-bold text-white mb-3 sm:mb-4 text-readable">
                 Interactive Route Map
               </h2>
-              <div className="h-[500px] rounded-xl overflow-hidden border border-white/10 relative">
+              <div className="h-[50vh] sm:h-[60vh] lg:h-[500px] rounded-lg sm:rounded-xl overflow-hidden border border-white/10 relative">
                 {hotspotsLoading && (
                   <div className="absolute top-3 right-3 bg-black/80 text-white px-3 py-2 rounded-lg text-xs flex items-center gap-2 z-[1000]">
                     <div className="w-3 h-3 border-2 border-white/40 border-t-sawaari-yellow rounded-full animate-spin" />

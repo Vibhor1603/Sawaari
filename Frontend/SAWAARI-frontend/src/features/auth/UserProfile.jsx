@@ -113,9 +113,7 @@ const UserProfile = () => {
     setPasswordResetLoading(true);
     try {
       const response = await fetch(
-        `${
-          import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"
-        }/forgot-password/send-otp`,
+        `${import.meta.env.VITE_API_BASE_URL}/forgot-password/send-otp`,
         {
           method: "POST",
           headers: {
@@ -158,9 +156,7 @@ const UserProfile = () => {
     setPasswordResetLoading(true);
     try {
       const response = await fetch(
-        `${
-          import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"
-        }/forgot-password/verify-otp`,
+        `${import.meta.env.VITE_API_BASE_URL}/forgot-password/verify-otp`,
         {
           method: "POST",
           headers: {
@@ -210,9 +206,7 @@ const UserProfile = () => {
     setPasswordResetLoading(true);
     try {
       const response = await fetch(
-        `${
-          import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"
-        }/forgot-password/reset`,
+        `${import.meta.env.VITE_API_BASE_URL}/forgot-password/reset`,
         {
           method: "POST",
           headers: {
