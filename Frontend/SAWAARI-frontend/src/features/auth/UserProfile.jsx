@@ -287,10 +287,12 @@ const UserProfile = () => {
   // Show loading state while checking authentication
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-black pt-20 flex items-center justify-center">
+      <div className="min-h-screen bg-black pt-16 sm:pt-20 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-sawaari-yellow border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-200">Loading profile...</p>
+          <div className="w-8 h-8 sm:w-12 sm:h-12 border-4 border-sawaari-yellow border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-200 text-sm sm:text-base">
+            Loading profile...
+          </p>
         </div>
       </div>
     );
@@ -302,44 +304,47 @@ const UserProfile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-black pt-20 relative">
+    <div className="min-h-screen bg-black pt-16 mt-10 sm:pt-20 relative">
       <FloatingRickshaws />
 
       <div className="container-sawaari relative z-10">
         {/* Header */}
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-sawaari-yellow/20 to-sawaari-green/20 border border-sawaari-yellow/30 rounded-lg px-4 py-2 mb-6">
-            <span className="text-xl">👤</span>
-            <span className="text-sm font-semibold text-sawaari-yellow">
+        <div className="text-center mb-8 sm:mb-12">
+          <div className="inline-flex items-center gap-1.5 sm:gap-2 bg-gradient-to-r from-sawaari-yellow/20 to-sawaari-green/20 border border-sawaari-yellow/30 rounded-lg px-3 py-1.5 sm:px-4 sm:py-2 mb-4 sm:mb-6">
+            <span className="text-lg sm:text-xl">👤</span>
+            <span className="text-xs sm:text-sm font-semibold text-sawaari-yellow">
               User Profile
             </span>
           </div>
-          <h1 className="text-4xl lg:text-5xl font-bold text-white mb-4">
+          <h1 className="text-2xl sm:text-4xl lg:text-5xl font-bold text-white mb-2 sm:mb-4">
             Manage Your Account
           </h1>
-          <p className="text-xl text-gray-200 max-w-2xl mx-auto">
+          <p className="text-sm sm:text-xl text-gray-200 max-w-2xl mx-auto px-4">
             Update your profile information and manage your account settings
           </p>
         </div>
 
-        <div className="max-w-4xl mx-auto grid md:grid-cols-2 gap-8">
+        <div className="max-w-4xl mx-auto grid md:grid-cols-2 gap-4 sm:gap-8 px-4">
           {/* Profile Information Card */}
           <div className="card">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-white">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 gap-3">
+              <h2 className="text-lg sm:text-2xl font-bold text-white">
                 Profile Information
               </h2>
               <button
                 onClick={() => setIsEditing(!isEditing)}
-                className="px-4 py-2 bg-sawaari-yellow text-black rounded-lg hover:bg-sawaari-yellow/80 transition-colors"
+                className="px-3 py-1.5 sm:px-4 sm:py-2 bg-sawaari-yellow text-black rounded-lg hover:bg-sawaari-yellow/80 transition-colors text-sm sm:text-base font-medium"
               >
                 {isEditing ? "Cancel" : "Edit Profile"}
               </button>
             </div>
 
-            <form onSubmit={handleUpdateProfile} className="space-y-6">
+            <form
+              onSubmit={handleUpdateProfile}
+              className="space-y-4 sm:space-y-6"
+            >
               <div>
-                <label className="block text-sm font-semibold text-sawaari-yellow mb-2">
+                <label className="block text-xs sm:text-sm font-semibold text-sawaari-yellow mb-1.5 sm:mb-2">
                   Full Name
                 </label>
                 <input
@@ -352,7 +357,7 @@ const UserProfile = () => {
                     }))
                   }
                   disabled={!isEditing}
-                  className={`w-full p-3 rounded-lg text-white transition-all duration-300 ${
+                  className={`w-full p-2.5 sm:p-3 rounded-lg text-white transition-all duration-300 text-sm sm:text-base ${
                     isEditing
                       ? "bg-black/30 border border-white/20 focus:border-sawaari-yellow focus:ring-2 focus:ring-sawaari-yellow/20"
                       : "bg-black/20 border border-white/10 cursor-not-allowed"
@@ -362,14 +367,14 @@ const UserProfile = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-sawaari-yellow mb-2">
+                <label className="block text-xs sm:text-sm font-semibold text-sawaari-yellow mb-1.5 sm:mb-2">
                   Email Address
                 </label>
                 <input
                   type="email"
                   value={profileData.email}
                   disabled
-                  className="w-full p-3 bg-black/20 border border-white/10 rounded-lg text-gray-400 cursor-not-allowed"
+                  className="w-full p-2.5 sm:p-3 bg-black/20 border border-white/10 rounded-lg text-gray-400 cursor-not-allowed text-sm sm:text-base"
                 />
                 <p className="text-xs text-gray-400 mt-1">
                   Email cannot be changed
@@ -377,7 +382,7 @@ const UserProfile = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-sawaari-yellow mb-2">
+                <label className="block text-xs sm:text-sm font-semibold text-sawaari-yellow mb-1.5 sm:mb-2">
                   Phone Number
                 </label>
                 <input
@@ -390,7 +395,7 @@ const UserProfile = () => {
                     }))
                   }
                   disabled={!isEditing}
-                  className={`w-full p-3 rounded-lg text-white transition-all duration-300 ${
+                  className={`w-full p-2.5 sm:p-3 rounded-lg text-white transition-all duration-300 text-sm sm:text-base ${
                     isEditing
                       ? "bg-black/30 border border-white/20 focus:border-sawaari-yellow focus:ring-2 focus:ring-sawaari-yellow/20"
                       : "bg-black/20 border border-white/10 cursor-not-allowed"
@@ -403,7 +408,7 @@ const UserProfile = () => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full btn-primary"
+                  className="w-full btn-primary text-sm sm:text-base py-2.5 sm:py-3"
                 >
                   {loading ? "Updating..." : "Update Profile"}
                 </button>
@@ -413,36 +418,37 @@ const UserProfile = () => {
 
           {/* Security Settings Card */}
           <div className="card">
-            <h2 className="text-2xl font-bold text-white mb-6">
+            <h2 className="text-lg sm:text-2xl font-bold text-white mb-4 sm:mb-6">
               Security Settings
             </h2>
 
-            <div className="space-y-6">
-              <div className="p-4 bg-black/30 border border-white/10 rounded-lg">
-                <h3 className="text-lg font-semibold text-white mb-2">
+            <div className="space-y-4 sm:space-y-6">
+              <div className="p-3 sm:p-4 bg-black/30 border border-white/10 rounded-lg">
+                <h3 className="text-base sm:text-lg font-semibold text-white mb-1.5 sm:mb-2">
                   Password
                 </h3>
-                <p className="text-gray-300 text-sm mb-4">
+                <p className="text-gray-300 text-xs sm:text-sm mb-3 sm:mb-4">
                   Keep your account secure by using a strong password
                 </p>
                 <div className="space-y-2">
                   <button
                     onClick={() => setShowPasswordReset(true)}
-                    className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                    className="w-full px-3 py-2 sm:px-4 sm:py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm sm:text-base"
                   >
                     Reset Password
                   </button>
-                  o
                 </div>
               </div>
 
-              <div className="p-4 bg-black/30 border border-white/10 rounded-lg">
-                <h3 className="text-lg font-semibold text-white mb-2">
+              <div className="p-3 sm:p-4 bg-black/30 border border-white/10 rounded-lg">
+                <h3 className="text-base sm:text-lg font-semibold text-white mb-1.5 sm:mb-2">
                   Account Status
                 </h3>
                 <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 bg-green-500 rounded-full"></span>
-                  <span className="text-green-400 text-sm">Active Account</span>
+                  <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-green-500 rounded-full"></span>
+                  <span className="text-green-400 text-xs sm:text-sm">
+                    Active Account
+                  </span>
                 </div>
               </div>
             </div>
@@ -451,14 +457,14 @@ const UserProfile = () => {
 
         {/* Password Reset Modal */}
         {showPasswordReset && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-neutral-900 rounded-xl w-full max-w-md border border-neutral-700 relative">
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
+            <div className="bg-neutral-900 rounded-xl w-full max-w-sm sm:max-w-md border border-neutral-700 relative max-h-[90vh] overflow-y-auto">
               <button
                 onClick={resetPasswordResetFlow}
-                className="absolute top-4 right-4 w-8 h-8 bg-neutral-800 hover:bg-neutral-700 rounded-full flex items-center justify-center text-white transition-colors"
+                className="absolute top-3 right-3 sm:top-4 sm:right-4 w-7 h-7 sm:w-8 sm:h-8 bg-neutral-800 hover:bg-neutral-700 rounded-full flex items-center justify-center text-white transition-colors"
               >
                 <svg
-                  className="w-4 h-4"
+                  className="w-3.5 h-3.5 sm:w-4 sm:h-4"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -472,18 +478,18 @@ const UserProfile = () => {
                 </svg>
               </button>
 
-              <div className="p-6">
-                <h3 className="text-xl font-bold text-white mb-4">
+              <div className="p-4 sm:p-6">
+                <h3 className="text-lg sm:text-xl font-bold text-white mb-3 sm:mb-4 pr-8">
                   Reset Password
                 </h3>
 
                 {/* Step Indicator */}
-                <div className="flex items-center justify-center mb-6">
-                  <div className="flex items-center space-x-2">
+                <div className="flex items-center justify-center mb-4 sm:mb-6">
+                  <div className="flex items-center space-x-1.5 sm:space-x-2">
                     {[1, 2, 3].map((stepNumber) => (
                       <div key={stepNumber} className="flex items-center">
                         <div
-                          className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
+                          className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
                             passwordResetStep >= stepNumber
                               ? "bg-sawaari-yellow text-black"
                               : "bg-white/20 text-gray-400"
@@ -493,7 +499,7 @@ const UserProfile = () => {
                         </div>
                         {stepNumber < 3 && (
                           <div
-                            className={`w-6 h-0.5 mx-1 transition-all duration-300 ${
+                            className={`w-4 sm:w-6 h-0.5 mx-1 transition-all duration-300 ${
                               passwordResetStep > stepNumber
                                 ? "bg-sawaari-yellow"
                                 : "bg-white/20"
@@ -507,15 +513,15 @@ const UserProfile = () => {
 
                 {/* Step 1: Send OTP */}
                 {passwordResetStep === 1 && (
-                  <div className="space-y-4">
-                    <p className="text-gray-300 text-sm">
+                  <div className="space-y-3 sm:space-y-4">
+                    <p className="text-gray-300 text-xs sm:text-sm">
                       We&apos;ll send an OTP to your email address:{" "}
-                      <strong>{user?.email}</strong>
+                      <strong className="break-all">{user?.email}</strong>
                     </p>
                     <button
                       onClick={handlePasswordResetRequest}
                       disabled={passwordResetLoading}
-                      className="w-full btn-primary"
+                      className="w-full btn-primary text-sm sm:text-base py-2.5 sm:py-3"
                     >
                       {passwordResetLoading ? "Sending OTP..." : "Send OTP"}
                     </button>
@@ -524,15 +530,20 @@ const UserProfile = () => {
 
                 {/* Step 2: Verify OTP */}
                 {passwordResetStep === 2 && (
-                  <form onSubmit={handleOtpVerification} className="space-y-4">
+                  <form
+                    onSubmit={handleOtpVerification}
+                    className="space-y-3 sm:space-y-4"
+                  >
                     {/* OTP Info */}
-                    <div className="bg-black/40 rounded-lg p-3 space-y-1">
-                      <div className="flex items-center gap-2 text-sawaari-yellow text-sm">
+                    <div className="bg-black/40 rounded-lg p-2.5 sm:p-3 space-y-1">
+                      <div className="flex items-center gap-2 text-sawaari-yellow text-xs sm:text-sm">
                         <span>📧</span>
-                        <span>OTP sent to {user?.email}</span>
+                        <span className="break-all">
+                          OTP sent to {user?.email}
+                        </span>
                       </div>
                       {otpData.timeRemaining > 0 && (
-                        <div className="flex items-center gap-2 text-gray-200 text-sm">
+                        <div className="flex items-center gap-2 text-gray-200 text-xs sm:text-sm">
                           <span>⏰</span>
                           <span>
                             Expires in {formatTime(otpData.timeRemaining)}
@@ -542,7 +553,7 @@ const UserProfile = () => {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-semibold text-sawaari-yellow mb-2">
+                      <label className="block text-xs sm:text-sm font-semibold text-sawaari-yellow mb-1.5 sm:mb-2">
                         Enter OTP
                       </label>
                       <input
@@ -555,7 +566,7 @@ const UserProfile = () => {
                           }))
                         }
                         placeholder="Enter 6-digit OTP"
-                        className="w-full p-3 bg-black/30 border border-white/20 rounded-lg text-white focus:border-sawaari-yellow focus:ring-2 focus:ring-sawaari-yellow/20 text-center text-lg tracking-widest"
+                        className="w-full p-2.5 sm:p-3 bg-black/30 border border-white/20 rounded-lg text-white focus:border-sawaari-yellow focus:ring-2 focus:ring-sawaari-yellow/20 text-center text-base sm:text-lg tracking-widest"
                         maxLength={6}
                         disabled={
                           passwordResetLoading || otpData.timeRemaining === 0
@@ -570,7 +581,7 @@ const UserProfile = () => {
                         disabled={
                           passwordResetLoading || otpData.timeRemaining === 0
                         }
-                        className={`w-full btn-primary ${
+                        className={`w-full btn-primary text-sm sm:text-base py-2.5 sm:py-3 ${
                           passwordResetLoading || otpData.timeRemaining === 0
                             ? "opacity-50 cursor-not-allowed"
                             : ""
@@ -583,7 +594,7 @@ const UserProfile = () => {
                         <button
                           type="button"
                           onClick={() => setPasswordResetStep(1)}
-                          className="w-full px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                          className="w-full px-3 py-2 sm:px-4 sm:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm sm:text-base"
                         >
                           Send New OTP
                         </button>
@@ -594,9 +605,12 @@ const UserProfile = () => {
 
                 {/* Step 3: Set New Password */}
                 {passwordResetStep === 3 && (
-                  <form onSubmit={handlePasswordReset} className="space-y-4">
+                  <form
+                    onSubmit={handlePasswordReset}
+                    className="space-y-3 sm:space-y-4"
+                  >
                     <div>
-                      <label className="block text-sm font-semibold text-sawaari-yellow mb-2">
+                      <label className="block text-xs sm:text-sm font-semibold text-sawaari-yellow mb-1.5 sm:mb-2">
                         New Password
                       </label>
                       <input
@@ -609,7 +623,7 @@ const UserProfile = () => {
                           }))
                         }
                         placeholder="Enter new password (min 6 characters)"
-                        className="w-full p-3 bg-black/30 border border-white/20 rounded-lg text-white focus:border-sawaari-yellow focus:ring-2 focus:ring-sawaari-yellow/20"
+                        className="w-full p-2.5 sm:p-3 bg-black/30 border border-white/20 rounded-lg text-white focus:border-sawaari-yellow focus:ring-2 focus:ring-sawaari-yellow/20 text-sm sm:text-base"
                         minLength={6}
                         required
                       />
@@ -646,7 +660,7 @@ const UserProfile = () => {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-semibold text-sawaari-yellow mb-2">
+                      <label className="block text-xs sm:text-sm font-semibold text-sawaari-yellow mb-1.5 sm:mb-2">
                         Confirm New Password
                       </label>
                       <input
@@ -659,7 +673,7 @@ const UserProfile = () => {
                           }))
                         }
                         placeholder="Confirm new password"
-                        className={`w-full p-3 bg-black/30 border rounded-lg text-white focus:ring-2 transition-all duration-300 ${
+                        className={`w-full p-2.5 sm:p-3 bg-black/30 border rounded-lg text-white focus:ring-2 transition-all duration-300 text-sm sm:text-base ${
                           passwordResetData.confirmPassword &&
                           passwordResetData.newPassword !==
                             passwordResetData.confirmPassword
@@ -688,18 +702,18 @@ const UserProfile = () => {
                       )}
                     </div>
 
-                    <div className="flex gap-3 pt-4">
+                    <div className="flex gap-2 sm:gap-3 pt-2 sm:pt-4">
                       <button
                         type="button"
                         onClick={resetPasswordResetFlow}
-                        className="flex-1 px-4 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                        className="flex-1 px-3 py-2 sm:px-4 sm:py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm sm:text-base"
                       >
                         Cancel
                       </button>
                       <button
                         type="submit"
                         disabled={passwordResetLoading}
-                        className="flex-1 btn-primary"
+                        className="flex-1 btn-primary text-sm sm:text-base py-2 sm:py-3"
                       >
                         {passwordResetLoading
                           ? "Resetting..."
@@ -709,7 +723,7 @@ const UserProfile = () => {
                   </form>
                 )}
 
-                <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                <div className="mt-3 sm:mt-4 p-2.5 sm:p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
                   <p className="text-xs text-blue-400">
                     💡 <strong>Security Tips:</strong>
                   </p>

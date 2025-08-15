@@ -95,7 +95,8 @@ function cleanHotspotsData(hotspots) {
 
 // Create graph from hotspots data
 function createGraph(hotspots) {
-  const graph = new Graph();
+  // Create an undirected graph for bidirectional travel
+  const graph = new Graph({ type: "undirected" });
 
   // Clean and deduplicate hotspots data first
   const cleanedHotspots = cleanHotspotsData(hotspots);
@@ -123,9 +124,27 @@ function createGraph(hotspots) {
   // Add all destination nodes to the graph
   console.log("📍 Adding destination nodes to graph:");
   let destinationCount = 0;
+  let invalidDestinations = 0;
+
   cleanedHotspots.forEach((hotspot) => {
     if (hotspot.destinations && Array.isArray(hotspot.destinations)) {
       hotspot.destinations.forEach((destination) => {
+        // Validate destination data
+        if (
+          !destination.name ||
+          !destination.latitude ||
+          !destination.longitude
+        ) {
+          console.log(`⚠️ Invalid destination data:`, {
+            name: destination.name,
+            hasLat: !!destination.latitude,
+            hasLon: !!destination.longitude,
+            from: hotspot.name,
+          });
+          invalidDestinations++;
+          return;
+        }
+
         if (!graph.hasNode(destination.name)) {
           try {
             graph.addNode(destination.name, {
@@ -147,6 +166,17 @@ function createGraph(hotspots) {
     }
   });
 
+  if (invalidDestinations > 0) {
+    console.log(`⚠️ Found ${invalidDestinations} invalid destinations`);
+  }
+
+  // Debug: Check specific nodes
+  console.log("🔍 Checking specific nodes:");
+  console.log(`  ABES exists: ${graph.hasNode("ABES")}`);
+  console.log(`  Charmurti exists: ${graph.hasNode("Charmurti")}`);
+  console.log(`  Sector 52 exists: ${graph.hasNode("Sector 52")}`);
+  console.log(`  Total nodes in graph: ${graph.order}`);
+
   console.log(
     `✅ Added ${cleanedHotspots.length} hotspot nodes and ${destinationCount} destination nodes`
   );
@@ -156,9 +186,14 @@ function createGraph(hotspots) {
   const addedEdges = new Set();
   let successfulEdges = 0;
   let failedEdges = 0;
+  const edgeDetails = [];
 
   cleanedHotspots.forEach((hotspot) => {
     if (hotspot.destinations && Array.isArray(hotspot.destinations)) {
+      console.log(
+        `🔗 Processing ${hotspot.name} with ${hotspot.destinations.length} destinations`
+      );
+
       hotspot.destinations.forEach((destination) => {
         if (graph.hasNode(hotspot.name) && graph.hasNode(destination.name)) {
           const edgeKey = `${hotspot.name}->${destination.name}`;
@@ -178,6 +213,30 @@ function createGraph(hotspots) {
             });
             addedEdges.add(edgeKey);
             successfulEdges++;
+
+            // Store edge details for debugging
+            edgeDetails.push({
+              from: hotspot.name,
+              to: destination.name,
+              distance: distance.toFixed(2),
+              fare: destination.estimated_fare || 0,
+            });
+
+            // Log important edges (like ABES connections)
+            if (
+              hotspot.name.toLowerCase().includes("abes") ||
+              destination.name.toLowerCase().includes("abes") ||
+              hotspot.name.toLowerCase().includes("sector") ||
+              destination.name.toLowerCase().includes("sector")
+            ) {
+              console.log(
+                `🔗 Important edge: ${hotspot.name} → ${
+                  destination.name
+                } (${distance.toFixed(2)}km, ₹${
+                  destination.estimated_fare || 0
+                })`
+              );
+            }
           } else {
             // Don't log duplicate edges as they're expected
             failedEdges++;
@@ -189,12 +248,51 @@ function createGraph(hotspots) {
           failedEdges++;
         }
       });
+    } else {
+      console.log(
+        `⚠️ ${hotspot.name} has no destinations or invalid destinations array`
+      );
     }
   });
 
   console.log(
     `✅ Created ${successfulEdges} edges, ${failedEdges} failed/duplicates`
   );
+
+  // Log sample of created edges for debugging
+  console.log("📋 Sample edges created:");
+  edgeDetails.slice(0, 10).forEach((edge) => {
+    console.log(
+      `  ${edge.from} → ${edge.to} (${edge.distance}km, ₹${edge.fare})`
+    );
+  });
+
+  // Debug specific path: ABES → Charmurti → Sector 52
+  console.log("🔍 Debugging ABES → Charmurti → Sector 52 path:");
+  console.log(
+    `  ABES → Charmurti edge exists: ${graph.hasEdge("ABES", "Charmurti")}`
+  );
+  console.log(
+    `  Charmurti → Sector 52 edge exists: ${graph.hasEdge(
+      "Charmurti",
+      "Sector 52"
+    )}`
+  );
+
+  if (graph.hasNode("ABES")) {
+    const abesNeighbors = graph.neighbors("ABES");
+    console.log(`  ABES neighbors: [${abesNeighbors.join(", ")}]`);
+  }
+
+  if (graph.hasNode("Charmurti")) {
+    const charmurtiNeighbors = graph.neighbors("Charmurti");
+    console.log(`  Charmurti neighbors: [${charmurtiNeighbors.join(", ")}]`);
+  }
+
+  if (graph.hasNode("Sector 52")) {
+    const sector52Neighbors = graph.neighbors("Sector 52");
+    console.log(`  Sector 52 neighbors: [${sector52Neighbors.join(", ")}]`);
+  }
 
   return graph;
 }
@@ -205,7 +303,55 @@ function createGraph(hotspots) {
 // Find shortest path between two points
 function findShortestPath(graph, start, end) {
   try {
-    const path = dijkstra.bidirectional(graph, start, end);
+    console.log(`🔍 Attempting to find path from "${start}" to "${end}"`);
+    console.log(`📊 Graph has ${graph.order} nodes and ${graph.size} edges`);
+
+    // First try the standard dijkstra algorithm
+    let path = null;
+    try {
+      path = dijkstra.bidirectional(graph, start, end);
+      console.log(
+        `✅ Dijkstra bidirectional found path: ${
+          path ? path.join(" → ") : "null"
+        }`
+      );
+    } catch (dijkstraError) {
+      console.warn(
+        `⚠️ Dijkstra bidirectional failed: ${dijkstraError.message}`
+      );
+
+      // Try unidirectional dijkstra as fallback
+      try {
+        path = dijkstra.singleSource(graph, start)[end];
+        if (path) {
+          // Convert path object to array if needed
+          path = Array.isArray(path) ? path : [start, ...path, end];
+        }
+        console.log(
+          `✅ Dijkstra single-source found path: ${
+            path ? path.join(" → ") : "null"
+          }`
+        );
+      } catch (singleSourceError) {
+        console.warn(
+          `⚠️ Dijkstra single-source also failed: ${singleSourceError.message}`
+        );
+
+        // Try manual BFS as last resort
+        path = findPathBFS(graph, start, end);
+        console.log(`✅ BFS found path: ${path ? path.join(" → ") : "null"}`);
+      }
+    }
+
+    if (!path || path.length === 0) {
+      console.log(`❌ No path found between "${start}" and "${end}"`);
+      return {
+        path: [],
+        totalDistance: 0,
+        totalFare: 0,
+        fareBreakdown: { segments: [], totalSegments: 0 },
+      };
+    }
 
     let totalDistance = 0;
     let totalFare = 0;
@@ -256,6 +402,39 @@ function findShortestPath(graph, start, end) {
   }
 }
 
+// Manual BFS pathfinding as fallback
+function findPathBFS(graph, start, end) {
+  console.log(`🔍 Using BFS to find path from "${start}" to "${end}"`);
+
+  const queue = [[start]];
+  const visited = new Set([start]);
+
+  while (queue.length > 0) {
+    const path = queue.shift();
+    const current = path[path.length - 1];
+
+    if (current === end) {
+      console.log(`✅ BFS found path: ${path.join(" → ")}`);
+      return path;
+    }
+
+    try {
+      const neighbors = graph.neighbors(current);
+      for (const neighbor of neighbors) {
+        if (!visited.has(neighbor)) {
+          visited.add(neighbor);
+          queue.push([...path, neighbor]);
+        }
+      }
+    } catch (error) {
+      console.warn(`Error getting neighbors for ${current}:`, error.message);
+    }
+  }
+
+  console.log(`❌ BFS could not find path from "${start}" to "${end}"`);
+  return null;
+}
+
 // Compare waypoints for route matching
 function compareWaypoints(waypoints1, waypoints2) {
   if (!waypoints1 || !waypoints2) return 0;
@@ -279,11 +458,42 @@ class RouteService {
 
       // Get hotspots data
       this.hotspots = await getHotspots();
-      console.log(`📍 Loaded ${this.hotspots.length} hotspots`);
+      console.log(`📍 Loaded ${this.hotspots.length} hotspots from database`);
 
       // Validate hotspots data
       if (!this.hotspots || this.hotspots.length === 0) {
         throw new Error("No hotspots data available");
+      }
+
+      // Debug: Log sample hotspot data structure
+      if (this.hotspots.length > 0) {
+        const sampleHotspot = this.hotspots[0];
+        console.log("📋 Sample hotspot structure:", {
+          name: sampleHotspot.name,
+          hasLatitude: !!sampleHotspot.latitude,
+          hasLongitude: !!sampleHotspot.longitude,
+          hasDestinations: !!sampleHotspot.destinations,
+          destinationsCount: sampleHotspot.destinations
+            ? sampleHotspot.destinations.length
+            : 0,
+          destinationsType: Array.isArray(sampleHotspot.destinations)
+            ? "array"
+            : typeof sampleHotspot.destinations,
+        });
+
+        if (
+          sampleHotspot.destinations &&
+          sampleHotspot.destinations.length > 0
+        ) {
+          const sampleDestination = sampleHotspot.destinations[0];
+          console.log("📋 Sample destination structure:", {
+            name: sampleDestination.name,
+            hasLatitude: !!sampleDestination.latitude,
+            hasLongitude: !!sampleDestination.longitude,
+            hasFare: !!sampleDestination.estimated_fare,
+            fare: sampleDestination.estimated_fare,
+          });
+        }
       }
 
       // Create graph with duplicate prevention
@@ -294,6 +504,55 @@ class RouteService {
         `✅ Graph initialized successfully: ${this.graph.order} nodes, ${this.graph.size} edges`
       );
 
+      // Test graph connectivity
+      if (this.graph.order > 0 && this.graph.size === 0) {
+        console.warn(
+          "⚠️ Graph has nodes but no edges! This will prevent pathfinding."
+        );
+      }
+
+      // Test basic graph functionality
+      if (this.graph.order >= 2) {
+        const nodes = this.graph.nodes();
+        const firstNode = nodes[0];
+        const secondNode = nodes[1];
+
+        console.log(
+          `🧪 Testing graph functionality with nodes: "${firstNode}" and "${secondNode}"`
+        );
+
+        // Test if we can get neighbors
+        try {
+          const neighbors = this.graph.neighbors(firstNode);
+          console.log(
+            `🧪 "${firstNode}" has ${neighbors.length} neighbors: ${neighbors
+              .slice(0, 3)
+              .join(", ")}${neighbors.length > 3 ? "..." : ""}`
+          );
+        } catch (error) {
+          console.error(
+            `🧪 Error getting neighbors for "${firstNode}":`,
+            error.message
+          );
+        }
+
+        // Test if dijkstra library is working
+        try {
+          const testPath = dijkstra.bidirectional(
+            this.graph,
+            firstNode,
+            secondNode
+          );
+          console.log(
+            `🧪 Test pathfinding result: ${
+              testPath ? testPath.join(" → ") : "No path found"
+            }`
+          );
+        } catch (error) {
+          console.error(`🧪 Test pathfinding failed:`, error.message);
+        }
+      }
+
       return {
         success: true,
         message: "Graph initialized successfully",
@@ -302,6 +561,7 @@ class RouteService {
       };
     } catch (error) {
       console.error("❌ Error initializing graph:", error);
+      console.error("❌ Error stack:", error.stack);
 
       // Don't throw error - create empty graph as fallback
       console.log("🔄 Creating fallback empty graph...");
@@ -392,11 +652,91 @@ class RouteService {
       throw new Error("Source and destination cannot be the same");
     }
 
+    // Debug: Check direct connections from source and to destination
+    const sourceNeighbors = this.graph.neighbors(source);
+    const destNeighbors = this.graph.neighbors(destination);
+    console.log(
+      `🔗 Source "${source}" connects to: ${sourceNeighbors.join(", ")}`
+    );
+    console.log(
+      `🔗 Destination "${destination}" connects to: ${destNeighbors.join(", ")}`
+    );
+
+    // Debug: Check if there are any intermediate nodes that connect both
+    const commonNeighbors = sourceNeighbors.filter((neighbor) =>
+      this.graph.hasEdge(neighbor, destination)
+    );
+    console.log(`🔗 Common intermediate nodes: ${commonNeighbors.join(", ")}`);
+
+    // Debug: Try to find all possible paths manually (BFS approach)
     console.log(`🛣️ Finding path from "${source}" to "${destination}"`);
     const result = findShortestPath(this.graph, source, destination);
 
     if (!result.path || result.path.length === 0) {
-      throw new Error(`No route found between ${source} and ${destination}`);
+      // Enhanced debugging for failed path finding
+      console.log("❌ No direct path found, analyzing graph connectivity...");
+
+      // Check if destination is reachable from source using BFS
+      const visited = new Set();
+      const queue = [source];
+      visited.add(source);
+      let reachableNodes = [source];
+
+      while (queue.length > 0) {
+        const current = queue.shift();
+        const neighbors = this.graph.neighbors(current);
+
+        for (const neighbor of neighbors) {
+          if (!visited.has(neighbor)) {
+            visited.add(neighbor);
+            queue.push(neighbor);
+            reachableNodes.push(neighbor);
+
+            if (neighbor === destination) {
+              console.log(
+                `✅ Destination "${destination}" is reachable from "${source}"`
+              );
+              console.log(`🔍 Reachable nodes: ${reachableNodes.join(", ")}`);
+              break;
+            }
+          }
+        }
+      }
+
+      if (!visited.has(destination)) {
+        console.log(
+          `❌ Destination "${destination}" is NOT reachable from "${source}"`
+        );
+        console.log(
+          `🔍 Reachable nodes from "${source}": ${reachableNodes.join(", ")}`
+        );
+
+        // Check what can reach the destination
+        const canReachDest = [];
+        for (const node of allNodes) {
+          if (node !== destination) {
+            try {
+              const testResult = findShortestPath(
+                this.graph,
+                node,
+                destination
+              );
+              if (testResult.path && testResult.path.length > 0) {
+                canReachDest.push(node);
+              }
+            } catch (e) {
+              // Ignore errors for individual path tests
+            }
+          }
+        }
+        console.log(
+          `🔍 Nodes that can reach "${destination}": ${canReachDest.join(", ")}`
+        );
+      }
+
+      throw new Error(
+        `No route found between ${source} and ${destination}. Graph connectivity issue detected.`
+      );
     }
 
     console.log(`✅ Path found: ${result.path.join(" → ")}`);
@@ -506,19 +846,22 @@ class RouteService {
       );
       routes.push(...additionalRoutes);
 
+      // Deduplicate routes based on path similarity
+      const uniqueRoutes = this.deduplicateRoutes(routes);
+
       // If no routes found
-      if (routes.length === 0) {
+      if (uniqueRoutes.length === 0) {
         throw new Error(`No route found between ${source} and ${destination}`);
       }
 
-      // Sort routes by different criteria
-      const sortedByDistance = [...routes].sort(
+      // Sort unique routes by different criteria
+      const sortedByDistance = [...uniqueRoutes].sort(
         (a, b) => a.distance - b.distance
       );
-      const sortedByTime = [...routes].sort(
+      const sortedByTime = [...uniqueRoutes].sort(
         (a, b) => a.estimatedTime.minutes - b.estimatedTime.minutes
       );
-      const sortedByFare = [...routes].sort(
+      const sortedByFare = [...uniqueRoutes].sort(
         (a, b) => a.totalFare - b.totalFare
       );
 
@@ -527,13 +870,13 @@ class RouteService {
         data: {
           source,
           destination,
-          routes,
+          routes: uniqueRoutes,
           recommendations: {
             fastest: sortedByTime[0],
             cheapest: sortedByFare[0],
             shortest: sortedByDistance[0],
           },
-          totalOptions: routes.length,
+          totalOptions: uniqueRoutes.length,
         },
       };
     } catch (error) {
@@ -717,6 +1060,30 @@ class RouteService {
       color,
       description,
     };
+  }
+
+  // Deduplicate routes based on path similarity
+  deduplicateRoutes(routes) {
+    const uniqueRoutes = [];
+    const seenPaths = new Set();
+
+    for (const route of routes) {
+      // Create a path signature for comparison
+      const pathSignature = route.path.join("->");
+
+      // Check if we've seen this exact path before
+      if (!seenPaths.has(pathSignature)) {
+        seenPaths.add(pathSignature);
+        uniqueRoutes.push(route);
+      } else {
+        console.log(`🔄 Removing duplicate route: ${pathSignature}`);
+      }
+    }
+
+    console.log(
+      `🧹 Deduplicated routes: ${routes.length} -> ${uniqueRoutes.length}`
+    );
+    return uniqueRoutes;
   }
 
   // Calculate fare estimates for different times

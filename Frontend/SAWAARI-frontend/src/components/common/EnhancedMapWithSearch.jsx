@@ -1,12 +1,12 @@
 /* eslint-disable react/prop-types */
-// Enhanced Map component with geolocation-based hotspot loading
-import React, { useMemo } from "react";
+// Enhanced Map component with integrated location search
+import React, { useMemo, useRef } from "react";
 import { MapContainer, TileLayer } from "react-leaflet";
 import { useMapHotspots } from "../../hooks/useMapHotspots";
+import { useMapControl } from "../../hooks/useMapControl";
 import HotspotMarkers from "../../features/hotspots/HotspotMarkers";
-import { LocationTracker, MapEventHandler } from "../map";
-
-// MapEventHandler is now imported from ../map
+import { LocationTracker, MapEventHandler, MapController } from "../map";
+import LocationSearch from "./LocationSearch";
 
 // Simple loading indicator
 function LoadingIndicator({ loading }) {
@@ -66,14 +66,21 @@ function ErrorIndicator({ error, onRetry }) {
   );
 }
 
-// Main Enhanced Map component
-export default function EnhancedMap({
+// Main Enhanced Map component with search
+export default function EnhancedMapWithSearch({
   center = [28.6139, 77.209],
   zoom = 14,
   onHotspotClick,
   style = { height: "100%", width: "100%" },
   showControls = true,
+  showSearch = true,
+  searchPlaceholder = "Search for a location...",
+  onLocationSelect,
+  searchBbox = null, // Delhi NCR bbox: [76.8, 28.4, 77.6, 28.9]
 }) {
+  const mapControlRef = useRef(null);
+  const { centerMap, getMapBounds } = useMapControl();
+
   // Memoize the center to prevent unnecessary re-renders
   const memoizedCenter = useMemo(
     () => ({
@@ -92,8 +99,69 @@ export default function EnhancedMap({
     refreshHotspots,
   } = useMapHotspots(memoizedCenter, zoom);
 
+  // Handle location selection from search
+  const handleLocationSelect = (locationData) => {
+    const { coordinates } = locationData;
+
+    // Center map on selected location
+    if (mapControlRef.current) {
+      mapControlRef.current.flyTo(
+        [coordinates.latitude, coordinates.longitude],
+        16,
+        {
+          duration: 1.5,
+          easeLinearity: 0.1,
+        }
+      );
+    }
+
+    // Call parent callback if provided
+    if (onLocationSelect) {
+      onLocationSelect(locationData);
+    }
+  };
+
+  // Handle map ready
+  const handleMapReady = (map) => {
+    mapControlRef.current = map;
+  };
+
+  // Get current map bounds for search bbox
+  const getCurrentBbox = () => {
+    if (searchBbox) return searchBbox;
+
+    if (mapControlRef.current) {
+      try {
+        const bounds = mapControlRef.current.getBounds();
+        return [
+          bounds.getWest(),
+          bounds.getSouth(),
+          bounds.getEast(),
+          bounds.getNorth(),
+        ];
+      } catch (error) {
+        console.error("Error getting map bounds for search:", error);
+      }
+    }
+
+    // Default Delhi NCR bbox
+    return [76.8, 28.4, 77.6, 28.9];
+  };
+
   return (
     <div style={{ position: "relative", ...style }}>
+      {/* Location Search */}
+      {showSearch && (
+        <div className="absolute top-3 left-3 right-3 z-[1001]">
+          <LocationSearch
+            onLocationSelect={handleLocationSelect}
+            placeholder={searchPlaceholder}
+            bbox={getCurrentBbox()}
+            className="max-w-md mx-auto sm:mx-0"
+          />
+        </div>
+      )}
+
       <MapContainer
         key={`map-${center[0]}-${center[1]}-${zoom}`}
         center={center}
@@ -113,12 +181,16 @@ export default function EnhancedMap({
           onLocationChange={onLocationChange}
         />
 
+        <MapController
+          onMapReady={handleMapReady}
+          mapControlRef={mapControlRef}
+        />
+
         <HotspotMarkers hotspot={hotspots} clickHandler={onHotspotClick} />
       </MapContainer>
 
       {showControls && (
         <>
-          {/* <LoadingIndicator loading={loading} /> */}
           <ErrorIndicator error={error} onRetry={refreshHotspots} />
         </>
       )}

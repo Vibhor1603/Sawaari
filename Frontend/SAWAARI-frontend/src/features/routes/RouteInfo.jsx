@@ -1,6 +1,6 @@
 /* eslint-disable react/prop-types */
 /* eslint-disable no-unused-vars */
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -16,12 +16,14 @@ import {
   LocationTracker,
   MapInteractionHandler,
   MapEventHandler,
+  MapController,
 } from "../../components/map";
 import HotspotMarkers from "../hotspots/HotspotMarkers";
 import RouteForm from "./RouteForm";
 import RouteOptions from "../../components/routes/RouteOptions";
 import MultipleRoutePolylines from "../../components/routes/MultipleRoutePolylines";
 import { useBoundsHotspots } from "../../hooks/useBoundsHotspots";
+import { ResponsiveLocationSearch } from "../../components/common";
 
 // Custom icons for route markers
 const startIcon = new L.DivIcon({
@@ -65,6 +67,9 @@ export default function RouteInfo() {
   const [selectedRouteId, setSelectedRouteId] = useState(null);
   const [recommendations, setRecommendations] = useState(null);
   const [showMultipleRoutes, setShowMultipleRoutes] = useState(false);
+
+  // Map control ref
+  const mapControlRef = useRef(null);
 
   // Use bounds-based hotspot loading
   const {
@@ -241,6 +246,31 @@ export default function RouteInfo() {
     setSelectedDestination([latitude, longitude]);
   };
 
+  // Handle location selection from search
+  const handleLocationSelect = (locationData) => {
+    const { coordinates } = locationData;
+
+    // Center map on selected location
+    if (mapControlRef.current) {
+      mapControlRef.current.flyTo(
+        [coordinates.latitude, coordinates.longitude],
+        16,
+        {
+          duration: 1.5,
+          easeLinearity: 0.1,
+        }
+      );
+    }
+
+    // Update selected destination
+    setSelectedDestination([coordinates.latitude, coordinates.longitude]);
+  };
+
+  // Handle map ready
+  const handleMapReady = (map) => {
+    mapControlRef.current = map;
+  };
+
   return (
     <div className="min-h-screen bg-black pt-16 sm:pt-20 relative overflow-hidden">
       {/* Creative Background Elements */}
@@ -286,7 +316,7 @@ export default function RouteInfo() {
           <div className="lg:col-span-1 space-y-4 sm:space-y-6 order-1 lg:order-1">
             {!showResults ? (
               /* Route Form */
-              <div className="bg-black/20 backdrop-blur-sm border border-white/10 rounded-lg sm:rounded-xl p-3 sm:p-6">
+              <div className="bg-black/20 backdrop-blur-sm border border-white/20 rounded-lg sm:rounded-xl p-3 sm:p-6">
                 <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-6">
                   <div className="w-8 h-8 sm:w-12 sm:h-12 bg-sawaari-yellow/20 rounded-full flex items-center justify-center">
                     <span className="text-sm sm:text-xl">🗺️</span>
@@ -365,7 +395,7 @@ export default function RouteInfo() {
               />
             ) : (
               /* Single Route Results */
-              <div className="glass-strong rounded-xl sm:rounded-2xl p-4 sm:p-6">
+              <div className="bg-black/20 backdrop-blur-sm border border-white/20 rounded-xl sm:rounded-2xl p-4 sm:p-6">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 gap-3 sm:gap-0">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 sm:w-12 sm:h-12 bg-sawaari-yellow-muted border border-sawaari-yellow-border rounded-full flex items-center justify-center">
@@ -501,13 +531,22 @@ export default function RouteInfo() {
 
           {/* Right Column - Map */}
           <div className="lg:col-span-2 order-2 lg:order-2">
-            <div className="glass-strong rounded-xl sm:rounded-2xl p-3 sm:p-4">
+            <div className="bg-black/20 backdrop-blur-sm border border-white/20 rounded-xl sm:rounded-2xl p-3 sm:p-4">
               <h2 className="text-lg sm:text-xl font-bold text-white mb-3 sm:mb-4 text-readable">
                 Interactive Route Map
               </h2>
               <div className="h-[50vh] sm:h-[60vh] lg:h-[500px] rounded-lg sm:rounded-xl overflow-hidden border border-white/10 relative">
+                {/* Location Search */}
+                <div className="absolute top-2 left-2 right-2 sm:top-3 sm:left-3 sm:right-3 z-[1001]">
+                  <ResponsiveLocationSearch
+                    onLocationSelect={handleLocationSelect}
+                    placeholder="Search for a location on the map"
+                    className="max-w-xs mx-auto sm:mx-0 sm:max-w-sm"
+                  />
+                </div>
+
                 {hotspotsLoading && (
-                  <div className="absolute top-3 right-3 bg-black/80 text-white px-3 py-2 rounded-lg text-xs flex items-center gap-2 z-[1000]">
+                  <div className="absolute top-16 right-3 bg-black/80 text-white px-3 py-2 rounded-lg text-xs flex items-center gap-2 z-[1000]">
                     <div className="w-3 h-3 border-2 border-white/40 border-t-sawaari-yellow rounded-full animate-spin" />
                     <span>Loading...</span>
                   </div>
@@ -528,6 +567,10 @@ export default function RouteInfo() {
                   <MapEventHandler
                     onBoundsChange={onMapBoundsChange}
                     onLocationChange={() => {}} // Not needed for routes
+                  />
+                  <MapController
+                    onMapReady={handleMapReady}
+                    mapControlRef={mapControlRef}
                   />
                   <HotspotMarkers
                     hotspot={hotspots}

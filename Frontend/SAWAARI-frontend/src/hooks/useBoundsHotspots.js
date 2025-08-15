@@ -3,10 +3,24 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import geoHotspotService from "../services/geoHotspotService";
 
 export const useBoundsHotspots = () => {
+  const hookId = useRef(Math.random().toString(36).substr(2, 9));
+  console.log("🚀 useBoundsHotspots hook initialized:", {
+    hookId: hookId.current,
+  });
+
   const [hotspots, setHotspots] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [lastBounds, setLastBounds] = useState(null);
+
+  // Debug hotspots state changes
+  useEffect(() => {
+    console.log("🔄 useBoundsHotspots state changed:", {
+      hookId: hookId.current,
+      count: hotspots.length,
+      names: hotspots.map((h) => h.name).slice(0, 3),
+    });
+  }, [hotspots]);
 
   // Use ref to prevent unnecessary re-renders
   const loadingRef = useRef(false);
@@ -43,10 +57,22 @@ export const useBoundsHotspots = () => {
         if (result.success) {
           // Only update if we have data
           if (result.data && result.data.length > 0) {
+            console.log("🔄 useBoundsHotspots CALLING setHotspots with data:", {
+              hookId: hookId.current,
+              count: result.data.length,
+              names: result.data.map((h) => h.name).slice(0, 3),
+            });
             setHotspots(result.data);
             setLastBounds(bounds);
           } else if (!result.cached) {
             // Only clear if it's a fresh request with no data
+            console.log(
+              "🔄 useBoundsHotspots CALLING setHotspots with empty:",
+              {
+                hookId: hookId.current,
+                count: 0,
+              }
+            );
             setHotspots([]);
             setLastBounds(bounds);
           }

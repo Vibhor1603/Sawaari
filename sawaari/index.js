@@ -50,10 +50,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Request logging (development only)
 if (process.env.NODE_ENV === "development") {
-  app.use((req, res, next) => {
-    console.log(`${req.method} ${req.path} - ${new Date().toISOString()}`);
-    next();
-  });
+  // Development logging disabled for production
 }
 
 // Performance monitoring endpoints

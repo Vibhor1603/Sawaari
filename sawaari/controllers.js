@@ -69,25 +69,11 @@ async function signup(req, res) {
     // Hash password and create user
     const hashedPassword = await hashPassword(password);
 
-    console.log("📞 Creating user with phone data:", {
-      name: name.trim(),
-      email: email.toLowerCase().trim(),
-      phone: phone.trim(),
-      hasPhone: !!phone.trim(),
-      phoneLength: phone.trim().length,
-    });
-
     const result = await createUser({
       name: name.trim(),
       email: email.toLowerCase().trim(),
       phone: phone.trim(),
       password: hashedPassword,
-    });
-
-    console.log("📞 User creation result:", {
-      success: result.success,
-      insertedId: result.insertedId,
-      message: result.message,
     });
 
     res.status(201).json({

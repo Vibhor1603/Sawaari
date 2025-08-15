@@ -1,6 +1,12 @@
 export { default as DatabaseLocationSelect } from "./DatabaseLocationSelect";
 export { default as LocationSelect } from "./LocationSelect";
+export { default as LocationSearch } from "./LocationSearch";
+export { default as CompactLocationSearch } from "./CompactLocationSearch";
+export { default as MobileLocationSearch } from "./MobileLocationSearch";
+export { default as ResponsiveLocationSearch } from "./ResponsiveLocationSearch";
+export { default as LocationSearchPerformanceTest } from "./LocationSearchPerformanceTest";
 export { default as EnhancedMap } from "./EnhancedMap";
+export { default as EnhancedMapWithSearch } from "./EnhancedMapWithSearch";
 export { default as FloatingRickshaws } from "./FloatingRickshaws";
 export { default as PerformanceMonitor } from "./PerformanceMonitor";
 export { default as SearchStatus } from "./SearchStatus";

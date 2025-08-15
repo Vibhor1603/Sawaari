@@ -12,14 +12,14 @@ export default function RouteOptions({
 
   if (!routes || routes.length === 0) {
     return (
-      <div className="glass-strong rounded-xl sm:rounded-2xl p-4 sm:p-6">
+      <div className="bg-black/20 backdrop-blur-sm border border-white/20 rounded-xl sm:rounded-2xl p-4 sm:p-6">
         <div className="text-center py-8">
           <div className="w-16 h-16 bg-red-500/20 border border-red-500/40 rounded-full flex items-center justify-center mx-auto mb-4">
             <span className="text-2xl">❌</span>
           </div>
           <h3 className="text-xl font-bold text-white mb-2">No Routes Found</h3>
           <p className="text-gray-300 mb-4">
-            We couldn't find any routes between these locations.
+            We couldn&apos;t find any routes between these locations.
           </p>
           <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mb-4">
             <h4 className="text-blue-400 font-semibold mb-2">Suggestions:</h4>
@@ -77,7 +77,7 @@ export default function RouteOptions({
   };
 
   return (
-    <div className="glass-strong rounded-xl sm:rounded-2xl p-4 sm:p-6">
+    <div className="bg-black/20 backdrop-blur-sm border border-white/20 rounded-xl sm:rounded-2xl p-4 sm:p-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 gap-3 sm:gap-0">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 sm:w-12 sm:h-12 bg-sawaari-yellow-muted border border-sawaari-yellow-border rounded-full flex items-center justify-center">

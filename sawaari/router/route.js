@@ -187,6 +187,68 @@ router.route("/api/routes/initialize").post(initializeRouteGraph);
 // Get route graph status
 router.route("/api/routes/status").get(getRouteGraphStatus);
 
+// Test route graph connectivity (debug endpoint)
+router.route("/api/routes/test").get(async (req, res) => {
+  try {
+    const { routeService } = require("../Backend/routeService");
+
+    // Initialize graph if needed
+    if (!routeService.graph) {
+      await routeService.initializeGraph();
+    }
+
+    const nodes = routeService.graph.nodes();
+    const edges = routeService.graph.size;
+
+    // Test with first few nodes
+    const testResults = [];
+    if (nodes.length >= 2) {
+      for (let i = 0; i < Math.min(3, nodes.length); i++) {
+        for (let j = i + 1; j < Math.min(3, nodes.length); j++) {
+          const source = nodes[i];
+          const destination = nodes[j];
+
+          try {
+            const result = await routeService.calculateRoute(
+              source,
+              destination
+            );
+            testResults.push({
+              source,
+              destination,
+              success: result.success,
+              pathLength: result.data?.path?.length || 0,
+              path: result.data?.path || [],
+            });
+          } catch (error) {
+            testResults.push({
+              source,
+              destination,
+              success: false,
+              error: error.message,
+            });
+          }
+        }
+      }
+    }
+
+    res.json({
+      success: true,
+      data: {
+        nodeCount: nodes.length,
+        edgeCount: edges,
+        sampleNodes: nodes.slice(0, 10),
+        testResults,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
 // Calculate route between two points (public)
 router
   .route("/api/routes/calculate")

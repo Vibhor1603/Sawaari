@@ -9,7 +9,7 @@ export default function RouteForm({
   handleRouteSearch,
 }) {
   return (
-    <div className="bg-black/20 backdrop-blur-sm border border-white/10 rounded-lg sm:rounded-xl p-4 sm:p-6 max-w-md mx-auto">
+    <div className="max-w-md mx-auto">
       <form onSubmit={handleRouteSearch} className="space-y-3 sm:space-y-4">
         {/* Source Location */}
         <div className="space-y-1 sm:space-y-2">
@@ -21,7 +21,7 @@ export default function RouteForm({
             value={source}
             onChange={setSource}
             placeholder="Search source"
-            className="w-full"
+            className="w-full border-0"
           />
         </div>
 
@@ -35,7 +35,7 @@ export default function RouteForm({
             value={destination}
             onChange={setDestination}
             placeholder="Search destination"
-            className="w-full"
+            className="w-full border-0"
           />
         </div>
 
@@ -43,7 +43,7 @@ export default function RouteForm({
         <div className="flex justify-center">
           <button
             type="submit"
-            className="flex items-center justify-center gap-2 px-6 py-2 bg-gradient-to-r from-sawaari-yellow to-sawaari-yellow/80 text-black font-medium text-sm rounded-lg shadow-sawaari-subtle hover:shadow-sawaari-glow hover:-translate-y-0.5 transition-all duration-300 transform hover:scale-[1.01] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none group"
+            className="flex items-center justify-center gap-2 px-6 py-2 bg-gradient-to-r from-sawaari-yellow to-sawaari-yellow/80 text-black font-medium text-sm rounded-lg shadow-sawaari-subtle hover:shadow-sawaari-glow hover:-translate-y-0.5 transition-all duration-300 transform hover:scale-[1.01] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none group border-0"
             disabled={!source || !destination}
           >
             <span>Find Best Route</span>

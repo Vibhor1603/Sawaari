@@ -10,8 +10,7 @@ export default function HotspotMarkers({ hotspot, clickHandler }) {
   };
 
   // Safety check for hotspot data
-  if (!hotspot || !Array.isArray(hotspot)) {
-    console.warn("HotspotMarkers: hotspot is not an array:", hotspot);
+  if (!hotspot || !Array.isArray(hotspot) || hotspot.length === 0) {
     return null;
   }
 
@@ -24,7 +23,6 @@ export default function HotspotMarkers({ hotspot, clickHandler }) {
           !item.color_code ||
           !item.destinations
         ) {
-          console.warn("Missing data for hotspot:", item);
           return null;
         }
 

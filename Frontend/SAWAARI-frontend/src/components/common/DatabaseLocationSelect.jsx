@@ -175,7 +175,7 @@ const DatabaseLocationSelect = ({
       <components.MenuList {...props}>
         {children}
         {!isSearching && hasMore && (
-          <div className="px-3 py-2 text-center text-xs border-t border-gray-700 bg-black">
+          <div className="px-3 py-2 text-center text-xs bg-black">
             <span
               onClick={(e) => {
                 e.preventDefault();
@@ -197,15 +197,13 @@ const DatabaseLocationSelect = ({
     control: (provided, state) => ({
       ...provided,
       backgroundColor: "rgba(0, 0, 0, 0.4)",
-      border: state.isFocused
-        ? "1px solid #f4b942"
-        : "1px solid rgba(255, 255, 255, 0.1)",
+      border: "none",
       borderRadius: "0.5rem",
       padding: "0.125rem",
       minHeight: "40px",
       boxShadow: "none",
       "&:hover": {
-        border: "1px solid rgba(255, 255, 255, 0.2)",
+        border: "none",
       },
       transition: "all 0.3s ease",
     }),
@@ -227,7 +225,7 @@ const DatabaseLocationSelect = ({
     menu: (provided) => ({
       ...provided,
       backgroundColor: "#000000",
-      border: "1px solid rgba(255, 255, 255, 0.05)",
+      border: "none",
       borderRadius: "0.5rem",
       zIndex: 9999,
       boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.3)",

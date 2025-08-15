@@ -34,7 +34,10 @@ class GeoHotspotService {
       // Return cached data if valid
       if (this.isCacheValid(cachedData)) {
         if (import.meta.env.DEV) {
-          console.log("📦 Using cached hotspots for bounds");
+          console.log("📦 Using cached hotspots for bounds:", {
+            dataLength: cachedData.data.data ? cachedData.data.data.length : 0,
+            success: cachedData.data.success,
+          });
         }
         return {
           ...cachedData.data,
@@ -51,7 +54,11 @@ class GeoHotspotService {
       }
 
       if (import.meta.env.DEV) {
-        console.log("🌐 Fetching hotspots for bounds from API");
+        console.log("🌐 Fetching hotspots for bounds from API:", {
+          bounds,
+          zoom,
+          cacheKey,
+        });
       }
 
       // Create the request promise and store it
@@ -95,6 +102,13 @@ class GeoHotspotService {
     this.cache.set(cacheKey, {
       data: result,
       timestamp: Date.now(),
+    });
+
+    console.log("🔍 API Response:", {
+      success: result.success,
+      dataLength: result.data ? result.data.length : 0,
+      error: result.error,
+      cached: false,
     });
 
     return {

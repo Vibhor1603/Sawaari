@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-vars */
 import { useState, useEffect } from "react";
-import { EnhancedMap } from "../../components/common";
+import { EnhancedMap, ResponsiveLocationSearch } from "../../components/common";
 
 // Component to display hotspots with enhanced geolocation-based loading
 function Hotspots() {
@@ -21,7 +21,6 @@ function Hotspots() {
   // Handle hotspot click
   const handleHotspotClick = (latitude, longitude) => {
     setSelectedDestination([latitude, longitude]);
-    console.log("Hotspot clicked:", latitude, longitude);
   };
 
   return (
@@ -74,7 +73,7 @@ function Hotspots() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
           {/* Left Column - Info */}
           <div className="lg:col-span-1 space-y-4 sm:space-y-6 order-1 lg:order-1">
-            <div className="glass-strong rounded-xl sm:rounded-2xl p-3 sm:p-6">
+            <div className="bg-black/20 backdrop-blur-sm border border-white/20 rounded-xl sm:rounded-2xl p-3 sm:p-6">
               <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
                 <div className="w-8 h-8 sm:w-12 sm:h-12 bg-sawaari-yellow/20 border border-sawaari-yellow/40 rounded-full flex items-center justify-center">
                   <span className="text-sm sm:text-xl animate-subtle-float">
@@ -150,13 +149,28 @@ function Hotspots() {
 
           {/* Right Column - Map */}
           <div className="lg:col-span-2 order-2 lg:order-2">
-            <div className="glass-strong rounded-xl sm:rounded-2xl p-3 sm:p-4">
+            <div className="bg-black/20 backdrop-blur-sm border border-white/20 rounded-xl sm:rounded-2xl p-3 sm:p-4">
               <h2 className="text-lg sm:text-xl font-bold text-white mb-3 sm:mb-4">
                 Interactive Rickshaw Points Map
               </h2>
-              <div className="h-[50vh] sm:h-[60vh] lg:h-[500px] rounded-lg sm:rounded-xl overflow-hidden border border-white/10">
+              <div className="h-[50vh] sm:h-[60vh] lg:h-[500px] rounded-lg sm:rounded-xl overflow-hidden border border-white/10 relative">
+                {/* Responsive Location Search */}
+                <div className="absolute top-2 left-2 right-2 sm:top-3 sm:left-3 sm:right-3 z-[1001]">
+                  <ResponsiveLocationSearch
+                    onLocationSelect={(locationData) => {
+                      // Update selected destination when location is selected
+                      setSelectedDestination([
+                        locationData.coordinates.latitude,
+                        locationData.coordinates.longitude,
+                      ]);
+                    }}
+                    placeholder="Search for a location on the map"
+                    className="max-w-md mx-auto sm:mx-0"
+                  />
+                </div>
+
                 <EnhancedMap
-                  center={[28.633043462708848, 77.44792897992077]}
+                  center={selectedDestination}
                   zoom={14}
                   onHotspotClick={handleHotspotClick}
                   showControls={true}
