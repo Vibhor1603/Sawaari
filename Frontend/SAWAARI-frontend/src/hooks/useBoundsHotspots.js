@@ -99,15 +99,6 @@ export const useBoundsHotspots = () => {
   );
 
   // Load initial hotspots for default bounds (centered around the map center)
-  useEffect(() => {
-    const defaultBounds = {
-      north: 28.643043462708848,
-      south: 28.623043462708848,
-      east: 77.45792897992077,
-      west: 77.42792897992077,
-    };
-    loadHotspotsForBounds(defaultBounds, 14);
-  }, [loadHotspotsForBounds]);
 
   return {
     hotspots,
