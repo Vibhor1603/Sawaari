@@ -14,7 +14,7 @@ export default function About() {
         "Live tracking of auto rickshaw availability with color-coded density maps",
       icon: "🔥",
       link: "/hotspots",
-      stats: "500+ Active Spots",
+      stats: "100+ Active Spots",
     },
     {
       id: 1,

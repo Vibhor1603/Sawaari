@@ -94,7 +94,7 @@ function Hotspots() {
               <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-3 sm:mb-4">
                 <div className="text-center bg-black/40 rounded-lg p-2 sm:p-3">
                   <div className="text-lg sm:text-xl font-bold text-sawaari-yellow">
-                    500+
+                    100+
                   </div>
                   <div className="text-xs text-gray-200">Active Spots</div>
                 </div>
