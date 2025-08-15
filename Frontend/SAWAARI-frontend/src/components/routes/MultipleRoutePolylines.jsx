@@ -26,7 +26,7 @@ export default function MultipleRoutePolylines({ routes, selectedRouteId }) {
           <Polyline
             key={route.id}
             positions={coordinates}
-            color={route.color || "#f4b942"}
+            color={"#111184"}
             weight={isSelected ? 6 : 4}
             opacity={isSelected ? 1 : 0.7}
             dashArray={

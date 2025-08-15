@@ -590,7 +590,7 @@ export default function RouteInfo() {
                     <>
                       <Polyline
                         positions={pathCoordinates}
-                        color="#f4b942"
+                        color="#111184"
                         weight={6}
                         opacity={0.8}
                       />
