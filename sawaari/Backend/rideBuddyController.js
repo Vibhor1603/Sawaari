@@ -454,8 +454,8 @@ const searchRideBuddies = async (req, res) => {
       hasPhone: !!req.user.phone,
     });
 
-    // Create search data structure with 15-minute expiry for debugging
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes from now
+    // Create search data structure with 5-minute expiry
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes from now
     const searchData = {
       userId: new ObjectId(userId),
       userEmail,
@@ -2006,17 +2006,7 @@ const cancelActiveSearch = async (req, res) => {
       });
     });
 
-    const result = await updateRideBuddySearch(
-      { userId: new ObjectId(userId), status: "active" },
-      { status: "cancelled", cancelledAt: new Date() }
-    );
-
-    console.log(`📊 Update result:`, {
-      matchedCount: result.matchedCount,
-      modifiedCount: result.modifiedCount,
-    });
-
-    if (result.modifiedCount === 0) {
+    if (activeSearches.length === 0) {
       console.log(`❌ No active search found to cancel for user ${userId}`);
       return res.status(404).json({
         success: false,
@@ -2025,6 +2015,25 @@ const cancelActiveSearch = async (req, res) => {
       });
     }
 
+    // Cancel each active search individually
+    let totalCancelled = 0;
+    for (const search of activeSearches) {
+      try {
+        const result = await updateRideBuddySearch(search._id, {
+          status: "cancelled",
+          cancelledAt: new Date(),
+        });
+        if (result.modifiedCount > 0) {
+          totalCancelled++;
+          console.log(`✅ Cancelled search ${search._id}`);
+        }
+      } catch (updateError) {
+        console.error(`❌ Failed to cancel search ${search._id}:`, updateError);
+      }
+    }
+
+    console.log(`📊 Total searches cancelled: ${totalCancelled}`);
+
     // Invalidate cache
     rideBuddyCacheService.invalidateUserCaches(userId);
     console.log(`✅ Search cancelled successfully for user ${userId}`);
@@ -2032,6 +2041,9 @@ const cancelActiveSearch = async (req, res) => {
     res.json({
       success: true,
       message: "Search cancelled successfully",
+      data: {
+        cancelledCount: totalCancelled,
+      },
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
