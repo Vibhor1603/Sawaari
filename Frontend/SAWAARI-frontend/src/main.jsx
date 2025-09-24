@@ -5,12 +5,14 @@ import "./index.css";
 import "leaflet/dist/leaflet.css";
 import Authstate from "./AuthContext.jsx";
 import ErrorBoundary from "./components/common/ErrorBoundary.jsx";
+import { Analytics } from "@vercel/analytics/react";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <ErrorBoundary>
       <Authstate>
         <App />
+        <Analytics />
       </Authstate>
     </ErrorBoundary>
   </React.StrictMode>
