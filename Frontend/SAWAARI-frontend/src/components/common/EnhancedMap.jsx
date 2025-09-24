@@ -8,14 +8,14 @@ import { LocationTracker, MapEventHandler } from "../map";
 
 // MapEventHandler is now imported from ../map
 
-// Simple loading indicator
+// Enhanced loading indicator
 function LoadingIndicator({ loading }) {
   if (!loading) return null;
 
   return (
-    <div className="absolute top-3 right-3 bg-black/80 text-white px-3 py-2 rounded-lg text-xs flex items-center gap-2 z-[1000]">
+    <div className="absolute top-3 right-3 bg-black/90 backdrop-blur-sm text-white px-3 py-2 rounded-lg text-xs flex items-center gap-2 z-[1000] border border-white/20">
       <div className="w-3 h-3 border-2 border-white/40 border-t-sawaari-yellow rounded-full animate-spin" />
-      <span>Loading...</span>
+      <span>Loading hotspots...</span>
     </div>
   );
 }
@@ -118,7 +118,7 @@ export default function EnhancedMap({
 
       {showControls && (
         <>
-          {/* <LoadingIndicator loading={loading} /> */}
+          <LoadingIndicator loading={loading} />
           <ErrorIndicator error={error} onRetry={refreshHotspots} />
         </>
       )}
