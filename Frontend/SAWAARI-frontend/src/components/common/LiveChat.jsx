@@ -403,9 +403,9 @@ const LiveChat = ({ chatId, partnerName, onClose }) => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-gradient-to-b from-neutral-900 to-neutral-800 rounded-b-xl overflow-hidden">
-      {/* Enhanced Status Bar */}
-      <div className="px-4 py-2 bg-gradient-to-r from-neutral-800 to-neutral-700 border-b border-neutral-600">
+    <div className="h-[80vh] flex flex-col bg-black/80 backdrop-blur-sm rounded-xl overflow-hidden shadow-2xl">
+      {/* Enhanced Status Bar with Close Button */}
+      <div className="px-3 py-2 bg-black/60 border-b border-white/10 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div
             className={`w-3 h-3 rounded-full ${
@@ -456,28 +456,51 @@ const LiveChat = ({ chatId, partnerName, onClose }) => {
             )}
           </span>
         </div>
+        <button
+          onClick={onClose}
+          className="text-white/60 hover:text-white transition-colors p-1 rounded-lg"
+          aria-label="Close chat"
+        >
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
       </div>
 
       {/* Compact Messages */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-3">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
         {!connected ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
-            <div className="w-12 h-12 bg-neutral-800 rounded-lg flex items-center justify-center mb-3">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-sawaari-yellow"></div>
+            <div className="w-16 h-16 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
+              <div className="animate-spin rounded-full h-8 w-8 border-2 border-sawaari-yellow/20 border-t-sawaari-yellow"></div>
             </div>
-            <h3 className="text-sm font-bold text-white mb-1">Connecting...</h3>
-            <p className="text-xs text-neutral-400">
-              Connecting to {partnerName}
+            <h3 className="text-base font-medium text-white mb-2">
+              Connecting...
+            </h3>
+            <p className="text-sm text-white/60">
+              Establishing connection with {partnerName}
             </p>
           </div>
         ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
-            <div className="w-12 h-12 bg-gradient-to-br from-sawaari-yellow/20 to-sawaari-green/20 rounded-lg flex items-center justify-center mb-3">
-              <span className="text-2xl">💬</span>
+            <div className="w-16 h-16 bg-sawaari-yellow/5 border border-sawaari-yellow/20 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
+              <span className="text-3xl">💬</span>
             </div>
-            <h3 className="text-sm font-bold text-white mb-1">Chat started!</h3>
-            <p className="text-xs text-neutral-400 max-w-xs">
-              10 minutes to coordinate with {partnerName}
+            <h3 className="text-base font-medium text-white mb-2">
+              Chat started!
+            </h3>
+            <p className="text-sm text-white/60 max-w-xs">
+              You have 10 minutes to coordinate your ride with {partnerName}
             </p>
           </div>
         ) : (
@@ -494,8 +517,8 @@ const LiveChat = ({ chatId, partnerName, onClose }) => {
                 <div
                   className={`max-w-xs px-3 py-2 rounded-xl transition-all duration-300 text-white ${
                     isOwnMessage
-                      ? "chat-message-sent border border-green-500/30"
-                      : "chat-message-received border border-neutral-600"
+                      ? "bg-sawaari-yellow/10 border border-sawaari-yellow/20"
+                      : "bg-white/5 border border-white/10"
                   }`}
                 >
                   <div className="flex items-center gap-1 mb-1">
@@ -511,19 +534,17 @@ const LiveChat = ({ chatId, partnerName, onClose }) => {
                     <span
                       className={`text-xs ${
                         isOwnMessage
-                          ? "text-green-200 opacity-70"
-                          : "opacity-50"
+                          ? "text-sawaari-yellow/60"
+                          : "text-white/40"
                       }`}
                     >
                       {formatMessageTime(message.timestamp)}
                     </span>
                   </div>
-                  <p className="text-sm">{message.message}</p>
+                  <p className="text-sm leading-relaxed">{message.message}</p>
                   {isOwnMessage && (
                     <div className="flex justify-end mt-1">
-                      <span className="text-xs opacity-80 text-green-100">
-                        ✓
-                      </span>
+                      <span className="text-xs text-sawaari-yellow/60">✓</span>
                     </div>
                   )}
                 </div>
@@ -534,21 +555,21 @@ const LiveChat = ({ chatId, partnerName, onClose }) => {
 
         {partnerTyping && connected && (
           <div className="flex justify-start">
-            <div className="bg-neutral-800 px-3 py-2 rounded-xl">
+            <div className="bg-white/5 px-3 py-2 rounded-lg border border-white/10">
               <div className="flex items-center gap-2">
                 <div className="flex gap-1">
-                  <div className="w-1.5 h-1.5 bg-neutral-400 rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-white/40 rounded-full animate-bounce"></div>
                   <div
-                    className="w-1.5 h-1.5 bg-neutral-400 rounded-full animate-bounce"
+                    className="w-2 h-2 bg-white/40 rounded-full animate-bounce"
                     style={{ animationDelay: "0.1s" }}
                   ></div>
                   <div
-                    className="w-1.5 h-1.5 bg-neutral-400 rounded-full animate-bounce"
+                    className="w-2 h-2 bg-white/40 rounded-full animate-bounce"
                     style={{ animationDelay: "0.2s" }}
                   ></div>
                 </div>
-                <span className="text-xs text-neutral-400">
-                  {partnerName} typing...
+                <span className="text-xs text-white/60">
+                  {partnerName} is typing...
                 </span>
               </div>
             </div>
@@ -559,31 +580,31 @@ const LiveChat = ({ chatId, partnerName, onClose }) => {
       </div>
 
       {/* Input Section / Contact Details */}
-      <div className="p-3 border-t border-neutral-700 bg-neutral-800">
+      <div className="p-4 border-t border-white/10 bg-black/60">
         {chatExpired || connectionPhase === "expired" ? (
-          <div className="flex items-center justify-center gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+          <div className="flex items-center justify-center gap-2 p-3 bg-red-500/5 border border-red-500/10 rounded-lg">
             <span className="text-red-400">⏰</span>
-            <span className="text-xs text-red-400 text-center">
+            <span className="text-xs text-red-400/90 text-center">
               Connection expired. Contact details no longer available.
             </span>
           </div>
         ) : connectionPhase === "contact" ? (
-          <div className="space-y-3">
-            <div className="flex items-center justify-center gap-2 p-2 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+          <div className="space-y-4">
+            <div className="flex items-center justify-center gap-2 p-2 bg-blue-500/5 border border-blue-500/10 rounded-lg">
               <span className="text-blue-400">📞</span>
-              <span className="text-xs text-blue-400 text-center">
+              <span className="text-xs text-blue-400/90 text-center">
                 Chat time expired. Contact details available for{" "}
                 {formatTime(contactTimeRemaining)}
               </span>
             </div>
-            <div className="bg-neutral-700 rounded-lg p-3 space-y-2">
+            <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 space-y-3 border border-white/10">
               <div className="text-center">
                 <h4 className="text-sm font-semibold text-white mb-2">
                   Contact Details
                 </h4>
-                <div className="text-xs text-neutral-300">
+                <div className="text-xs text-white/80">
                   <p className="mb-1">👤 {partnerName}</p>
-                  <p className="text-sawaari-yellow">
+                  <p className="text-sawaari-yellow/90">
                     Use these details to coordinate your ride
                   </p>
                 </div>
@@ -591,18 +612,18 @@ const LiveChat = ({ chatId, partnerName, onClose }) => {
             </div>
           </div>
         ) : !connected ? (
-          <div className="flex items-center justify-center gap-2 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+          <div className="flex items-center justify-center gap-2 p-4 bg-yellow-500/5 border border-yellow-500/10 rounded-xl">
             <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-yellow-400"></div>
-            <span className="text-xs text-yellow-400">Connecting...</span>
+            <span className="text-xs text-yellow-400/90">Connecting...</span>
           </div>
         ) : (
-          <form onSubmit={handleSendMessage} className="flex gap-2">
+          <form onSubmit={handleSendMessage} className="flex gap-3">
             <input
               type="text"
               value={newMessage}
               onChange={handleInputChange}
-              placeholder="Type message..."
-              className="flex-1 px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-sm placeholder-neutral-400 focus:border-sawaari-yellow focus:ring-1 focus:ring-sawaari-yellow/20 focus:outline-none transition-all duration-300"
+              placeholder="Type your message..."
+              className="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm placeholder-white/40 focus:border-sawaari-yellow/50 focus:ring-1 focus:ring-sawaari-yellow/20 focus:outline-none transition-all duration-300"
               maxLength={500}
               disabled={chatExpired || !connected || connectionPhase !== "chat"}
             />
@@ -614,11 +635,11 @@ const LiveChat = ({ chatId, partnerName, onClose }) => {
                 !connected ||
                 connectionPhase !== "chat"
               }
-              className="px-4 py-2 bg-gradient-to-r from-sawaari-yellow to-sawaari-green text-black rounded-lg font-semibold hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+              className="px-4 py-2 bg-sawaari-yellow text-black rounded-lg font-medium hover:bg-sawaari-yellow/90 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               <span className="text-sm">Send</span>
               <svg
-                className="w-3 h-3"
+                className="w-4 h-4"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -627,7 +648,7 @@ const LiveChat = ({ chatId, partnerName, onClose }) => {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                  d="M5 13l4 4L19 7"
                 />
               </svg>
             </button>
