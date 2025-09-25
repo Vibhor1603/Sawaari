@@ -427,7 +427,20 @@ const createRideBuddyMatch = async (matchData) => {
 const findRideBuddyMatches = async (filters = {}) => {
   return await dbService.executeOperation(async () => {
     const collection = await dbService.getCollection("rideBuddyMatches");
-    return await collection.find(filters).sort({ createdAt: -1 }).toArray();
+    // Only include active matches that haven't expired
+    const now = new Date();
+    const TOTAL_CONNECTION_DURATION = 15 * 60 * 1000; // 15 minutes total
+    const defaultFilters = {
+      status: "active",
+      createdAt: { $gt: new Date(now.getTime() - TOTAL_CONNECTION_DURATION) },
+    };
+
+    // Merge with provided filters
+    const finalFilters = { ...defaultFilters, ...filters };
+    return await collection
+      .find(finalFilters)
+      .sort({ createdAt: -1 })
+      .toArray();
   });
 };
 

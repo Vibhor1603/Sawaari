@@ -335,21 +335,26 @@ const filterAlreadyConnectedUsers = async (userId, matches) => {
   try {
     if (!matches || matches.length === 0) return matches;
 
-    // Get all existing requests and matches for this user
+    const now = new Date();
+    const TOTAL_CONNECTION_DURATION = 15 * 60 * 1000; // 15 minutes
+
+    // Get all existing active requests and active matches for this user
     const [existingRequests, existingMatches] = await Promise.all([
       findRideBuddyRequests({
         $or: [
           { senderId: new ObjectId(userId) },
           { receiverId: new ObjectId(userId) },
         ],
-        status: { $in: ["accepted", "auto-accepted"] }, // Only filter out accepted connections
+        status: { $in: ["accepted", "auto-accepted"] },
+        createdAt: { $gt: new Date(now - TOTAL_CONNECTION_DURATION) },
       }),
       findRideBuddyMatches({
         $or: [
           { user1Id: new ObjectId(userId) },
           { user2Id: new ObjectId(userId) },
         ],
-        status: "active", // Only filter out active matches
+        status: "active",
+        createdAt: { $gt: new Date(now - TOTAL_CONNECTION_DURATION) },
       }),
     ]);
 
@@ -381,17 +386,39 @@ const filterAlreadyConnectedUsers = async (userId, matches) => {
       console.log(`🤝 Found existing match connection with ${otherUserId}`);
     });
 
-    // Filter out already connected users
+    // Filter out users who are already connected with the same or very similar route
     const filteredMatches = matches.filter((match) => {
       const matchUserId = match.userId.toString();
-      const isAlreadyConnected = connectedUserIds.has(matchUserId);
+      const matchRoute = {
+        source: match.route?.source?.name,
+        destination: match.route?.destination?.name,
+      };
 
-      if (isAlreadyConnected) {
-        console.log(
-          `🚫 Filtering out ${match.userName} - already connected/pending`
+      // If this user is already connected, check if the routes are different
+      if (connectedUserIds.has(matchUserId)) {
+        const existingMatch = existingMatches.find(
+          (m) =>
+            (m.user1Id.toString() === matchUserId ||
+              m.user2Id.toString() === matchUserId) &&
+            m.route1?.source?.name === matchRoute.source &&
+            m.route1?.destination?.name === matchRoute.destination
         );
+
+        if (existingMatch) {
+          console.log(
+            `🚫 Filtering out ${match.userName} - already connected with same route`
+          );
+          return false;
+        }
+
+        // Allow connection if routes are different
+        console.log(
+          `✅ Allowing connection with ${match.userName} - different route than existing connection`
+        );
+        return true;
       }
 
+      return true;
       return !isAlreadyConnected;
     });
 
@@ -1481,14 +1508,11 @@ const cleanupExpiredMatches = async () => {
       `🧹 Found ${expiredMatches.length} expired matches to clean up`
     );
 
-    // Update expired matches to "expired" status
+    // Actually delete expired matches to allow re-matching
     for (const match of expiredMatches) {
-      await updateRideBuddyMatch(match._id, {
-        status: "expired",
-        expiredAt: now,
-      });
+      await RideBuddyMatch.deleteOne({ _id: match._id });
       console.log(
-        `🧹 Expired match ${match._id} between users ${match.user1Id} and ${match.user2Id}`
+        `🧹 Deleted expired match ${match._id} between users ${match.user1Id} and ${match.user2Id}`
       );
     }
 
