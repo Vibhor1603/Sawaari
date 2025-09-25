@@ -23,9 +23,26 @@ class RealTimeRideBuddyService {
 
     // Listen for ride buddy specific events
     io.on("connection", (socket) => {
-      // These events are handled by the enhanced chatService
-      // This service provides additional utility methods
+      // Authenticate and get user info
+      const userId = socket.user?.id;
+      if (userId) {
+        chatService.activeConnections.set(userId, socket);
+        console.log(`🔌 User ${userId} connected to ride buddy service`);
+
+        // Send any pending notifications
+        this.sendPendingNotifications(userId);
+      }
+
+      socket.on("disconnect", () => {
+        if (userId) {
+          chatService.activeConnections.delete(userId);
+          console.log(`🔌 User ${userId} disconnected from ride buddy service`);
+        }
+      });
     });
+
+    // Start periodic cleanup
+    this.startPeriodicCleanup();
   }
 
   // Send notification to specific user

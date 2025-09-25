@@ -900,7 +900,28 @@ const RideBuddy = () => {
       console.log("🔔 New potential match received:", data);
 
       if (data.newMatch) {
-        const newMatch = data.newMatch;
+        // Normalize/validate incoming match data
+        const raw = data.newMatch;
+        const newMatch = {
+          userId: raw.userId || raw._id || "unknown",
+          userName: raw.userName || raw.name || "Anonymous",
+          userEmail: raw.userEmail || raw.email || "",
+          source: raw.source || (raw.route ? raw.route.source : "Unknown"),
+          destination:
+            raw.destination || (raw.route ? raw.route.destination : "Unknown"),
+          overlapPercentage:
+            typeof raw.overlapPercentage === "number"
+              ? raw.overlapPercentage
+              : 0,
+          estimatedSharedFare:
+            typeof raw.estimatedSharedFare === "number"
+              ? raw.estimatedSharedFare
+              : null,
+          sharedDistance:
+            typeof raw.sharedDistance === "number" ? raw.sharedDistance : null,
+          createdAt: raw.createdAt || new Date().toISOString(),
+          // Add any other fields needed by UI here
+        };
 
         setSearchResults((prev) => {
           const exists = prev.some((match) => match.userId === newMatch.userId);
@@ -1104,7 +1125,11 @@ const RideBuddy = () => {
           matches
         );
         console.log("🔍 Search result data:", result.data);
-
+        console.log("🔍 Search state before update:", {
+          isActive: searchState.isActive,
+          searchLoading,
+          matchCount: searchResults.length,
+        });
         const filteredMatches = matches.filter((match) => {
           if (match.userId === user?.id) {
             console.log(`🚫 Filtering out current user: ${match.userId}`);
@@ -1129,8 +1154,9 @@ const RideBuddy = () => {
         );
         setSearchResults(filteredMatches);
 
+        // Set search state to active only if no matches were found
         const newSearchState = {
-          isActive: true,
+          isActive: filteredMatches.length === 0, // Only keep searching if no matches found
           searchId: result.data.searchId,
           expiresAt: result.data.expiresAt,
           source: searchForm.source.name,
@@ -1140,6 +1166,12 @@ const RideBuddy = () => {
         };
         console.log("🔍 Setting new search state:", newSearchState);
         setSearchState(newSearchState);
+
+        console.log("🔍 Search state after filtering:", {
+          isActive: searchState.isActive,
+          filteredMatchCount: filteredMatches.length,
+          newSearchState,
+        });
 
         if (filteredMatches.length === 0) {
           showDebouncedToast(
@@ -1580,8 +1612,10 @@ const RideBuddy = () => {
             ))}
           </div>
         </div>
+
+        {/* Tab Content */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 sm:gap-6 lg:gap-8 lg:items-start">
-          {activeTab === "search" && (
+          {activeTab === "search" ? (
             <>
               <div className="lg:col-span-2 order-1 lg:order-1">
                 <div className="bg-black/20 backdrop-blur-sm border border-white/10 rounded-lg sm:rounded-xl p-6 sm:p-8 flex flex-col gap-6 sm:gap-8">
@@ -1819,153 +1853,139 @@ const RideBuddy = () => {
                   )}
                 </div>
               </div>
-              {/* Right Column - Always Visible Results Panel */}
+
+              {/* Right Column - Results Panel */}
               <div className="lg:col-span-3 order-2 lg:order-2">
-                <div className="bg-black/20 backdrop-blur-sm border border-white/10 rounded-lg sm:rounded-xl p-6 sm:p-8 flex flex-col gap-4 sm:gap-6">
+                <div className="bg-black/20 backdrop-blur-sm border border-white/10 rounded-lg sm:rounded-xl p-6 sm:p-8">
                   <h2 className="text-lg sm:text-xl font-bold text-white text-readable">
                     Travel Buddy Matches
                   </h2>
 
-                  {/* Active Search State */}
-                  {searchState.isActive ? (
-                    <div className="text-center py-4">
-                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-sawaari-yellow mx-auto mb-2"></div>
-                      <h3 className="text-base font-bold text-white mb-1">
-                        Searching for Buddies...
-                      </h3>
-                      <p className="text-gray-300 text-sm mb-1">
-                        Your search is active! We&apos;ll notify you when
-                        potential matches are found.
-                      </p>
-                      <p className="text-xs text-gray-400">
-                        Search expires in{" "}
-                        {Math.floor(searchState.timeRemaining / 60000)}:
-                        {String(
-                          Math.floor((searchState.timeRemaining % 60000) / 1000)
-                        ).padStart(2, "0")}
-                      </p>
-                    </div>
-                  ) : searchResults.length > 0 ? (
-                    /* Search Results */
-                    <div className="space-y-4">
-                      <div className="text-center mb-4">
-                        <p className="text-gray-400 text-sm">
-                          Found {searchResults.length} potential travel
-                          companion{searchResults.length !== 1 ? "s" : ""}
-                        </p>
-                      </div>
-                      <div className="space-y-4 max-h-96 overflow-y-auto">
-                        {searchResults.map((match) => (
-                          <div
-                            key={match.userId}
-                            className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-black/30 border border-white/10 rounded-lg gap-4"
-                          >
-                            <div className="flex items-center gap-4 min-w-0 flex-1">
-                              <div className="w-12 h-12 bg-sawaari-yellow-muted border border-sawaari-yellow-border rounded-full flex items-center justify-center flex-shrink-0">
-                                <span className="text-sawaari-yellow font-semibold">
-                                  {(
-                                    match.userName ||
-                                    `User ${match.userId?.slice(-4)}`
-                                  )
-                                    ?.charAt(0)
-                                    ?.toUpperCase() || "U"}
-                                </span>
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <h4 className="font-semibold text-white text-readable truncate">
-                                  {match.userName ||
-                                    `User ${match.userId?.slice(-4)}`}
-                                </h4>
-                                <p className="text-sm text-gray-300 text-readable-secondary truncate">
-                                  {getLocationName(
-                                    match.route?.source || match.source
-                                  )}{" "}
-                                  →{" "}
-                                  {getLocationName(
-                                    match.route?.destination ||
-                                      match.destination
-                                  )}
-                                </p>
-                                <div className="flex flex-wrap gap-2 mt-1">
-                                  {match.overlapPercentage && (
-                                    <p className="text-xs text-sawaari-yellow">
-                                      {Math.round(match.overlapPercentage)}%
-                                      route match
-                                    </p>
-                                  )}
-                                  {match.estimatedSharedFare && (
-                                    <p className="text-xs text-green-400">
-                                      ₹{Math.round(match.estimatedSharedFare)}{" "}
-                                      shared fare
-                                    </p>
-                                  )}
+                  <div className="mt-4 sm:mt-6">
+                    {searchResults.length > 0 ? (
+                      <div className="space-y-4">
+                        <div className="text-center mb-4">
+                          <p className="text-gray-400 text-sm">
+                            Found {searchResults.length} potential travel
+                            companion{searchResults.length !== 1 ? "s" : ""}
+                            {searchState.isActive && " • Search still active"}
+                          </p>
+                          {searchState.isActive && (
+                            <p className="text-xs text-gray-400 mt-1">
+                              Search expires in{" "}
+                              {Math.floor(searchState.timeRemaining / 60000)}:
+                              {String(
+                                Math.floor(
+                                  (searchState.timeRemaining % 60000) / 1000
+                                )
+                              ).padStart(2, "0")}
+                            </p>
+                          )}
+                        </div>
+                        <div className="space-y-4 max-h-96 overflow-y-auto">
+                          {searchResults.map((match) => (
+                            <div
+                              key={match.userId}
+                              className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-black/30 border border-white/10 rounded-lg gap-4"
+                            >
+                              <div className="flex items-center gap-4 min-w-0 flex-1">
+                                <div className="w-12 h-12 bg-sawaari-yellow-muted border border-sawaari-yellow-border rounded-full flex items-center justify-center flex-shrink-0">
+                                  <span className="text-sawaari-yellow font-semibold">
+                                    {(
+                                      match.userName ||
+                                      `User ${match.userId?.slice(-4)}`
+                                    )
+                                      ?.charAt(0)
+                                      ?.toUpperCase() || "U"}
+                                  </span>
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <h4 className="font-semibold text-white text-readable truncate">
+                                    {match.userName ||
+                                      `User ${match.userId?.slice(-4)}`}
+                                  </h4>
+                                  <p className="text-sm text-gray-300 text-readable-secondary truncate">
+                                    {getLocationName(
+                                      match.route?.source || match.source
+                                    )}{" "}
+                                    →{" "}
+                                    {getLocationName(
+                                      match.route?.destination ||
+                                        match.destination
+                                    )}
+                                  </p>
+                                  <div className="flex flex-wrap gap-2 mt-1">
+                                    {match.overlapPercentage && (
+                                      <p className="text-xs text-sawaari-yellow">
+                                        {Math.round(match.overlapPercentage)}%
+                                        route match
+                                      </p>
+                                    )}
+                                    {match.estimatedSharedFare && (
+                                      <p className="text-xs text-green-400">
+                                        ₹{Math.round(match.estimatedSharedFare)}{" "}
+                                        shared fare
+                                      </p>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
+                              <button
+                                onClick={() => sendRideRequest(match)}
+                                disabled={sentRequestIds.has(match.userId)}
+                                className={`px-4 py-2 rounded-lg transition-all duration-300 text-sm font-medium whitespace-nowrap flex-shrink-0 ${
+                                  sentRequestIds.has(match.userId)
+                                    ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                                    : "bg-sawaari-yellow text-black hover:bg-sawaari-yellow/80"
+                                }`}
+                              >
+                                {sentRequestIds.has(match.userId)
+                                  ? "Request Sent"
+                                  : "Send Request"}
+                              </button>
                             </div>
-                            <button
-                              onClick={() => sendRideRequest(match.userId)}
-                              disabled={sentRequestIds.has(match.userId)}
-                              className={`px-4 py-2 rounded-lg transition-all duration-300 text-sm font-medium whitespace-nowrap flex-shrink-0 ${
-                                sentRequestIds.has(match.userId)
-                                  ? "bg-gray-600 text-gray-400 cursor-not-allowed"
-                                  : "bg-sawaari-yellow text-black hover:bg-sawaari-yellow/80"
-                              }`}
-                            >
-                              {sentRequestIds.has(match.userId)
-                                ? "Request Sent"
-                                : "Send Request"}
-                            </button>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  ) : searchResults.length === 0 &&
-                    !searchLoading &&
-                    !searchState.isActive &&
-                    searchForm.source.name &&
-                    searchForm.destination.name ? (
-                    /* No Results Found */
-                    <div className="text-center py-8">
-                      <div className="text-6xl mb-4">🔍</div>
-                      <h3 className="text-xl font-bold text-white mb-2 text-readable">
-                        No matches found
-                      </h3>
-                      <p className="text-gray-300 text-readable-secondary mb-2">
-                        We couldn&apos;t find any travel buddies for your route
-                        right now.
-                      </p>
-                      <p className="text-gray-300 text-readable-secondary">
-                        Try searching again or adjust your route!
-                      </p>
-                    </div>
-                  ) : (
-                    /* Default State - Always Visible */
-                    <div className="flex flex-col items-center justify-center py-6 text-center">
-                      <div className="text-4xl mb-3">🚀</div>
-                      <h3 className="text-lg font-bold text-white mb-2 text-readable">
-                        Ready to Find Travel Buddies?
-                      </h3>
-                      <p className="text-gray-300 text-readable-secondary mb-3 max-w-sm text-sm">
-                        Select your locations and start searching for fellow
-                        travelers.
-                      </p>
-                      <div className="bg-sawaari-yellow/10 border border-sawaari-yellow/20 rounded-lg p-3 max-w-sm">
-                        <h4 className="text-sawaari-yellow font-semibold mb-2 text-sm">
-                          Quick Tips:
-                        </h4>
-                        <ul className="text-xs text-gray-300 space-y-1 text-left">
-                          <li>• 2km search radius</li>
-                          <li>• 5-minute active search</li>
-                          <li>• Chat with matches</li>
-                          <li>• Share ride costs</li>
-                        </ul>
+                    ) : searchState.isActive ? (
+                      <div className="text-center py-4">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-sawaari-yellow mx-auto mb-2"></div>
+                        <h3 className="text-base font-bold text-white mb-1">
+                          Searching for Buddies...
+                        </h3>
+                        <p className="text-gray-300 text-sm mb-1">
+                          Your search is active! We&apos;ll notify you when
+                          potential matches are found.
+                        </p>
                       </div>
-                    </div>
-                  )}
+                    ) : (
+                      <div className="flex flex-col items-center justify-center py-6 text-center">
+                        <div className="text-4xl mb-3">🚀</div>
+                        <h3 className="text-lg font-bold text-white mb-2 text-readable">
+                          Ready to Find Travel Buddies?
+                        </h3>
+                        <p className="text-gray-300 text-readable-secondary mb-3 max-w-sm text-sm">
+                          Select your locations and start searching for fellow
+                          travelers.
+                        </p>
+                        <div className="bg-sawaari-yellow/10 border border-sawaari-yellow/20 rounded-lg p-3 max-w-sm">
+                          <h4 className="text-sawaari-yellow font-semibold mb-2 text-sm">
+                            Quick Tips:
+                          </h4>
+                          <ul className="text-xs text-gray-300 space-y-1 text-left">
+                            <li>• 2km search radius</li>
+                            <li>• 5-minute active search</li>
+                            <li>• Chat with matches</li>
+                            <li>• Share ride costs</li>
+                          </ul>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </>
-          )}
+          ) : null}
 
           {activeTab === "connections" && (
             <div className="lg:col-span-5 space-y-4 sm:space-y-6">

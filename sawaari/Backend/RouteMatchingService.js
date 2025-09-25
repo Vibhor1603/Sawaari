@@ -2,6 +2,7 @@ const { haversineDistance, calculateFare } = require("./routeService");
 const { findRideBuddySearches } = require("./database");
 const { rideBuddyCacheService } = require("./cacheService");
 const { ObjectId } = require("mongodb");
+const matchNotificationService = require("./matchNotificationService");
 
 /**
  * Enhanced RouteMatchingService - Functional approach for route matching and calculation
@@ -206,6 +207,33 @@ const calculateRouteOverlap = (route1, route2) => {
     route1Waypoints: waypoints1.length,
     route2Waypoints: waypoints2.length,
   };
+
+  // If this is a good match (overlap > 30%), notify users
+  if (result.overlapPercentage > DEFAULT_CONFIG.minOverlapPercentage) {
+    const routeData = {
+      source: route1.source?.name || route1.source,
+      destination: route1.destination?.name || route1.destination,
+      overlapPercentage: result.overlapPercentage,
+      sharedDistance: result.sharedDistance,
+      commonSteps: result.commonSteps,
+    };
+
+    // Notify about the match
+    matchNotificationService
+      .notifyMatches([
+        {
+          userId: route1.userId,
+          matchData: { ...routeData, partnerId: route2.userId },
+        },
+        {
+          userId: route2.userId,
+          matchData: { ...routeData, partnerId: route1.userId },
+        },
+      ])
+      .catch((err) =>
+        console.error("Failed to send match notifications:", err)
+      );
+  }
 
   // Cache the result for 30 minutes (route calculations are relatively stable)
   rideBuddyCacheService.setRouteCalculation(cacheKey, result, 1800000);
@@ -603,53 +631,58 @@ const findPotentialMatches = async (userRoute, options = {}) => {
  * @returns {Array} - Ranked array of matches
  */
 const rankMatches = (matches, preferences = {}) => {
-  if (!matches || !matches.length) return [];
+  try {
+    if (!matches || !matches.length) return [];
 
-  const weights = {
-    overlapPercentage: preferences.overlapWeight || 0.4,
-    savings: preferences.savingsWeight || 0.3,
-    proximity: preferences.proximityWeight || 0.2,
-    recency: preferences.recencyWeight || 0.1,
-  };
-
-  // Calculate composite score for each match
-  const rankedMatches = matches.map((match) => {
-    const overlapScore = match.overlap.overlapPercentage / 100;
-    const savingsScore = Math.min(match.fareSharing.savings1 / 100, 1); // Normalize to 0-1
-    const minProximity = Math.min(
-      match.proximity.sourceDistance,
-      match.proximity.destinationDistance
-    );
-    const proximityScore = Math.max(0, 1 - minProximity / 10); // 10km max distance
-
-    const hoursSinceSearch =
-      (new Date() - new Date(match.searchTimestamp)) / (1000 * 60 * 60);
-    const recencyScore = Math.max(0, 1 - hoursSinceSearch / 24); // 24 hours max
-
-    const compositeScore =
-      overlapScore * weights.overlapPercentage +
-      savingsScore * weights.savings +
-      proximityScore * weights.proximity +
-      recencyScore * weights.recency;
-
-    return {
-      ...match,
-      ranking: {
-        compositeScore: Math.round(compositeScore * 1000) / 1000,
-        overlapScore,
-        savingsScore,
-        proximityScore,
-        recencyScore,
-      },
+    const weights = {
+      overlapPercentage: preferences.overlapWeight || 0.4,
+      savings: preferences.savingsWeight || 0.3,
+      proximity: preferences.proximityWeight || 0.2,
+      recency: preferences.recencyWeight || 0.1,
     };
-  });
 
-  // Sort by composite score (highest first)
-  rankedMatches.sort(
-    (a, b) => b.ranking.compositeScore - a.ranking.compositeScore
-  );
+    // Calculate composite score for each match
+    const rankedMatches = matches.map((match) => {
+      const overlapScore = match.overlap.overlapPercentage / 100;
+      const savingsScore = Math.min(match.fareSharing.savings1 / 100, 1); // Normalize to 0-1
+      const minProximity = Math.min(
+        match.proximity.sourceDistance,
+        match.proximity.destinationDistance
+      );
+      const proximityScore = Math.max(0, 1 - minProximity / 10); // 10km max distance
 
-  return rankedMatches;
+      const hoursSinceSearch =
+        (new Date() - new Date(match.searchTimestamp)) / (1000 * 60 * 60);
+      const recencyScore = Math.max(0, 1 - hoursSinceSearch / 24); // 24 hours max
+
+      const compositeScore =
+        overlapScore * weights.overlapPercentage +
+        savingsScore * weights.savings +
+        proximityScore * weights.proximity +
+        recencyScore * weights.recency;
+
+      return {
+        ...match,
+        ranking: {
+          compositeScore: Math.round(compositeScore * 1000) / 1000,
+          overlapScore,
+          savingsScore,
+          proximityScore,
+          recencyScore,
+        },
+      };
+    });
+
+    // Sort by composite score (highest first)
+    rankedMatches.sort(
+      (a, b) => b.ranking.compositeScore - a.ranking.compositeScore
+    );
+
+    return rankedMatches;
+  } catch (error) {
+    console.error("Error ranking matches:", error);
+    return [];
+  }
 };
 
 /**
@@ -905,7 +938,7 @@ module.exports = {
   isSimilarLocation,
   levenshteinDistance,
   findNearbyUsers,
-  calculateDistance,
+  calculateDistance: haversineDistance,
   calculateSharedFare,
   findPotentialMatches,
   rankMatches,

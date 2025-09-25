@@ -292,10 +292,36 @@ setInterval(async () => {
  * @returns {Array} - Filtered matches
  */
 const filterMatchesByPreferences = (matches, preferences) => {
+  console.log("🔍 Filtering matches by preferences:", {
+    matches: matches.length,
+    preferences: preferences,
+  });
+
   return matches.filter((match) => {
-    // Add preference-based filtering logic here
-    // For now, return all matches
-    return true;
+    // Basic validation
+    if (!match || !match.userId) {
+      console.log("❌ Invalid match object:", match);
+      return false;
+    }
+
+    // Keep match by default if no preferences set
+    if (!preferences) {
+      return true;
+    }
+
+    let meetsPreferences = true;
+
+    // Log each preference check
+    console.log(`🔍 Checking preferences for match with ${match.userName}:`, {
+      matchId: match.searchId,
+      overlap: match.overlap?.overlapPercentage || 0,
+      route: {
+        source: match.route?.source?.name,
+        destination: match.route?.destination?.name,
+      },
+    });
+
+    return meetsPreferences;
   });
 };
 
@@ -316,36 +342,43 @@ const filterAlreadyConnectedUsers = async (userId, matches) => {
           { senderId: new ObjectId(userId) },
           { receiverId: new ObjectId(userId) },
         ],
-        status: { $in: ["pending", "accepted", "auto-accepted"] },
+        status: { $in: ["accepted", "auto-accepted"] }, // Only filter out accepted connections
       }),
       findRideBuddyMatches({
         $or: [
           { user1Id: new ObjectId(userId) },
           { user2Id: new ObjectId(userId) },
         ],
-        status: { $in: ["active", "connected"] },
+        status: "active", // Only filter out active matches
       }),
     ]);
 
     // Create sets of connected user IDs for fast lookup
     const connectedUserIds = new Set();
 
-    // Add users from existing requests
+    console.log(`🔍 Checking existing connections for user ${userId}:`, {
+      requests: existingRequests.length,
+      matches: existingMatches.length,
+    });
+
+    // Add users from existing active requests
     existingRequests.forEach((request) => {
       const otherUserId =
         request.senderId.toString() === userId
           ? request.receiverId.toString()
           : request.senderId.toString();
       connectedUserIds.add(otherUserId);
+      console.log(`📝 Found existing request connection with ${otherUserId}`);
     });
 
-    // Add users from existing matches
+    // Add users from existing active matches
     existingMatches.forEach((match) => {
       const otherUserId =
         match.user1Id.toString() === userId
           ? match.user2Id.toString()
           : match.user1Id.toString();
       connectedUserIds.add(otherUserId);
+      console.log(`🤝 Found existing match connection with ${otherUserId}`);
     });
 
     // Filter out already connected users
@@ -539,12 +572,33 @@ const searchRideBuddies = async (req, res) => {
         userId: userRoute.userId,
       });
 
+      console.log("🔍 Searching for matches with route:", {
+        userId: userRoute.userId,
+        userName: userRoute.userName,
+        source: userRoute.source.name,
+        destination: userRoute.destination.name,
+        searchRadius: searchData.searchRadius,
+      });
+
       // Use the new findActiveMatches method for real-time bidirectional matching
       matches = await routeMatchingService.findActiveMatches(userRoute, userId);
 
       console.log(
         `📊 Found ${matches.length} initial matches before filtering`
       );
+
+      if (matches.length > 0) {
+        console.log(
+          "📊 Initial matches detail:",
+          matches.map((m) => ({
+            userName: m.userName,
+            source: m.route.source.name,
+            destination: m.route.destination.name,
+            overlap: m.overlap.overlapPercentage,
+            userId: m.userId,
+          }))
+        );
+      }
 
       // Filter matches based on user preferences
       matches = filterMatchesByPreferences(matches, searchData.preferences);
@@ -554,15 +608,47 @@ const searchRideBuddies = async (req, res) => {
       matches = await securityService.filterBlockedUsers(userId, matches);
       console.log(`📊 After security filtering: ${matches.length} matches`);
 
-      // Filter out users who are already connected or have pending requests
-      matches = await filterAlreadyConnectedUsers(userId, matches);
-      console.log(`📊 After connection filtering: ${matches.length} matches`);
+      // Filter out users who are already connected
+      const beforeConnectionFilter = matches.length;
+      try {
+        matches = await filterAlreadyConnectedUsers(userId, matches);
+        console.log(
+          `📊 After connection filtering: ${matches.length} matches (removed ${
+            beforeConnectionFilter - matches.length
+          } already connected users)`
+        );
+
+        // Log matches that will be returned
+        if (matches.length > 0) {
+          console.log(
+            "✅ Final matches to return:",
+            matches.map((m) => ({
+              userName: m.userName,
+              overlapPercentage: m.overlap.overlapPercentage,
+              source: m.route.source.name,
+              destination: m.route.destination.name,
+              userId: m.userId,
+            }))
+          );
+        } else {
+          console.log("ℹ️ No matches to return after all filtering steps");
+        }
+      } catch (filterError) {
+        console.error("❌ Error during connection filtering:", filterError);
+        // Don't throw, use the unfiltered matches
+        matches = beforeConnectionFilter;
+      }
 
       // Notify existing searchers about this new search
-      await routeMatchingService.notifyExistingSearchers(
-        userRoute,
-        chatService
-      );
+      try {
+        await routeMatchingService.notifyExistingSearchers(
+          userRoute,
+          chatService
+        );
+      } catch (notifyError) {
+        console.error("❌ Error notifying existing searchers:", notifyError);
+        // Don't throw, notification failure shouldn't prevent match results
+      }
     } catch (matchError) {
       console.error("Error finding matches:", matchError);
       // Continue without matches if matching fails
@@ -574,16 +660,19 @@ const searchRideBuddies = async (req, res) => {
       data: {
         searchId: searchResult.insertedId,
         matches: matches.map((match) => ({
+          _id: match.searchId || match.userId, // frontend uses this as key
           userId: match.userId,
           userEmail: match.userEmail,
           userName: match.userName,
-          route: match.route,
+          source: match.route.source.name,
+          destination: match.route.destination.name,
           overlapPercentage: match.overlap.overlapPercentage,
-          sharedDistance: match.overlap.sharedDistance,
-          estimatedSharedFare: match.fareSharing.sharedFare,
-          savings: match.fareSharing.savings1,
-          searchTimestamp: match.searchTimestamp,
-          searchId: match.searchId,
+          sharedDistance: match.overlap.sharedDistance || 0,
+          estimatedSharedFare: match.fareSharing?.sharedFare || 0,
+          savings: match.fareSharing?.savings1 || 0,
+          searchTimestamp: match.searchTimestamp || new Date().toISOString(),
+          searchId: match.searchId || searchResult.insertedId,
+          userPhone: match.userPhone,
         })),
         matchCount: matches.length,
         searchRadius: searchData.searchRadius,
