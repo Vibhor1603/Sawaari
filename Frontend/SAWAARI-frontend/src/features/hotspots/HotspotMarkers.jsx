@@ -54,7 +54,7 @@ export default function HotspotMarkers({ hotspot, clickHandler }) {
                 </div>
 
                 {/* Destinations List */}
-                <div className="space-y-1 max-h-24 overflow-y-auto">
+                <div className="space-y-1 max-h-48 overflow-y-auto scrollbar-thin scrollbar-thumb-sawaari-yellow/20 scrollbar-track-transparent hover:scrollbar-thumb-sawaari-yellow/40">
                   {item.destinations.map((result) => (
                     <button
                       key={result.name}

@@ -617,13 +617,16 @@ const LiveChat = ({ chatId, partnerName, onClose }) => {
             <span className="text-xs text-yellow-400/90">Connecting...</span>
           </div>
         ) : (
-          <form onSubmit={handleSendMessage} className="flex gap-3">
+          <form
+            onSubmit={handleSendMessage}
+            className="flex gap-2 w-full max-w-full"
+          >
             <input
               type="text"
               value={newMessage}
               onChange={handleInputChange}
               placeholder="Type your message..."
-              className="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm placeholder-white/40 focus:border-sawaari-yellow/50 focus:ring-1 focus:ring-sawaari-yellow/20 focus:outline-none transition-all duration-300"
+              className="flex-1 min-w-2 px-2 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm placeholder-white/40 focus:border-sawaari-yellow/50 focus:ring-1 focus:ring-sawaari-yellow/20 focus:outline-none transition-all duration-300"
               maxLength={500}
               disabled={chatExpired || !connected || connectionPhase !== "chat"}
             />
@@ -635,11 +638,11 @@ const LiveChat = ({ chatId, partnerName, onClose }) => {
                 !connected ||
                 connectionPhase !== "chat"
               }
-              className="px-4 py-2 bg-sawaari-yellow text-black rounded-lg font-medium hover:bg-sawaari-yellow/90 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="flex-shrink-0 px-2 sm:px-4 py-2 bg-sawaari-yellow text-black rounded-lg font-medium hover:bg-sawaari-yellow/90 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 sm:gap-2"
             >
-              <span className="text-sm">Send</span>
+              <span className="text-sm whitespace-nowrap">Send</span>
               <svg
-                className="w-4 h-4"
+                className="w-4 h-4 flex-shrink-0"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"

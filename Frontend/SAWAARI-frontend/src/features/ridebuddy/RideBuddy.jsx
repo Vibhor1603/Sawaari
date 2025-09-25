@@ -192,6 +192,8 @@ const RideBuddy = () => {
             "rideBuddy_activeConnections",
             JSON.stringify(validConnections)
           );
+          // Update the state to remove expired connections
+          setActiveConnections(validConnections);
         }
       }
     } catch (error) {

@@ -39,7 +39,7 @@ export default function Navbar() {
       className="fixed top-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-md border-b border-white/10"
       ref={navRef}
     >
-      <div className="container-sawaari">
+      <div className="container-sawaari max-w-7xl mx-auto px-8">
         <div className="flex items-center justify-between h-16">
           {/* Enhanced Brand */}
           <NavLink
@@ -47,7 +47,9 @@ export default function Navbar() {
             className="flex items-center space-x-3 text-white hover:text-sawaari-yellow transition-colors duration-300"
           >
             <div className="w-14 h-10  rounded-full flex items-center justify-center shadow-sawaari-subtle">
-              <span className="text-black font-bold text-lg"><img src="/logo.jpg" /></span>
+              <span className="text-black font-bold text-lg">
+                <img src="/logo.jpg" />
+              </span>
             </div>
             <span className="text-xl font-bold text-sawaari-yellow text-readable">
               SAWAARI
@@ -55,8 +57,8 @@ export default function Navbar() {
           </NavLink>
 
           {/* Enhanced Desktop Navigation */}
-          <div className="hidden lg:flex items-center space-x-8">
-            <div className="flex items-center space-x-1">
+          <div className="hidden lg:flex items-center space-x-16">
+            <div className="flex items-center space-x-8">
               <NavLink
                 to="/home"
                 className={({ isActive }) =>
