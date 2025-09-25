@@ -16,10 +16,6 @@ let lastApiCall = 0;
 const cache = new Map();
 const pendingRequests = new Map();
 
-console.log(
-  "🚀 AUTH SERVICE INITIALIZED - Real API calls with smart management"
-);
-
 // Rate limiting wrapper
 const rateLimitedCall = async (apiCall) => {
   const now = Date.now();
@@ -283,7 +279,6 @@ const isAuthenticated = () => {
 
     // Check if token is in old format (missing type, iss, aud)
     if (!payload.type || !payload.iss || !payload.aud) {
-      console.log("🔄 Old format token detected, clearing...");
       clearTokens();
       return false;
     }

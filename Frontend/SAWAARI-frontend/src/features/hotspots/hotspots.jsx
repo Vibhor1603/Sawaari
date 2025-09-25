@@ -1,6 +1,10 @@
 /* eslint-disable no-unused-vars */
 import { useState, useEffect } from "react";
-import { EnhancedMap, ResponsiveLocationSearch } from "../../components/common";
+import {
+  EnhancedMap,
+  ResponsiveLocationSearch,
+  LocationBanner,
+} from "../../components/common";
 
 // Component to display hotspots with enhanced geolocation-based loading
 function Hotspots() {
@@ -23,8 +27,15 @@ function Hotspots() {
     setSelectedDestination([latitude, longitude]);
   };
 
+  // Handle default location selection from banner
+  const handleUseDefaultLocation = (defaultLocation) => {
+    setSelectedDestination(defaultLocation);
+  };
+
   return (
     <div className="min-h-screen bg-black pt-20 relative overflow-hidden">
+      {/* Location Banner */}
+      <LocationBanner onUseDefaultLocation={handleUseDefaultLocation} />
       {/* Creative Background Elements */}
       <div className="absolute inset-0 pointer-events-none">
         {/* Floating Rickshaws */}

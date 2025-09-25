@@ -34,25 +34,21 @@ const rateLimitedCall = async (apiCall) => {
 
 // Generic API request with retry logic and error handling
 const apiRequest = async (endpoint, options = {}, retryCount = 0) => {
-  console.log("🌐 apiRequest called with:", { endpoint, options, retryCount });
-
   const requestKey = `${options.method || "GET"}-${endpoint}-${JSON.stringify(
     options.body || {}
   )}`;
 
   // Prevent duplicate simultaneous requests
   if (pendingRequests.has(requestKey)) {
-    console.log("🔄 Returning cached pending request for:", requestKey);
     return pendingRequests.get(requestKey);
   }
 
   const requestPromise = rateLimitedCall(async () => {
     try {
-      console.log("🚀 Making authService.apiRequest call to:", endpoint);
       const response = await authService.apiRequest(endpoint, options);
-      console.log("📡 Got response:", response);
+
       const data = await response.json();
-      console.log("📊 Parsed data:", data);
+
       return data;
     } catch (error) {
       console.error("❌ Error in apiRequest:", error);
@@ -224,24 +220,12 @@ const handleConnectionRequest = async (
   responseMessage = ""
 ) => {
   try {
-    console.log("🚀 handleConnectionRequest called with:", {
-      requestId,
-      action,
-      responseMessage,
-    });
-
     if (!requestId || !["accept", "decline"].includes(action)) {
       console.error("❌ Invalid parameters:", { requestId, action });
       throw new Error(
         "Valid request ID and action (accept/decline) are required"
       );
     }
-
-    console.log("🔧 Sending request response:", {
-      requestId,
-      action,
-      responseMessage,
-    });
 
     const response = await apiRequest(`/api/ride-buddy/request/${requestId}`, {
       method: "PUT",
@@ -250,8 +234,6 @@ const handleConnectionRequest = async (
         message: responseMessage,
       }),
     });
-
-    console.log("🔧 API Response:", response);
 
     if (response.success) {
       // Clear relevant caches
@@ -526,7 +508,6 @@ const reportUser = async (userId, reason, description = "") => {
 // Clear all caches
 const clearCache = () => {
   cache.clear();
-  console.log("RideBuddy service cache cleared");
 };
 
 // Get cache status
@@ -564,13 +545,9 @@ const validateSearchData = (searchData) => {
 // Cancel active search
 const cancelActiveSearch = async () => {
   try {
-    console.log("🚀 cancelActiveSearch called");
-
     const response = await apiRequest("/api/ride-buddy/search/active", {
       method: "POST",
     });
-
-    console.log("🔧 Cancel search API Response:", response);
 
     if (response.success) {
       // Clear search-related caches
@@ -725,8 +702,6 @@ const rideBuddyService = {
   // Cleanup expired requests
   cleanupExpiredRequests: async () => {
     try {
-      console.log("🧹 Calling cleanup expired requests API");
-
       const response = await apiRequest("/api/ride-buddy/cleanup-expired", {
         method: "POST",
       });
@@ -759,8 +734,6 @@ const rideBuddyService = {
   // Cleanup duplicate requests
   cleanupDuplicateRequests: async () => {
     try {
-      console.log("🧹 Calling cleanup duplicate requests API");
-
       const response = await apiRequest("/api/ride-buddy/cleanup-duplicates", {
         method: "POST",
       });

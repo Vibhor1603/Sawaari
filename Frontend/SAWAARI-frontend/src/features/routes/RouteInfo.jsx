@@ -23,7 +23,10 @@ import RouteForm from "./RouteForm";
 import RouteOptions from "../../components/routes/RouteOptions";
 import MultipleRoutePolylines from "../../components/routes/MultipleRoutePolylines";
 import { useBoundsHotspots } from "../../hooks/useBoundsHotspots";
-import { ResponsiveLocationSearch } from "../../components/common";
+import {
+  ResponsiveLocationSearch,
+  LocationBanner,
+} from "../../components/common";
 
 // Custom icons for route markers
 const startIcon = new L.DivIcon({
@@ -271,8 +274,21 @@ export default function RouteInfo() {
     mapControlRef.current = map;
   };
 
+  const handleUseDefaultLocation = (defaultLocation) => {
+    setSelectedDestination(defaultLocation);
+    if (mapControlRef.current) {
+      mapControlRef.current.flyTo(defaultLocation, 14, {
+        duration: 1.5,
+        easeLinearity: 0.1,
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-black pt-16 sm:pt-20 relative overflow-hidden">
+      {/* Location Banner */}
+      <LocationBanner onUseDefaultLocation={handleUseDefaultLocation} />
+
       {/* Creative Background Elements */}
       <div className="absolute inset-0 pointer-events-none">
         {/* Animated Route Lines */}

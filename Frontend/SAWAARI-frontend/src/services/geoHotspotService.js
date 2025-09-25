@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 // Frontend service for geolocation-based hotspot loading
 class GeoHotspotService {
   constructor() {
@@ -33,12 +34,6 @@ class GeoHotspotService {
 
       // Return cached data if valid
       if (this.isCacheValid(cachedData)) {
-        if (import.meta.env.DEV) {
-          console.log("📦 Using cached hotspots for bounds:", {
-            dataLength: cachedData.data.data ? cachedData.data.data.length : 0,
-            success: cachedData.data.success,
-          });
-        }
         return {
           ...cachedData.data,
           cached: true,
@@ -47,18 +42,7 @@ class GeoHotspotService {
 
       // Check if there's already a pending request for this key
       if (this.pendingRequests.has(cacheKey)) {
-        if (import.meta.env.DEV) {
-          console.log("⏳ Request already pending, waiting for result");
-        }
         return await this.pendingRequests.get(cacheKey);
-      }
-
-      if (import.meta.env.DEV) {
-        console.log("🌐 Fetching hotspots for bounds from API:", {
-          bounds,
-          zoom,
-          cacheKey,
-        });
       }
 
       // Create the request promise and store it
@@ -104,13 +88,6 @@ class GeoHotspotService {
       timestamp: Date.now(),
     });
 
-    console.log("🔍 API Response:", {
-      success: result.success,
-      dataLength: result.data ? result.data.length : 0,
-      error: result.error,
-      cached: false,
-    });
-
     return {
       ...result,
       cached: false,
@@ -125,17 +102,10 @@ class GeoHotspotService {
 
       // Return cached data if valid
       if (this.isCacheValid(cachedData)) {
-        if (process.env.NODE_ENV === "development") {
-          console.log("📦 Using cached nearby hotspots");
-        }
         return {
           ...cachedData.data,
           cached: true,
         };
-      }
-
-      if (process.env.NODE_ENV === "development") {
-        console.log("🌐 Fetching nearby hotspots from API");
       }
 
       const response = await fetch(`${this.baseURL}/api/hotspots/nearby`, {
@@ -197,9 +167,6 @@ class GeoHotspotService {
   clearCache() {
     this.cache.clear();
     this.pendingRequests.clear(); // Also clear pending requests
-    if (process.env.NODE_ENV === "development") {
-      console.log("🗑️ Hotspot cache and pending requests cleared");
-    }
   }
 
   // Get cache statistics
@@ -234,10 +201,6 @@ class GeoHotspotService {
         this.cache.delete(key);
         cleanedCount++;
       }
-    }
-
-    if (cleanedCount > 0 && process.env.NODE_ENV === "development") {
-      console.log(`🧹 Cleaned ${cleanedCount} expired cache entries`);
     }
 
     return cleanedCount;

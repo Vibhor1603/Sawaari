@@ -9,14 +9,11 @@ class ChatService {
 
     // Event listeners
     this.eventListeners = new Map();
-
-    console.log("💬 Chat Service initialized");
   }
 
   // Initialize chat service
   async initialize(user) {
     if (this.isInitialized) {
-      console.log("💬 Chat service already initialized");
       return;
     }
 
@@ -34,7 +31,6 @@ class ChatService {
       await this.loadConversations();
 
       this.isInitialized = true;
-      console.log("💬 Chat service initialized successfully");
 
       this.emit("chat_initialized");
     } catch (error) {
@@ -46,12 +42,10 @@ class ChatService {
   // Set up socket event listeners
   setupSocketListeners() {
     socketService.on("socket_connected", () => {
-      console.log("💬 Socket connected, chat service ready");
       this.emit("connection_status_changed", { connected: true });
     });
 
     socketService.on("socket_disconnected", (reason) => {
-      console.log("💬 Socket disconnected:", reason);
       this.emit("connection_status_changed", { connected: false, reason });
     });
 
@@ -83,7 +77,6 @@ class ChatService {
           this.conversations.set(conversation.id, conversation);
         });
 
-        console.log(`💬 Loaded ${data.data.length} conversations`);
         this.emit(
           "conversations_loaded",
           Array.from(this.conversations.values())
@@ -144,7 +137,6 @@ class ChatService {
       );
 
       if (existingConversation) {
-        console.log("💬 Conversation already exists:", existingConversation.id);
         return existingConversation;
       }
 
@@ -316,7 +308,6 @@ class ChatService {
     this.conversations.clear();
     this.eventListeners.clear();
     this.isInitialized = false;
-    console.log("💬 Chat service cleaned up");
   }
 
   // Event listener management
