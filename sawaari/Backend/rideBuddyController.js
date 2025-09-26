@@ -890,10 +890,15 @@ const sendRequest = async (req, res) => {
       console.log(
         `🚫 Blocking rapid duplicate request - found ${recentRequests.length} recent requests`
       );
-      return res.status(429).json({
+      return res.status(409).json({
         success: false,
-        error: "Too many requests",
-        message: "Please wait before sending another request to this user",
+        error: "Duplicate request",
+        message:
+          "Please wait 30 seconds before sending another request to this user",
+        details: {
+          timeToWait: 30,
+          requestId: recentRequests[0]._id,
+        },
       });
     }
 
@@ -1005,10 +1010,15 @@ const sendRequest = async (req, res) => {
     });
 
     if (receiverSearches.length === 0) {
-      return res.status(400).json({
+      return res.status(404).json({
         success: false,
-        error: "Receiver not available",
-        message: "Receiver is no longer available for connections",
+        error: "Search expired",
+        message:
+          "This user is no longer searching for a ride buddy. They may have found a match or cancelled their search.",
+        details: {
+          receiverId,
+          reason: "no_active_search",
+        },
       });
     }
 

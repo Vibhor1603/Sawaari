@@ -40,7 +40,25 @@ const RequestManager = ({
       }
     } catch (error) {
       console.error("Error accepting request:", error);
-      toast.error("Failed to accept request. Please try again.");
+
+      // Handle specific error cases
+      if (error.status === 404) {
+        toast.error(
+          "This request is no longer available. It may have expired or been cancelled."
+        );
+      } else if (error.status === 409) {
+        toast.error(
+          error.data?.message || "This request has already been processed."
+        );
+      } else if (error.status === 400) {
+        toast.error(
+          error.data?.message || "Invalid request. Please check your input."
+        );
+      } else {
+        toast.error(
+          error.data?.message || "Failed to accept request. Please try again."
+        );
+      }
     } finally {
       setProcessingRequests((prev) => {
         const newSet = new Set(prev);

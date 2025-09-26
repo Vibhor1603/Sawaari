@@ -46,8 +46,15 @@ const apiRequest = async (endpoint, options = {}, retryCount = 0) => {
   const requestPromise = rateLimitedCall(async () => {
     try {
       const response = await authService.apiRequest(endpoint, options);
-
       const data = await response.json();
+
+      // If the response is not ok, throw an error with the response data
+      if (!response.ok) {
+        const error = new Error(data.message || "Request failed");
+        error.status = response.status;
+        error.data = data;
+        throw error;
+      }
 
       return data;
     } catch (error) {
