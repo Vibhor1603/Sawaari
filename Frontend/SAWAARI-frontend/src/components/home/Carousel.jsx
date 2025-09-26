@@ -113,15 +113,22 @@ export default function InteractiveHero() {
               </span>
             </div>
 
-            {/* Enhanced SAWAARI wordmark with better readability - Responsive */}
-            <h1 className="mb-6 sm:mb-8">
-              <span className="block text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white leading-none mb-2 sm:mb-4 text-readable">
-                <span className="text-sawaari-yellow">SAW</span>AARI
-              </span>
-              <span className="block text-xl sm:text-2xl lg:text-3xl font-light text-gray-200 text-readable-secondary">
-                Last Mile Travel Made Simple
-              </span>
-            </h1>
+            {/* Logo and SAWAARI wordmark */}
+            <div className="flex items-center mb-6 sm:mb-8">
+              <img
+                src="/logo.jpg"
+                alt="Sawaari Logo"
+                className="w-16 h-16 sm:w-20 sm:h-20 object-contain rounded-full mr-4"
+              />
+              <h1>
+                <span className="block text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white leading-none text-readable">
+                  <span className="text-sawaari-yellow">SAW</span>AARI
+                </span>
+                <span className="block text-xl sm:text-2xl lg:text-3xl font-light text-gray-200 text-readable-secondary mt-2">
+                  Last Mile Travel Made Simple
+                </span>
+              </h1>
+            </div>
 
             {/* Enhanced CTA buttons with subtle effects - Responsive */}
             <div className="btn-group-responsive mb-8 sm:mb-12">

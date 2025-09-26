@@ -44,25 +44,25 @@ export default function Navbar() {
           {/* Enhanced Brand */}
           <NavLink
             to="/"
-            className="flex items-center space-x-3 text-white hover:text-sawaari-yellow transition-colors duration-300"
+            className="flex items-center space-x-4 text-white hover:text-sawaari-yellow transition-colors duration-300 mr-8"
           >
-            <div className="w-14 h-10  rounded-full flex items-center justify-center shadow-sawaari-subtle">
-              <span className="text-black font-bold text-lg">
-                <img src="/logo.jpg" />
-              </span>
-            </div>
+            <img
+              src="/logo.jpg"
+              alt="Sawaari Logo"
+              className="w-10 h-10 object-contain rounded-full"
+            />
             <span className="text-xl font-bold text-sawaari-yellow text-readable">
               SAWAARI
             </span>
           </NavLink>
 
           {/* Enhanced Desktop Navigation */}
-          <div className="hidden lg:flex items-center space-x-16">
-            <div className="flex items-center space-x-8">
+          <div className="hidden lg:flex items-center space-x-8">
+            <div className="flex items-center space-x-6">
               <NavLink
                 to="/home"
                 className={({ isActive }) =>
-                  `px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
+                  `px-5 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
                     isActive
                       ? "text-sawaari-yellow bg-sawaari-yellow-muted border border-sawaari-yellow-border text-readable"
                       : "text-gray-300 hover:text-sawaari-yellow hover:bg-sawaari-yellow-muted/50 text-readable-secondary"
