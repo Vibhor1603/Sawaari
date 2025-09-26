@@ -13,6 +13,9 @@ const { rideBuddyCacheService } = require("./Backend/cacheService");
 require("dotenv").config();
 
 const app = express();
+// Enable trust proxy - required when running behind a reverse proxy like Nginx
+app.set("trust proxy", 1);
+
 const server = http.createServer(app);
 // Parse CORS origins from environment variable
 const corsOrigins = process.env.CORS_ORIGINS
