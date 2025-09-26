@@ -170,9 +170,10 @@ export default function Navbar() {
           {/* Enhanced Mobile Menu Button */}
           <button
             onClick={toggleNav}
-            className="lg:hidden p-2 rounded-lg text-gray-300 hover:text-sawaari-yellow hover:bg-sawaari-yellow-muted/50 transition-all duration-300"
+            className="lg:hidden p-2 rounded-lg text-sawaari-yellow bg-sawaari-yellow-muted/30 hover:bg-sawaari-yellow-muted border border-sawaari-yellow/30 hover:border-sawaari-yellow transition-all duration-300 animate-pulse-slow relative"
             aria-label="Toggle navigation menu"
           >
+            <div className="absolute -top-1 -right-1 w-2 h-2 bg-sawaari-yellow rounded-full animate-ping"></div>
             <svg
               className="w-6 h-6"
               fill="none"

@@ -9,22 +9,24 @@ export default function InteractiveHero() {
   const features = [
     {
       id: 0,
-      title: "Find Rickhsaw points",
-      description:
-        "Discover available auto rickshaws points near you instantly",
+      title: "Auto Rickshaw Stands",
+      description: "Find nearby auto stands for your commute",
       link: "/hotspots",
+      tagline: "Last Mile Travel Made Simple",
     },
     {
       id: 1,
-      title: "Best Routes",
-      description: "Get the fastest routes with transparent pricing",
+      title: "Smart Routes",
+      description: "Find auto routes to your destination",
       link: "/routes",
+      tagline: "Last Mile Travel Made Simple",
     },
     {
       id: 2,
-      title: "Share Rides",
-      description: "Connect with others for affordable journeys",
+      title: "Share Your Auto",
+      description: "Connect with co-passengers heading the same way",
       link: "/ridebuddy",
+      tagline: "Last Mile Travel Made Simple",
     },
   ];
 
@@ -107,26 +109,19 @@ export default function InteractiveHero() {
             <div className="inline-flex items-center gap-2 sm:gap-3 bg-sawaari-yellow-muted border border-sawaari-yellow-border rounded-full px-4 sm:px-6 py-2 sm:py-3 mb-6 sm:mb-8 backdrop-blur-sm">
               <span className="text-lg sm:text-xl lg:text-2xl">🛺</span>
               <span className="text-xs sm:text-sm font-medium text-sawaari-yellow text-readable">
-                India&apos;s Ride Companion
+                Auto Rickshaw Services
               </span>
             </div>
 
             {/* Enhanced SAWAARI wordmark with better readability - Responsive */}
             <h1 className="mb-6 sm:mb-8">
               <span className="block text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white leading-none mb-2 sm:mb-4 text-readable">
-                SAWAARI
+                <span className="text-sawaari-yellow">SAW</span>AARI
               </span>
-              <span className="block text-lg sm:text-xl lg:text-2xl font-normal text-gray-200 text-readable-secondary">
-                Your Journey, Simplified
+              <span className="block text-xl sm:text-2xl lg:text-3xl font-light text-gray-200 text-readable-secondary">
+                Last Mile Travel Made Simple
               </span>
             </h1>
-
-            {/* Enhanced tagline with better contrast - Responsive */}
-            <p className="text-base sm:text-lg lg:text-xl text-gray-200 leading-relaxed mb-8 sm:mb-12 max-w-xl text-readable-secondary">
-              Experience the convenience of finding, booking, and sharing auto
-              rickshaw rides across India with our smart platform designed for
-              modern travelers.
-            </p>
 
             {/* Enhanced CTA buttons with subtle effects - Responsive */}
             <div className="btn-group-responsive mb-8 sm:mb-12">
